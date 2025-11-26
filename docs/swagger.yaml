@@ -295,6 +295,17 @@ definitions:
       error:
         type: string
     type: object
+  types.FetchAllBookingsResponse:
+    properties:
+      bookings:
+        items:
+          $ref: '#/definitions/types.Booking'
+        type: array
+      bookingsRequested:
+        type: integer
+      totalBookings:
+        type: integer
+    type: object
   types.FetchAllQuotesResponse:
     properties:
       quotes:
@@ -1063,29 +1074,6 @@ paths:
       summary: Delete a booking
       tags:
       - Booking
-    get:
-      consumes:
-      - application/json
-      description: Retrieve booking information by its database ID
-      parameters:
-      - description: Booking ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get booking by ID
-      tags:
-      - Booking
     put:
       consumes:
       - application/json
@@ -1115,6 +1103,50 @@ paths:
       security:
       - BearerAuth: []
       summary: Update a booking
+      tags:
+      - Booking
+  /booking/bookings:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all bookings with optional date filtering and pagination
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.FetchAllBookingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all bookings with filters
       tags:
       - Booking
   /booking/user/{uid}:
