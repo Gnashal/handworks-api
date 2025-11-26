@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"handworks-api/types"
 	"net/http"
 	"time"
@@ -49,8 +50,22 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /booking/{id} [get]
 func (h *BookingHandler) GetBookingById(c *gin.Context) {
-	_ = h.Service.GetBookingById(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(fmt.Errorf("missing id parameter")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	booking, err := h.Service.GetBookingById(ctx, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, booking)
 }
 
 // GetBookingByUId godoc
