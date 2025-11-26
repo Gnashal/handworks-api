@@ -12,6 +12,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type BookingService interface {
+	CreateBooking(ctx context.Context, evt types.CreateBookingEvent) (*types.Booking, error)
+}
+
 type BookingTasks struct{}
 type PaymentPort interface {
 	GetQuotePrices(ctx context.Context, quoteId string) (*types.CleaningPrices, error)
