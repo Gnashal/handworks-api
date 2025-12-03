@@ -141,7 +141,7 @@ func (s *BookingService) GetBookingById(ctx context.Context, id string) (*types.
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	tx.Rollback(ctx)
 	booking, err = s.Tasks.FetchBookingById(ctx, tx, id)
 	if err != nil {
 		return nil, err
