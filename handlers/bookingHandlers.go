@@ -114,8 +114,6 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 // @Success 200 {array} map[string]interface{}
 // @Router /booking/user/{uid} [get]
 func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
-	_ = h.Service.GetBookingByUId(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
 // UpdateBooking godoc
