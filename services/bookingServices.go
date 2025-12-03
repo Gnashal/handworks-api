@@ -135,19 +135,22 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 }
 
 func (s *BookingService) GetBookingById(ctx context.Context, id string) (*types.Booking, error) {
-	var booking *types.Booking
+	 var booking *types.Booking
 
-	tx, err := s.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted, AccessMode: pgx.ReadOnly})
-	if err != nil {
-		return nil, err
-	}
-	tx.Rollback(ctx)
-	booking, err = s.Tasks.FetchBookingById(ctx, tx, id)
-	if err != nil {
-		return nil, err
-	}
+    err := s.withTx(ctx, func(tx pgx.Tx) error {
+        b, err := s.Tasks.FetchBookingById(ctx, tx, id)
+        if err != nil {
+            return err
+        }
+        booking = b
+        return nil
+    })
 
-	return booking, nil
+    if err != nil {
+        return nil, err
+    }
+
+    return booking, nil
 }
 
 func (s *BookingService) GetBookingByUId(ctx context.Context) error {
