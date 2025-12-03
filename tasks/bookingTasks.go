@@ -632,3 +632,89 @@ func (t *BookingTasks) FetchBookingById(
 		TotalPrice:  totalPrice,
 	}, nil
 }
+
+func (t *BookingTasks) FetchBookingByUId(
+	ctx context.Context,
+	tx pgx.Tx,
+	bookingId string,
+	userId string,
+) (*types.Booking, error) {
+
+	var exists bool
+	err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM account.accounts WHERE id = $1)", userId).Scan(&exists)
+	if err != nil {
+		return nil, fmt.Errorf("checking user existence: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("user with id=%s does not exist", userId)
+	}
+
+	var (
+		basebookingID string
+		mainserviceID string
+		addonIDs      []string
+		equipmentIDs  []string
+		resourcesIDs  []string
+		cleanerIDs    []string
+		totalPrice    float32
+	)
+
+	query := `
+		SELECT base_booking_id, main_service_id, addon_ids,
+		       equipment_ids, resource_ids, cleaner_ids, total_price
+		FROM booking.bookings
+		WHERE id = $1 AND user_id = $2`
+
+	if err := tx.QueryRow(ctx, query,
+		bookingId, userId,
+	).Scan(
+		&basebookingID, &mainserviceID, &addonIDs,
+		&equipmentIDs, &resourcesIDs, &cleanerIDs, &totalPrice,
+	); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("booking not found: %w", err)
+		}
+		return nil, fmt.Errorf("fetch booking row: %w", err)
+	}
+
+	base, err := loadBaseBooking(ctx, tx, basebookingID)
+	if err != nil {
+		return nil, err
+	}
+
+	main, err := loadServiceDetails(ctx, tx, mainserviceID)
+	if err != nil {
+		return nil, err
+	}
+
+	addon, err := loadAddOns(ctx, tx, addonIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	equipment, err := loadEquipments(ctx, tx, equipmentIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	resource, err := loadResources(ctx, tx, resourcesIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaner, err := loadCleaners(ctx, tx, cleanerIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.Booking{
+		ID:          bookingId,
+		Base:        *base,
+		MainService: *main,
+		Addons:      addon,
+		Equipments:  equipment,
+		Resources:   resource,
+		Cleaners:    cleaner,
+		TotalPrice:  totalPrice,
+	}, nil
+}

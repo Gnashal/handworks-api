@@ -135,26 +135,41 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 }
 
 func (s *BookingService) GetBookingById(ctx context.Context, id string) (*types.Booking, error) {
-	 var booking *types.Booking
+	var booking *types.Booking
 
-    err := s.withTx(ctx, func(tx pgx.Tx) error {
-        b, err := s.Tasks.FetchBookingById(ctx, tx, id)
-        if err != nil {
-            return err
-        }
-        booking = b
-        return nil
-    })
+	err := s.withTx(ctx, func(tx pgx.Tx) error {
+		b, err := s.Tasks.FetchBookingById(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		booking = b
+		return nil
+	})
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    return booking, nil
+	return booking, nil
 }
 
-func (s *BookingService) GetBookingByUId(ctx context.Context) error {
-	return nil
+func (s *BookingService) GetBookingByUId(ctx context.Context, bookingId string, userId string) (*types.Booking, error) {
+	var booking *types.Booking
+
+	err := s.withTx(ctx, func(tx pgx.Tx) error {
+		b, err := s.Tasks.FetchBookingByUId(ctx, tx, bookingId, userId)
+		if err != nil {
+			return err
+		}
+		booking = b
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return booking, nil
 }
 
 func (s *BookingService) UpdateBooking(ctx context.Context) error {
