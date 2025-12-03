@@ -136,7 +136,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 func (s *BookingService) GetBookingById(ctx context.Context) error {
 	return nil
 }
-
+// TODO: change by customer ID
 func (s *BookingService) GetBookingByUId(ctx context.Context) error {
 	return nil
 }

@@ -34,7 +34,7 @@ func (s *AccountService) withTx(
 // Customer methods
 func (s *AccountService) SignUpCustomer(ctx context.Context, req types.SignUpCustomerRequest) (*types.SignUpCustomerResponse, error) {
 	var customer types.Customer
-
+	
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		acc, err := s.Tasks.CreateAccount(ctx, tx, req.FirstName, req.LastName, req.Email, req.Provider, req.ClerkID, req.Role)
 		if err != nil {
