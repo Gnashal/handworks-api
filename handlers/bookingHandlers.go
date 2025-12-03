@@ -78,19 +78,18 @@ func (h *BookingHandler) GetBookingById(c *gin.Context) {
 // @Param uid path string true "User ID"
 // @Success 200 {array} map[string]interface{}
 // @Router /booking/user/{uid} [get]
-func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
+func (h *BookingHandler) GetBookingsByUId(c *gin.Context) {
+	userId := c.Param("id")
 
-	bookingId := c.Param("bookingId")
-	userId := c.Param("userId")
-
-	if bookingId == "" || userId == "" {
+	if userId == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
-			"message": "bookingId and userId are required",
+			"message": "userId is required",
 		})
 		return
 	}
-	booking, err := h.Service.GetBookingByUId(c.Request.Context(), bookingId, userId)
+
+	bookings, err := h.Service.GetBookingsByUId(c.Request.Context(), userId)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"status":  "error",
@@ -100,8 +99,8 @@ func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"booking": booking,
+		"status":   "success",
+		"bookings": bookings,
 	})
 }
 

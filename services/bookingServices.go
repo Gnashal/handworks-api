@@ -153,15 +153,15 @@ func (s *BookingService) GetBookingById(ctx context.Context, id string) (*types.
 	return booking, nil
 }
 
-func (s *BookingService) GetBookingByUId(ctx context.Context, bookingId string, userId string) (*types.Booking, error) {
-	var booking *types.Booking
+func (s *BookingService) GetBookingsByUId(ctx context.Context, userId string) ([]*types.Booking, error) {
+	var bookings []*types.Booking
 
 	err := s.withTx(ctx, func(tx pgx.Tx) error {
-		b, err := s.Tasks.FetchBookingByUId(ctx, tx, bookingId, userId)
+		b, err := s.Tasks.FetchAllBookingsByUserID(ctx, tx, userId)
 		if err != nil {
 			return err
 		}
-		booking = b
+		bookings = b
 		return nil
 	})
 
@@ -169,7 +169,7 @@ func (s *BookingService) GetBookingByUId(ctx context.Context, bookingId string, 
 		return nil, err
 	}
 
-	return booking, nil
+	return bookings, nil
 }
 
 func (s *BookingService) UpdateBooking(ctx context.Context) error {
