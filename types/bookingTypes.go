@@ -202,3 +202,11 @@ type Booking struct {
 	Cleaners    []CleanerAssigned   `json:"cleaners"`
 	TotalPrice  float32             `json:"totalPrice"`
 }
+
+type UpdateBookingEvent struct {
+	BookingID  string    `json:"bookingId"`
+	StartSched time.Time `json:"startSched"`
+	EndSched   time.Time `json:"endSched"`
+	DirtyScale int32     `json:"dirtyScale"`
+	Photos     []string  `json:"photos"`
+}

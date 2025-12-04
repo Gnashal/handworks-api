@@ -116,8 +116,39 @@ func (h *BookingHandler) GetBookingsByUId(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Router /booking/{id} [put]
 func (h *BookingHandler) UpdateBooking(c *gin.Context) {
-	_ = h.Service.UpdateBooking(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+	bookingId := c.Param("id")
+	if bookingId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "bookingId is required",
+		})
+		return
+	}
+
+	var req types.UpdateBookingEvent
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	req.BookingID = bookingId
+
+	updatedBooking, err := h.Service.UpdateBooking(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"booking": updatedBooking,
+	})
 }
 
 // DeleteBooking godoc

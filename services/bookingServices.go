@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"handworks-api/tasks"
 	"handworks-api/types"
 
 	"github.com/jackc/pgx/v5"
@@ -172,8 +173,43 @@ func (s *BookingService) GetBookingsByUId(ctx context.Context, userId string) ([
 	return bookings, nil
 }
 
-func (s *BookingService) UpdateBooking(ctx context.Context) error {
-	return nil
+func (s *BookingService) UpdateBooking(
+	ctx context.Context,
+	evt types.UpdateBookingEvent,
+) (*types.Booking, error) {
+
+	if evt.BookingID == "" {
+		return nil, fmt.Errorf("missing booking id")
+	}
+
+	var updated *types.Booking
+
+	err := s.withTx(ctx, func(tx pgx.Tx) error {
+
+		task := tasks.PaymentTasks{}
+
+		booking, err := task.ModifyBookingByID(
+			ctx,
+			tx,
+			evt.BookingID,
+			evt.StartSched,
+			evt.EndSched,
+			evt.DirtyScale,
+			evt.Photos,
+		)
+		if err != nil {
+			return err
+		}
+
+		updated = booking
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
 }
 
 func (s *BookingService) DeleteBooking(ctx context.Context) error {
