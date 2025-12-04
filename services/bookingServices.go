@@ -133,16 +133,80 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 
 	return createdBooking, nil
 }
-func (s *BookingService) GetBookingById(ctx context.Context) error {
-	return nil
-}
-// TODO: change by customer ID
-func (s *BookingService) GetBookingByUId(ctx context.Context) error {
-	return nil
+
+func (s *BookingService) GetBookingById(ctx context.Context, id string) (*types.Booking, error) {
+	var booking *types.Booking
+
+	err := s.withTx(ctx, func(tx pgx.Tx) error {
+		b, err := s.Tasks.FetchBookingById(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+		booking = b
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return booking, nil
 }
 
-func (s *BookingService) UpdateBooking(ctx context.Context) error {
-	return nil
+func (s *BookingService) GetBookingsByUId(ctx context.Context, custId string) ([]*types.Booking, error) {
+	var bookings []*types.Booking
+
+	err := s.withTx(ctx, func(tx pgx.Tx) error {
+		b, err := s.Tasks.FetchAllBookingsByUserID(ctx, tx, custId)
+		if err != nil {
+			return err
+		}
+		bookings = b
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bookings, nil
+}
+
+func (s *BookingService) UpdateBooking(
+	ctx context.Context,
+	evt types.UpdateBookingEvent,
+) (*types.Booking, error) {
+
+	if evt.BookingID == "" {
+		return nil, fmt.Errorf("missing booking id")
+	}
+
+	var updated *types.Booking
+
+	err := s.withTx(ctx, func(tx pgx.Tx) error {
+
+		booking, err := s.Tasks.ModifyBookingByID(
+			ctx,
+			tx,
+			evt.BookingID,
+			evt.StartSched,
+			evt.EndSched,
+			evt.DirtyScale,
+			evt.Photos,
+		)
+		if err != nil {
+			return err
+		}
+
+		updated = booking
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
 }
 
 func (s *BookingService) DeleteBooking(ctx context.Context) error {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"handworks-api/types"
 	"net/http"
 	"time"
@@ -49,8 +50,22 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /booking/{id} [get]
 func (h *BookingHandler) GetBookingById(c *gin.Context) {
-	_ = h.Service.GetBookingById(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+	id := c.Param("id")
+	if id == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(fmt.Errorf("missing id parameter")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	booking, err := h.Service.GetBookingById(ctx, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, booking)
 }
 
 // GetBookingByUId godoc
@@ -63,9 +78,30 @@ func (h *BookingHandler) GetBookingById(c *gin.Context) {
 // @Param uid path string true "User ID"
 // @Success 200 {array} map[string]interface{}
 // @Router /booking/user/{uid} [get]
-func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
-	_ = h.Service.GetBookingByUId(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+func (h *BookingHandler) GetBookingsByUId(c *gin.Context) {
+	userId := c.Param("id")
+
+	if userId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "userId is required",
+		})
+		return
+	}
+
+	bookings, err := h.Service.GetBookingsByUId(c.Request.Context(), userId)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":   "success",
+		"bookings": bookings,
+	})
 }
 
 // UpdateBooking godoc
@@ -80,8 +116,39 @@ func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Router /booking/{id} [put]
 func (h *BookingHandler) UpdateBooking(c *gin.Context) {
-	_ = h.Service.UpdateBooking(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+	bookingId := c.Param("id")
+	if bookingId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "bookingId is required",
+		})
+		return
+	}
+
+	var req types.UpdateBookingEvent
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	req.BookingID = bookingId
+
+	updatedBooking, err := h.Service.UpdateBooking(c.Request.Context(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"booking": updatedBooking,
+	})
 }
 
 // DeleteBooking godoc

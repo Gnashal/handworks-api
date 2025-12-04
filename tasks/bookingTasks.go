@@ -12,59 +12,58 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type BookingTasks struct {}
+type BookingTasks struct{}
 type PaymentPort interface {
 	GetQuotePrices(ctx context.Context, quoteId string) (*types.CleaningPrices, error)
 }
 
 func (t *BookingTasks) AllocateAll(ctx context.Context, paymentPort PaymentPort, req *types.CreateBookingRequest) (*types.BookingAllocation, error) {
-    g, c := errgroup.WithContext(ctx)
+	g, c := errgroup.WithContext(ctx)
 
-    var (
-        prices   *types.CleaningPrices
-        alloc    *types.CleaningAllocation
-        cleaners []types.CleanerAssigned
-    )
+	var (
+		prices   *types.CleaningPrices
+		alloc    *types.CleaningAllocation
+		cleaners []types.CleanerAssigned
+	)
 
-    g.Go(func() error {
-        var err error
-        prices, err = paymentPort.GetQuotePrices(c, req.Base.QuoteId)
-        return err
-    })
+	g.Go(func() error {
+		var err error
+		prices, err = paymentPort.GetQuotePrices(c, req.Base.QuoteId)
+		return err
+	})
 
-    g.Go(func() error {
-        var err error
-        alloc, err = t.AllocateEquipmentAndResources(c, req)
-        return err
-    })
+	g.Go(func() error {
+		var err error
+		alloc, err = t.AllocateEquipmentAndResources(c, req)
+		return err
+	})
 
-    g.Go(func() error {
-        var err error
-        cleaners, err = t.AllocateCleaners(c, req)
-        return err
-    })
+	g.Go(func() error {
+		var err error
+		cleaners, err = t.AllocateCleaners(c, req)
+		return err
+	})
 
-    if err := g.Wait(); err != nil {
-        return nil, err
-    }
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 
-    // Defensive nils
-    if prices == nil {
-        prices = &types.CleaningPrices{}
-    }
-    if alloc == nil {
-        alloc = &types.CleaningAllocation{}
-    }
+	// Defensive nils
+	if prices == nil {
+		prices = &types.CleaningPrices{}
+	}
+	if alloc == nil {
+		alloc = &types.CleaningAllocation{}
+	}
 
-    return &types.BookingAllocation{
-        CleaningAllocation: alloc,
-        CleanerAssigned:    cleaners,
-        CleaningPrices:     prices,
-    }, nil
+	return &types.BookingAllocation{
+		CleaningAllocation: alloc,
+		CleanerAssigned:    cleaners,
+		CleaningPrices:     prices,
+	}, nil
 }
 
-
-func (t * BookingTasks) AllocateEquipmentAndResources(ctx context.Context, req *types.CreateBookingRequest) (*types.CleaningAllocation, error) {
+func (t *BookingTasks) AllocateEquipmentAndResources(ctx context.Context, req *types.CreateBookingRequest) (*types.CleaningAllocation, error) {
 	// FOR TESTING PA NI, I HAVE NOT IMPLEMENTED THE REAL LOGIC YET
 	// TODO: Automation logic for resource and equipment allocation
 	equipments := []types.CleaningEquipment{
@@ -80,7 +79,7 @@ func (t * BookingTasks) AllocateEquipmentAndResources(ctx context.Context, req *
 	}, nil
 }
 
-func (t* BookingTasks) AllocateCleaners(ctx context.Context, req *types.CreateBookingRequest) ([]types.CleanerAssigned, error) {
+func (t *BookingTasks) AllocateCleaners(ctx context.Context, req *types.CreateBookingRequest) ([]types.CleanerAssigned, error) {
 	// FOR TESTING PA NI, I HAVE NOT IMPLEMENTED THE REAL LOGIC YET
 	// TODO: Automation logic for cleaner assignment
 	cleaners := []types.CleanerAssigned{
@@ -203,7 +202,7 @@ func insertServiceDetails[T any](ctx context.Context, tx pgx.Tx, serviceType typ
 func (t *BookingTasks) CreateMainServiceBooking(
 	ctx context.Context,
 	tx pgx.Tx,
-	logger * utils.Logger,
+	logger *utils.Logger,
 	mainService types.ServiceDetail,
 ) (*types.ServiceDetails, error) {
 
@@ -274,7 +273,7 @@ func (t *BookingTasks) CreateMainServiceBooking(
 func (t *BookingTasks) CreateAddOn(
 	ctx context.Context,
 	tx pgx.Tx,
-	logger * utils.Logger,
+	logger *utils.Logger,
 	addonReq types.AddOnRequest,
 	addOnPrice float32,
 ) (*types.AddOns, error) {
@@ -340,4 +339,320 @@ func (t *BookingTasks) SaveBooking(
 	}
 
 	return id, nil
+}
+
+func (t *BookingTasks) FetchBookingById(
+	ctx context.Context,
+	tx pgx.Tx,
+	id string,
+) (*types.Booking, error) {
+
+	var (
+		baseBookingID string
+		mainServiceID string
+		addonIDs      []string
+		equipmentIDs  []string
+		resourceIDs   []string
+		cleanerIDs    []string
+		totalPrice    float32
+	)
+
+	query := `
+		SELECT base_booking_id, main_service_id, addon_ids, 
+		       equipment_ids, resource_ids, cleaner_ids, total_price
+		FROM booking.bookings
+		WHERE id = $1
+	`
+
+	if err := tx.QueryRow(ctx, query,
+		id,
+	).Scan(
+		&baseBookingID, &mainServiceID, &addonIDs,
+		&equipmentIDs, &resourceIDs, &cleanerIDs, &totalPrice,
+	); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("booking not found: %w", err)
+		}
+		return nil, fmt.Errorf("fetch booking row: %w", err)
+	}
+
+	base, err := loadBaseBooking(ctx, tx, baseBookingID)
+	if err != nil {
+		return nil, err
+	}
+
+	mainSvc, err := loadServiceDetails(ctx, tx, mainServiceID)
+	if err != nil {
+		return nil, fmt.Errorf("load main service: %w", err)
+	}
+
+	addons, err := loadAddOns(ctx, tx, addonIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	equipments, err := loadEquipments(ctx, tx, equipmentIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := loadResources(ctx, tx, resourceIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaners, err := loadCleaners(ctx, tx, cleanerIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.Booking{
+		ID:          id,
+		Base:        *base,
+		MainService: *mainSvc,
+		Addons:      addons,
+		Equipments:  equipments,
+		Resources:   resources,
+		Cleaners:    cleaners,
+		TotalPrice:  totalPrice,
+	}, nil
+}
+
+func (t *BookingTasks) FetchAllBookingsByUserID(
+	ctx context.Context,
+	tx pgx.Tx,
+	custId string,
+) ([]*types.Booking, error) {
+
+	// var exists bool
+	// err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM account.accounts WHERE id = $1)", userId).Scan(&exists)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("checking user existence: %w", err)
+	// }
+	// if !exists {
+	// 	return nil, fmt.Errorf("user with id %s does not exist", userId)
+	// }
+
+	// Query all bookings for the user using join with basebookings
+
+	query := `
+		SELECT b.id, b.base_booking_id, b.main_service_id, b.addon_ids,
+		       b.equipment_ids, b.resource_ids, b.cleaner_ids, b.total_price
+		FROM booking.bookings b
+		JOIN booking.basebookings bb ON b.base_booking_id = bb.id
+		WHERE bb.cust_id = $1
+	`
+
+	rows, err := tx.Query(ctx, query, custId)
+	if err != nil {
+		return nil, fmt.Errorf("fetch bookings: %w", err)
+	}
+	defer rows.Close()
+
+	type bookingRow struct {
+		bookingID, baseBookingID, mainServiceID         string
+		addonIDs, equipmentIDs, resourceIDs, cleanerIDs []string
+		totalPrice                                      float32
+	}
+
+	var rowsData []bookingRow
+	for rows.Next() {
+		var r bookingRow
+		if err := rows.Scan(
+			&r.bookingID, &r.baseBookingID, &r.mainServiceID,
+			&r.addonIDs, &r.equipmentIDs, &r.resourceIDs,
+			&r.cleanerIDs, &r.totalPrice,
+		); err != nil {
+			return nil, fmt.Errorf("scan booking row: %w", err)
+		}
+		rowsData = append(rowsData, r)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate booking rows: %w", err)
+	}
+
+	if len(rowsData) == 0 {
+		return nil, fmt.Errorf("no bookings found for user with id=%s", custId)
+	}
+	var bookings []*types.Booking
+	for _, r := range rowsData {
+		base, err := loadBaseBooking(ctx, tx, r.baseBookingID)
+		if err != nil {
+			return nil, err
+		}
+
+		main, err := loadServiceDetails(ctx, tx, r.mainServiceID)
+		if err != nil {
+			return nil, err
+		}
+
+		addons, err := loadAddOns(ctx, tx, r.addonIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		equipments, err := loadEquipments(ctx, tx, r.equipmentIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		resources, err := loadResources(ctx, tx, r.resourceIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		cleaners, err := loadCleaners(ctx, tx, r.cleanerIDs)
+		if err != nil {
+			return nil, err
+		}
+
+		bookings = append(bookings, &types.Booking{
+			ID:          r.bookingID,
+			Base:        *base,
+			MainService: *main,
+			Addons:      addons,
+			Equipments:  equipments,
+			Resources:   resources,
+			Cleaners:    cleaners,
+			TotalPrice:  r.totalPrice,
+		})
+	}
+
+	return bookings, nil
+}
+
+func (t *BookingTasks) ModifyBookingByID(
+	ctx context.Context,
+	tx pgx.Tx,
+	bookingId string,
+	newStartSched, newEndSched time.Time,
+	newDirtyScale int32,
+	newPhotos []string,
+) (*types.Booking, error) {
+
+	var baseBookingID string
+	var mainServiceID string
+	var addonIDs, equipmentIDs, resourceIDs, cleanerIDs []string
+	var totalPrice float32
+
+	getQuery := `
+		SELECT base_booking_id, main_service_id, addon_ids, equipment_ids, 
+		       resource_ids, cleaner_ids, total_price
+		FROM booking.bookings
+		WHERE id = $1
+	`
+
+	err := tx.QueryRow(ctx, getQuery, bookingId).Scan(
+		&baseBookingID, &mainServiceID,
+		&addonIDs, &equipmentIDs,
+		&resourceIDs, &cleanerIDs,
+		&totalPrice,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("booking with id %s does not exist", bookingId)
+		}
+		return nil, fmt.Errorf("fetch booking details: %w", err)
+	}
+
+	updateQuery := `
+		UPDATE booking.basebookings
+		SET start_sched = $1,
+		    end_sched   = $2,
+		    dirty_scale = $3,
+		    photos      = $4,
+		    updated_at  = NOW()
+		WHERE id = $5
+	`
+
+	_, err = tx.Exec(ctx, updateQuery,
+		newStartSched,
+		newEndSched,
+		newDirtyScale,
+		newPhotos,
+		baseBookingID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("update basebooking: %w", err)
+	}
+
+	base, err := loadBaseBooking(ctx, tx, baseBookingID)
+	if err != nil {
+		return nil, err
+	}
+
+	main, err := loadServiceDetails(ctx, tx, mainServiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	addons, err := loadAddOns(ctx, tx, addonIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	equipments, err := loadEquipments(ctx, tx, equipmentIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := loadResources(ctx, tx, resourceIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaners, err := loadCleaners(ctx, tx, cleanerIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.Booking{
+		ID:          bookingId,
+		Base:        *base,
+		MainService: *main,
+		Addons:      addons,
+		Equipments:  equipments,
+		Resources:   resources,
+		Cleaners:    cleaners,
+		TotalPrice:  totalPrice,
+	}, nil
+}
+
+func (t *BookingTasks) DeleteBookingByID(
+	ctx context.Context,
+	tx pgx.Tx,
+	bookingId string,
+) error {
+	// First, get the base_booking_id of the booking
+	var baseBookingID string
+	err := tx.QueryRow(ctx, `
+		SELECT base_booking_id
+		FROM booking.bookings
+		WHERE id = $1
+	`, bookingId).Scan(&baseBookingID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("booking with id=%s not found", bookingId)
+		}
+		return fmt.Errorf("fetch booking for deletion: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		DELETE FROM booking.bookings
+		WHERE id = $1
+	`, bookingId)
+	if err != nil {
+		return fmt.Errorf("delete booking: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		DELETE FROM booking.basebookings
+		WHERE id = $1
+	`, baseBookingID)
+	if err != nil {
+		return fmt.Errorf("delete base booking: %w", err)
+	}
+
+	return nil
 }
