@@ -53,6 +53,7 @@ func main() {
 	publicPaths := []string{"/api/account/customer/signup", 
 	"/api/account/employee/signup", 
 	"/api/payment/quote/preview", "/health"}
+
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths))
 
 	accountService := services.NewAccountService(conn, logger)

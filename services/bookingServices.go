@@ -153,24 +153,9 @@ func (s *BookingService) GetBookingById(ctx context.Context, id string) (*types.
 
 	return booking, nil
 }
-
-func (s *BookingService) GetBookingsByUId(ctx context.Context, userId string) ([]*types.Booking, error) {
-	var bookings []*types.Booking
-
-	err := s.withTx(ctx, func(tx pgx.Tx) error {
-		b, err := s.Tasks.FetchAllBookingsByUserID(ctx, tx, userId)
-		if err != nil {
-			return err
-		}
-		bookings = b
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return bookings, nil
+// TODO: change by customer ID
+func (s *BookingService) GetBookingByUId(ctx context.Context) error {
+	return nil
 }
 
 func (s *BookingService) UpdateBooking(
