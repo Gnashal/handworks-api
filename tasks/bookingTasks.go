@@ -366,3 +366,100 @@ func (t *BookingTasks) FetchAllBookings(
 
 	return &response, nil
 }
+
+func (t *PaymentTasks) ModifyBookingByID(
+	ctx context.Context,
+	tx pgx.Tx,
+	bookingId string,
+	newStartSched, newEndSched time.Time,
+	newDirtyScale int32,
+	newPhotos []string,
+) (*types.Booking, error) {
+
+	var baseBookingID string
+	var mainServiceID string
+	var addonIDs, equipmentIDs, resourceIDs, cleanerIDs []string
+	var totalPrice float32
+
+	getQuery := `
+		SELECT base_booking_id, main_service_id, addon_ids, equipment_ids, 
+		       resource_ids, cleaner_ids, total_price
+		FROM booking.bookings
+		WHERE id = $1
+	`
+
+	err := tx.QueryRow(ctx, getQuery, bookingId).Scan(
+		&baseBookingID, &mainServiceID,
+		&addonIDs, &equipmentIDs,
+		&resourceIDs, &cleanerIDs,
+		&totalPrice,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("booking with id %s does not exist", bookingId)
+		}
+		return nil, fmt.Errorf("fetch booking details: %w", err)
+	}
+
+	updateQuery := `
+		UPDATE booking.basebookings
+		SET start_sched = $1,
+		    end_sched   = $2,
+		    dirty_scale = $3,
+		    photos      = $4,
+		    updated_at  = NOW()
+		WHERE id = $5
+	`
+
+	_, err = tx.Exec(ctx, updateQuery,
+		newStartSched,
+		newEndSched,
+		newDirtyScale,
+		newPhotos,
+		baseBookingID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("update basebooking: %w", err)
+	}
+
+	base, err := loadBaseBooking(ctx, tx, baseBookingID)
+	if err != nil {
+		return nil, err
+	}
+
+	main, err := loadServiceDetails(ctx, tx, mainServiceID)
+	if err != nil {
+		return nil, err
+	}
+
+	addons, err := loadAddOns(ctx, tx, addonIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	equipments, err := loadEquipments(ctx, tx, equipmentIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := loadResources(ctx, tx, resourceIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	cleaners, err := loadCleaners(ctx, tx, cleanerIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.Booking{
+		ID:          bookingId,
+		Base:        *base,
+		MainService: *main,
+		Addons:      addons,
+		Equipments:  equipments,
+		Resources:   resources,
+		Cleaners:    cleaners,
+		TotalPrice:  totalPrice,
+	}, nil
+}
