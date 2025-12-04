@@ -347,7 +347,6 @@ func (t *BookingTasks) FetchBookingById(
 	id string,
 ) (*types.Booking, error) {
 
-	// Load main row
 	var (
 		baseBookingID string
 		mainServiceID string
@@ -377,19 +376,16 @@ func (t *BookingTasks) FetchBookingById(
 		return nil, fmt.Errorf("fetch booking row: %w", err)
 	}
 
-	// Load base booking
 	base, err := loadBaseBooking(ctx, tx, baseBookingID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Load services
 	mainSvc, err := loadServiceDetails(ctx, tx, mainServiceID)
 	if err != nil {
 		return nil, fmt.Errorf("load main service: %w", err)
 	}
 
-	// Load extras
 	addons, err := loadAddOns(ctx, tx, addonIDs)
 	if err != nil {
 		return nil, err
@@ -425,7 +421,7 @@ func (t *BookingTasks) FetchBookingById(
 func (t *BookingTasks) FetchAllBookingsByUserID(
 	ctx context.Context,
 	tx pgx.Tx,
-	userId string,
+	custId string,
 ) ([]*types.Booking, error) {
 
 	// var exists bool
@@ -447,7 +443,7 @@ func (t *BookingTasks) FetchAllBookingsByUserID(
 		WHERE bb.cust_id = $1
 	`
 
-	rows, err := tx.Query(ctx, query, userId)
+	rows, err := tx.Query(ctx, query, custId)
 	if err != nil {
 		return nil, fmt.Errorf("fetch bookings: %w", err)
 	}
@@ -477,7 +473,7 @@ func (t *BookingTasks) FetchAllBookingsByUserID(
 	}
 
 	if len(rowsData) == 0 {
-		return nil, fmt.Errorf("no bookings found for user with id=%s", userId)
+		return nil, fmt.Errorf("no bookings found for user with id=%s", custId)
 	}
 	var bookings []*types.Booking
 	for _, r := range rowsData {
@@ -526,7 +522,7 @@ func (t *BookingTasks) FetchAllBookingsByUserID(
 	return bookings, nil
 }
 
-func (t *PaymentTasks) ModifyBookingByID(
+func (t *BookingTasks) ModifyBookingByID(
 	ctx context.Context,
 	tx pgx.Tx,
 	bookingId string,
@@ -621,4 +617,42 @@ func (t *PaymentTasks) ModifyBookingByID(
 		Cleaners:    cleaners,
 		TotalPrice:  totalPrice,
 	}, nil
+}
+
+func (t *BookingTasks) DeleteBookingByID(
+	ctx context.Context,
+	tx pgx.Tx,
+	bookingId string,
+) error {
+	// First, get the base_booking_id of the booking
+	var baseBookingID string
+	err := tx.QueryRow(ctx, `
+		SELECT base_booking_id
+		FROM booking.bookings
+		WHERE id = $1
+	`, bookingId).Scan(&baseBookingID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return fmt.Errorf("booking with id=%s not found", bookingId)
+		}
+		return fmt.Errorf("fetch booking for deletion: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		DELETE FROM booking.bookings
+		WHERE id = $1
+	`, bookingId)
+	if err != nil {
+		return fmt.Errorf("delete booking: %w", err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		DELETE FROM booking.basebookings
+		WHERE id = $1
+	`, baseBookingID)
+	if err != nil {
+		return fmt.Errorf("delete base booking: %w", err)
+	}
+
+	return nil
 }

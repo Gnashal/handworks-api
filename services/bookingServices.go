@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"handworks-api/tasks"
 	"handworks-api/types"
 
 	"github.com/jackc/pgx/v5"
@@ -154,11 +153,11 @@ func (s *BookingService) GetBookingById(ctx context.Context, id string) (*types.
 	return booking, nil
 }
 
-func (s *BookingService) GetBookingsByUId(ctx context.Context, userId string) ([]*types.Booking, error) {
+func (s *BookingService) GetBookingsByUId(ctx context.Context, custId string) ([]*types.Booking, error) {
 	var bookings []*types.Booking
 
 	err := s.withTx(ctx, func(tx pgx.Tx) error {
-		b, err := s.Tasks.FetchAllBookingsByUserID(ctx, tx, userId)
+		b, err := s.Tasks.FetchAllBookingsByUserID(ctx, tx, custId)
 		if err != nil {
 			return err
 		}
@@ -186,9 +185,7 @@ func (s *BookingService) UpdateBooking(
 
 	err := s.withTx(ctx, func(tx pgx.Tx) error {
 
-		task := tasks.PaymentTasks{}
-
-		booking, err := task.ModifyBookingByID(
+		booking, err := s.Tasks.ModifyBookingByID(
 			ctx,
 			tx,
 			evt.BookingID,
