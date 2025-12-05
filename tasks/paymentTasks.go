@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"handworks-api/types"
+	"handworks-api/utils"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -313,4 +314,19 @@ func(t* PaymentTasks) VerifyQuoteAndFetchPrices(ctx context.Context, tx pgx.Tx, 
 	}
 	prices.MainServicePrice = dbQuote.TotalPrice
 	return &prices, nil
+}
+func (t *PaymentTasks) FetchAllQuotes(ctx context.Context, tx pgx.Tx, customerId string, logger *utils.Logger) ([]*types.Quote, error) {
+	var rawJSON []byte
+	err := tx.QueryRow(ctx, `SELECT payment.get_quotes_by_customer($1)`, customerId).Scan(&rawJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call sproc get_quotes_by_customer: %w", err)
+	}
+
+	var quotes []*types.Quote
+	if err := json.Unmarshal(rawJSON, &quotes); err != nil {
+		logger.Error("failed to unmarshal quotes JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal quotes: %w", err)
+	}
+
+	return quotes, nil
 }

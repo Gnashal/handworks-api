@@ -54,7 +54,7 @@ func main() {
 	"/api/account/employee/signup", 
 	"/api/payment/quote/preview", "/health"}
 
-	router.Use(middleware.ClerkAuthMiddleware(publicPaths))
+	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
 
 	accountService := services.NewAccountService(conn, logger)
 	inventoryService := services.NewInventoryService(conn, logger)

@@ -70,11 +70,11 @@ func (h *PaymentHandler) MakePublicQuotation(c *gin.Context) {
 // @Tags Payment
 // @Accept json
 // @Produce json
-// @Param customer_id path string true "Customer ID"
-// @Success 200 {array} types.QuotesResponse
+// @Param customerId path string true "Customer ID"
+// @Success 200 {array} []types.Quote
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/quote/{customerId} [get]
+// @Router /payment/quotes/{customerId} [get]
 func (h *PaymentHandler) GetAllQuotesFromCustomer(c *gin.Context) {
 	customerId := c.Param("customerId")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

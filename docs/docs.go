@@ -1166,7 +1166,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/payment/quote/{customerId}": {
+        "/payment/quotes/{customerId}": {
             "get": {
                 "security": [
                     {
@@ -1188,7 +1188,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Customer ID",
-                        "name": "customer_id",
+                        "name": "customerId",
                         "in": "path",
                         "required": true
                     }
@@ -1199,7 +1199,10 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/types.QuotesResponse"
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/types.Quote"
+                                }
                             }
                         }
                     },
@@ -1841,6 +1844,68 @@ const docTemplate = `{
                 }
             }
         },
+        "types.Quote": {
+            "type": "object",
+            "properties": {
+                "addonTotal": {
+                    "type": "number"
+                },
+                "addons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.QuoteAddon"
+                    }
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "customerId": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "isValid": {
+                    "type": "boolean"
+                },
+                "mainService": {
+                    "type": "string"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "totalPrice": {
+                    "type": "number"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.QuoteAddon": {
+            "type": "object",
+            "properties": {
+                "addonPrice": {
+                    "type": "number"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "quoteId": {
+                    "type": "string"
+                },
+                "serviceDetail": {
+                    "description": "serialized ServicesRequest",
+                    "type": "object"
+                },
+                "serviceType": {
+                    "type": "string"
+                }
+            }
+        },
         "types.QuoteRequest": {
             "type": "object",
             "properties": {
@@ -1887,17 +1952,6 @@ const docTemplate = `{
                 },
                 "totalPrice": {
                     "type": "number"
-                }
-            }
-        },
-        "types.QuotesResponse": {
-            "type": "object",
-            "properties": {
-                "quotes": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.QuoteResponse"
-                    }
                 }
             }
         },
