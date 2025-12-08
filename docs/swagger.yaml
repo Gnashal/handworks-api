@@ -295,6 +295,17 @@ definitions:
       error:
         type: string
     type: object
+  types.FetchAllQuotesResponse:
+    properties:
+      quotes:
+        items:
+          $ref: '#/definitions/types.Quote'
+        type: array
+      quotesRequested:
+        type: integer
+      totalQuotes:
+        type: integer
+    type: object
   types.GeneralCleaningDetails:
     properties:
       homeType:
@@ -1410,28 +1421,43 @@ paths:
       summary: Create a quotation
       tags:
       - Payment
-  /payment/quotes/{customerId}:
+  /payment/quotes:
     get:
       consumes:
       - application/json
-      description: Retrieve all quotations associated with a specific customer
+      description: Retrieve all quotations associated with a specific customer with
+        optional date filtering and pagination.
       parameters:
       - description: Customer ID
-        in: path
+        in: query
         name: customerId
         required: true
         type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      - default: 0
+        description: Page number (starting at 0)
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of quotes per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              items:
-                $ref: '#/definitions/types.Quote'
-              type: array
-            type: array
+            $ref: '#/definitions/types.FetchAllQuotesResponse'
         "400":
           description: Bad Request
           schema:

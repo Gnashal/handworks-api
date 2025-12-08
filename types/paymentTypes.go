@@ -26,6 +26,11 @@ type QuoteAddon struct {
 	AddonPrice    float32         `json:"addonPrice"`
 	CreatedAt     time.Time       `json:"createdAt"`
 }
+type FetchAllQuotesResponse struct{
+	TotalQuotes int `json:"totalQuotes"`
+	QuotesRequested int `json:"quotesRequested"`
+	Quotes []Quote `json:"quotes"`
+}
 
 type QuoteAddonCleaningPrice struct {
 	AddonName  string  `json:"addon_name"`
