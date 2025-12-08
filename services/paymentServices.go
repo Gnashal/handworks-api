@@ -86,17 +86,25 @@ func (s *PaymentService) MakeQuotation(ctx context.Context, req types.QuoteReque
 	return &quoteResponse, nil
 }
 
-func (s *PaymentService) GetAllQuotesFromCustomer(ctx context.Context, customerId string) ([]*types.Quote, error) {
-	var quotes []*types.Quote
+func (s *PaymentService) GetAllQuotesFromCustomer(
+    ctx context.Context,
+    customerId, startDate, endDate string,
+    page, limit int,
+) (*types.FetchAllQuotesResponse, error) {
 
-	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		var err error
-		quotes, err = s.Tasks.FetchAllQuotes(ctx, tx, customerId, s.Logger)
-		return err
-	}); err != nil {
-		s.Logger.Error("Failed to fetch Quotes: %v", err)
-		return nil, err
-	}
+    var result *types.FetchAllQuotesResponse
 
-	return quotes, nil
+    if err := s.withTx(ctx, func(tx pgx.Tx) error {
+        var err error
+        result, err = s.Tasks.FetchAllQuotes(
+            ctx, tx, customerId, startDate, endDate, page, limit, s.Logger,
+        )
+        return err
+    }); err != nil {
+        s.Logger.Error("Failed to fetch Quotes: %v", err)
+        return nil, err
+    }
+
+    return result, nil
 }
+

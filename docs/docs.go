@@ -1166,14 +1166,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/payment/quotes/{customerId}": {
+        "/payment/quotes": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all quotations associated with a specific customer",
+                "description": "Retrieve all quotations associated with a specific customer with optional date filtering and pagination.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1189,21 +1189,41 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Customer ID",
                         "name": "customerId",
-                        "in": "path",
+                        "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number (starting at 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of quotes per page",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/types.Quote"
-                                }
-                            }
+                            "$ref": "#/definitions/types.FetchAllQuotesResponse"
                         }
                     },
                     "400": {
@@ -1670,6 +1690,23 @@ const docTemplate = `{
             "properties": {
                 "error": {
                     "type": "string"
+                }
+            }
+        },
+        "types.FetchAllQuotesResponse": {
+            "type": "object",
+            "properties": {
+                "quotes": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.Quote"
+                    }
+                },
+                "quotesRequested": {
+                    "type": "integer"
+                },
+                "totalQuotes": {
+                    "type": "integer"
                 }
             }
         },

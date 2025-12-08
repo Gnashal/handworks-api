@@ -46,5 +46,6 @@ func BookingEndpoint(r* gin.RouterGroup, h * handlers.BookingHandler){
 func PaymentEndpoint(r* gin.RouterGroup, h * handlers.PaymentHandler){
 	r.POST("/quote", h.MakeQuotation)
 	r.POST("/quote/preview", h.MakePublicQuotation)
-	r.GET("/quotes/:customerId", h.GetAllQuotesFromCustomer)
+	r.GET("/quotes", h.GetAllQuotesFromCustomer)
+
 }
