@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"handworks-api/utils"
 	"net/http"
 	"os"
 	"strings"
@@ -22,7 +23,7 @@ func getSessionToken(r *http.Request) string {
 	return strings.TrimPrefix(authHeader, "Bearer ")
 }
 
-func ClerkAuthMiddleware(publicPaths []string) gin.HandlerFunc {
+func ClerkAuthMiddleware(publicPaths []string, logger * utils.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
 		for _, p := range publicPaths {
@@ -37,6 +38,7 @@ func ClerkAuthMiddleware(publicPaths []string) gin.HandlerFunc {
 		// Get JWT from header
 		token := getSessionToken(c.Request)
 		if token == "" {
+			logger.Debug("Token is empty")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
@@ -45,6 +47,7 @@ func ClerkAuthMiddleware(publicPaths []string) gin.HandlerFunc {
 		unsafeClaims, err := jwt.Decode(c.Request.Context(), &jwt.DecodeParams{
 			Token: token,
 		})
+		logger.Debug("Claims error: %s", err)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
@@ -55,6 +58,7 @@ func ClerkAuthMiddleware(publicPaths []string) gin.HandlerFunc {
 			KeyID:      unsafeClaims.KeyID,
 			JWKSClient: jwksClient,
 		})
+		logger.Debug("JWK error: %s", err)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
@@ -65,6 +69,7 @@ func ClerkAuthMiddleware(publicPaths []string) gin.HandlerFunc {
 			Token: token,
 			JWK:   jwk,
 		})
+		logger.Debug("Token verification error: %s", err)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return

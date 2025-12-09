@@ -22,9 +22,14 @@ type QuoteAddon struct {
 	ID            string 		`json:"id"`
 	QuoteID       string          `json:"quoteId"`
 	ServiceType   string          `json:"serviceType"`
-	ServiceDetail json.RawMessage `json:"serviceDetail"` // serialized ServicesRequest
+	ServiceDetail json.RawMessage `json:"serviceDetail" swaggertype:"object"` // serialized ServicesRequest
 	AddonPrice    float32         `json:"addonPrice"`
 	CreatedAt     time.Time       `json:"createdAt"`
+}
+type FetchAllQuotesResponse struct{
+	TotalQuotes int `json:"totalQuotes"`
+	QuotesRequested int `json:"quotesRequested"`
+	Quotes []Quote `json:"quotes"`
 }
 
 type QuoteAddonCleaningPrice struct {
@@ -39,9 +44,9 @@ type QuoteResponse struct {
 	QuoteId string `json:"quote_id"`
 	MainServiceName string `json:"mainServiceName"`
 	MainServiceTotal float32 `json:"mainServiceTotal"`
-	Addons []AddOnBreakdown `json:"addons"`
 	AddonTotal float32 `json:"addonTotal"`
 	TotalPrice float32 `json:"totalPrice"`
+	Addons []AddOnBreakdown `json:"addons"`
 }
 // QuoteRequest represents the data needed to build a quotation.
 type QuoteRequest struct {
