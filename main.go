@@ -8,9 +8,11 @@ import (
 	"handworks-api/middleware"
 	"handworks-api/services"
 	"handworks-api/utils"
+	"os"
 
 	_ "handworks-api/docs" // Import generated docs
 
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -41,7 +43,7 @@ func main() {
 	if err := router.SetTrustedProxies(nil); err != nil {
 		logger.Fatal("Failed to set trusted proxies: %v", err)
 	}
-
+	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
 	router.Use(cors.New(config.NewCors()))
 	conn, err := config.InitDB(logger, c)
 	if err != nil {
