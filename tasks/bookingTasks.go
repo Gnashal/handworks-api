@@ -12,59 +12,58 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type BookingTasks struct {}
+type BookingTasks struct{}
 type PaymentPort interface {
 	GetQuotePrices(ctx context.Context, quoteId string) (*types.CleaningPrices, error)
 }
 
 func (t *BookingTasks) AllocateAll(ctx context.Context, paymentPort PaymentPort, req *types.CreateBookingRequest) (*types.BookingAllocation, error) {
-    g, c := errgroup.WithContext(ctx)
+	g, c := errgroup.WithContext(ctx)
 
-    var (
-        prices   *types.CleaningPrices
-        alloc    *types.CleaningAllocation
-        cleaners []types.CleanerAssigned
-    )
+	var (
+		prices   *types.CleaningPrices
+		alloc    *types.CleaningAllocation
+		cleaners []types.CleanerAssigned
+	)
 
-    g.Go(func() error {
-        var err error
-        prices, err = paymentPort.GetQuotePrices(c, req.Base.QuoteId)
-        return err
-    })
+	g.Go(func() error {
+		var err error
+		prices, err = paymentPort.GetQuotePrices(c, req.Base.QuoteId)
+		return err
+	})
 
-    g.Go(func() error {
-        var err error
-        alloc, err = t.AllocateEquipmentAndResources(c, req)
-        return err
-    })
+	g.Go(func() error {
+		var err error
+		alloc, err = t.AllocateEquipmentAndResources(c, req)
+		return err
+	})
 
-    g.Go(func() error {
-        var err error
-        cleaners, err = t.AllocateCleaners(c, req)
-        return err
-    })
+	g.Go(func() error {
+		var err error
+		cleaners, err = t.AllocateCleaners(c, req)
+		return err
+	})
 
-    if err := g.Wait(); err != nil {
-        return nil, err
-    }
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 
-    // Defensive nils
-    if prices == nil {
-        prices = &types.CleaningPrices{}
-    }
-    if alloc == nil {
-        alloc = &types.CleaningAllocation{}
-    }
+	// Defensive nils
+	if prices == nil {
+		prices = &types.CleaningPrices{}
+	}
+	if alloc == nil {
+		alloc = &types.CleaningAllocation{}
+	}
 
-    return &types.BookingAllocation{
-        CleaningAllocation: alloc,
-        CleanerAssigned:    cleaners,
-        CleaningPrices:     prices,
-    }, nil
+	return &types.BookingAllocation{
+		CleaningAllocation: alloc,
+		CleanerAssigned:    cleaners,
+		CleaningPrices:     prices,
+	}, nil
 }
 
-
-func (t * BookingTasks) AllocateEquipmentAndResources(ctx context.Context, req *types.CreateBookingRequest) (*types.CleaningAllocation, error) {
+func (t *BookingTasks) AllocateEquipmentAndResources(ctx context.Context, req *types.CreateBookingRequest) (*types.CleaningAllocation, error) {
 	// FOR TESTING PA NI, I HAVE NOT IMPLEMENTED THE REAL LOGIC YET
 	// TODO: Automation logic for resource and equipment allocation
 	equipments := []types.CleaningEquipment{
@@ -80,7 +79,7 @@ func (t * BookingTasks) AllocateEquipmentAndResources(ctx context.Context, req *
 	}, nil
 }
 
-func (t* BookingTasks) AllocateCleaners(ctx context.Context, req *types.CreateBookingRequest) ([]types.CleanerAssigned, error) {
+func (t *BookingTasks) AllocateCleaners(ctx context.Context, req *types.CreateBookingRequest) ([]types.CleanerAssigned, error) {
 	// FOR TESTING PA NI, I HAVE NOT IMPLEMENTED THE REAL LOGIC YET
 	// TODO: Automation logic for cleaner assignment
 	cleaners := []types.CleanerAssigned{
@@ -203,7 +202,7 @@ func insertServiceDetails[T any](ctx context.Context, tx pgx.Tx, serviceType typ
 func (t *BookingTasks) CreateMainServiceBooking(
 	ctx context.Context,
 	tx pgx.Tx,
-	logger * utils.Logger,
+	logger *utils.Logger,
 	mainService types.ServiceDetail,
 ) (*types.ServiceDetails, error) {
 
@@ -274,7 +273,7 @@ func (t *BookingTasks) CreateMainServiceBooking(
 func (t *BookingTasks) CreateAddOn(
 	ctx context.Context,
 	tx pgx.Tx,
-	logger * utils.Logger,
+	logger *utils.Logger,
 	addonReq types.AddOnRequest,
 	addOnPrice float32,
 ) (*types.AddOns, error) {
@@ -340,4 +339,30 @@ func (t *BookingTasks) SaveBooking(
 	}
 
 	return id, nil
+}
+
+func (t *BookingTasks) FetchAllBookings(
+	ctx context.Context,
+	tx pgx.Tx,
+	startDate, endDate string,
+	page, limit int,
+	logger *utils.Logger,
+) (*types.FetchAllBookingsResponse, error) {
+
+	var rawJSON []byte
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_all_bookings($1, $2, $3, $4)`,
+		startDate, endDate, page, limit).Scan(&rawJSON)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_all_bookings: %w", err)
+	}
+
+	var response types.FetchAllBookingsResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal quotes JSON: %v", err)
+		return nil, fmt.Errorf("unmarhsal quotes: %w", err)
+	}
+
+	return &response, nil
 }

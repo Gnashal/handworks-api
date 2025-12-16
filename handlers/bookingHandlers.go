@@ -4,6 +4,7 @@ import (
 	"context"
 	"handworks-api/types"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -38,19 +39,68 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-// GetBookingById godoc
-// @Summary Get booking by ID
-// @Description Retrieve booking information by its database ID
+// GetBookings godoc
+// @Summary Get all bookings with filters
+// @Description Retrieve all bookings with optional date filtering and pagination
 // @Tags Booking
-// @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param id path string true "Booking ID"
-// @Success 200 {object} map[string]interface{}
-// @Router /booking/{id} [get]
-func (h *BookingHandler) GetBookingById(c *gin.Context) {
-	_ = h.Service.GetBookingById(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+// @Param startDate query string false "Start date (YYYY-MM-DD)"
+// @Param endDate query string false "End date (YYYY-MM-DD)"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} types.FetchAllBookingsResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/bookings [get]
+// @Security BearerAuth
+func (h *BookingHandler) GetBookings(c *gin.Context) {
+	// Parse query parameters
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid page parameter",
+		})
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid limit parameter",
+		})
+		return
+	}
+
+	// Use context with timeout
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	// Call the service
+	result, err := h.Service.GetBookings(ctx, startDate, endDate, page, limit)
+	if err != nil {
+		h.Logger.Error("failed to get bookings: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to fetch bookings",
+		})
+		return
+	}
+
+	// Return response
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   result,
+	})
+
 }
 
 // GetBookingByUId godoc

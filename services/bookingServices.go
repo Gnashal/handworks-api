@@ -133,9 +133,27 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 
 	return createdBooking, nil
 }
-func (s *BookingService) GetBookingById(ctx context.Context) error {
-	return nil
+func (s *BookingService) GetBookings(
+	ctx context.Context,
+	startDate, endDate string,
+	page, limit int,
+) (*types.FetchAllBookingsResponse, error) {
+
+	var result *types.FetchAllBookingsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		result, err = s.Tasks.FetchAllBookings(ctx, tx, startDate, endDate, page, limit, s.Logger)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch Quotes: %v", err)
+		return nil, err
+	}
+
+	return result, nil
+
 }
+
 // TODO: change by customer ID
 func (s *BookingService) GetBookingByUId(ctx context.Context) error {
 	return nil
