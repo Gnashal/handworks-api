@@ -63,7 +63,7 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "10")
 
 	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
+	if err != nil || page < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
 			"message": "invalid page parameter",
@@ -104,18 +104,70 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 }
 
 // GetBookingByUId godoc
-// @Summary Get booking by user ID
-// @Description Retrieve all bookings for a specific user
+// @Summary Get bookings by user ID
+// @Description Retrieve all bookings for a specific user with optional date filtering and pagination
 // @Tags Booking
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param uid path string true "User ID"
-// @Success 200 {array} map[string]interface{}
-// @Router /booking/user/{uid} [get]
+//
+// @Param customerId path string true "Customer/User ID"
+// @Param startDate query string false "Start date (YYYY-MM-DD)"
+// @Param endDate query string false "End date (YYYY-MM-DD)"
+// @Param page query int false "Page number" default(0)
+// @Param limit query int false "Items per page" default(10)
+//
+// @Success 200 {object} types.FetchAllBookingsResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 401 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+//
+// @Router /booking/{customerId} [get]
 func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
-	_ = h.Service.GetBookingByUId(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+	// Read path parameter
+	customerId := c.Param("id")
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+
+	// Pagination defaults
+	pageStr := c.DefaultQuery("page", "0")
+	limitStr := c.DefaultQuery("limit", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid page parameter",
+		})
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid limit parameter",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.Service.GetBookingByUId(ctx, customerId, startDate, endDate, page, limit)
+	if err != nil {
+		h.Logger.Error("failed to get customer bookings: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to fetch bookings",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   result,
+	})
 }
 
 // UpdateBooking godoc

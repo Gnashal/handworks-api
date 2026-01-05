@@ -366,3 +366,30 @@ func (t *BookingTasks) FetchAllBookings(
 
 	return &response, nil
 }
+
+func (t *BookingTasks) FetchAllCustomerBookings(
+	ctx context.Context,
+	tx pgx.Tx,
+	customerId, startDate, endDate string,
+	page, limit int,
+	logger *utils.Logger,
+) (*types.FetchAllBookingsResponse, error) {
+
+	var rawJSON []byte
+	// Use the fixed function
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_bookings_by_customer($1, $2, $3, $4, $5)`,
+		customerId, startDate, endDate, page, limit,
+	).Scan(&rawJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_bookings_by_customer: %w", err)
+	}
+
+	var response types.FetchAllBookingsResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
+	}
+	//unmarshal each array type here
+
+	return &response, nil
+}
