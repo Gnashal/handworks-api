@@ -48,9 +48,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 		baseBook, err := s.Tasks.MakeBaseBooking(
 			ctx,
 			tx,
-			req.Base.CustID,
-			req.Base.CustomerFirstName,
-			req.Base.CustomerLastName,
+			req.AccountID,
 			req.Base.Address,
 			req.Base.StartSched,
 			req.Base.EndSched,

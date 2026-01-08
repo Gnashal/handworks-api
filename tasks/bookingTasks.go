@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"handworks-api/types"
 	"handworks-api/utils"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -91,11 +92,9 @@ func (t *BookingTasks) AllocateCleaners(ctx context.Context, req *types.CreateBo
 
 // makeBaseBooking inserts into booking.basebookings and returns the created BaseBookingDetails.
 func (t *BookingTasks) MakeBaseBooking(
-	c context.Context,
+	ctx context.Context,
 	tx pgx.Tx,
-	custID string,
-	customerFirstName string,
-	customerLastName string,
+	accountID string,
 	address types.Address,
 	startSched time.Time,
 	endSched time.Time,
@@ -106,7 +105,7 @@ func (t *BookingTasks) MakeBaseBooking(
 
 	var createdBaseBook types.BaseBookingDetails
 
-	err := tx.QueryRow(c,
+	err := tx.QueryRow(ctx,
 		`INSERT INTO booking.basebookings (
             cust_id,
             customer_first_name,
@@ -122,21 +121,24 @@ func (t *BookingTasks) MakeBaseBooking(
             updated_at,
             quote_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING id, cust_id, customer_first_name, customer_last_name, address, start_sched, end_sched, dirty_scale, payment_status, review_status, photos, created_at, updated_at, quote_id`,
-		custID,
-		customerFirstName,
-		customerLastName,
-		address,
-		startSched,
-		endSched,
-		dirtyScale,
-		"UNPAID",
-		"PENDING",
-		photos,
-		time.Now(),
-		time.Now(),
-		quoteId,
+        SELECT 
+            c.id,                -- customer ID from account.customers
+            a.first_name,        -- first name from account.accounts
+            a.last_name,         -- last name from account.accounts
+            $2, $3, $4, $5, 'UNPAID', 'PENDING', $6, NOW(), NOW(), $7
+        FROM account.accounts a
+        JOIN account.customers c ON a.id = c.account_id
+        WHERE a.id = $1
+        RETURNING id, cust_id, customer_first_name, customer_last_name, address, 
+            start_sched, end_sched, dirty_scale, payment_status, review_status, 
+            photos, created_at, updated_at, quote_id`,
+		accountID,  // $1 - account.accounts.id
+		address,    // $2
+		startSched, // $3
+		endSched,   // $4
+		dirtyScale, // $5
+		photos,     // $6
+		quoteId,    // $7
 	).Scan(
 		&createdBaseBook.ID,
 		&createdBaseBook.CustID,
@@ -375,11 +377,26 @@ func (t *BookingTasks) FetchAllCustomerBookings(
 	logger *utils.Logger,
 ) (*types.FetchAllBookingsResponse, error) {
 
+	// Convert empty strings to nil
+	var startDateParam, endDateParam interface{}
+
+	if strings.TrimSpace(startDate) == "" {
+		startDateParam = nil
+	} else {
+		startDateParam = startDate
+	}
+
+	if strings.TrimSpace(endDate) == "" {
+		endDateParam = nil
+	} else {
+		endDateParam = endDate
+	}
+
 	var rawJSON []byte
-	// Use the fixed function
+	// Pass nil for empty dates instead of empty strings
 	err := tx.QueryRow(ctx,
 		`SELECT booking.get_bookings_by_customer($1, $2, $3, $4, $5)`,
-		customerId, startDate, endDate, page, limit,
+		customerId, startDateParam, endDateParam, page, limit,
 	).Scan(&rawJSON)
 	if err != nil {
 		return nil, fmt.Errorf("failed calling sproc get_bookings_by_customer: %w", err)
@@ -389,7 +406,6 @@ func (t *BookingTasks) FetchAllCustomerBookings(
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}
-	//unmarshal each array type here
 
 	return &response, nil
 }

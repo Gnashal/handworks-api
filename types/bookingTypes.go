@@ -183,6 +183,7 @@ type AddOnRequest struct {
 }
 
 type CreateBookingRequest struct {
+	AccountID   string                    `json:"accountId"`
 	Base        BaseBookingDetailsRequest `json:"base"`
 	MainService ServicesRequest           `json:"mainService"`
 	Addons      []AddOnRequest            `json:"addons"`

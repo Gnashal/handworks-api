@@ -1018,46 +1018,13 @@ paths:
       tags:
       - Account
   /booking:
-    post:
-      consumes:
-      - application/json
-      description: Creates a booking record
-      parameters:
-      - description: Booking info
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/types.CreateBookingRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.Booking'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create a new booking
-      tags:
-      - Booking
-  /booking/{customerId}:
     get:
       consumes:
       - application/json
-      description: Retrieve all bookings for a specific user with optional date filtering
-        and pagination
+      description: Get bookings for a specific customer using query parameters
       parameters:
-      - description: Customer/User ID
-        in: path
+      - description: Customer ID
+        in: query
         name: customerId
         required: true
         type: string
@@ -1100,7 +1067,38 @@ paths:
             $ref: '#/definitions/types.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get bookings by user ID
+      summary: Get customer bookings
+      tags:
+      - Booking
+    post:
+      consumes:
+      - application/json
+      description: Creates a booking record
+      parameters:
+      - description: Booking info
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Booking'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new booking
       tags:
       - Booking
   /booking/{id}:

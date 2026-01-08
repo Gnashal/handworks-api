@@ -104,30 +104,45 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 }
 
 // GetBookingByUId godoc
-// @Summary Get bookings by user ID
-// @Description Retrieve all bookings for a specific user with optional date filtering and pagination
+// @Summary Get customer bookings
+// @Description Get bookings for a specific customer using query parameters
 // @Tags Booking
 // @Security BearerAuth
 // @Accept json
 // @Produce json
-//
-// @Param customerId path string true "Customer/User ID"
+// @Param customerId query string true "Customer ID"
 // @Param startDate query string false "Start date (YYYY-MM-DD)"
 // @Param endDate query string false "End date (YYYY-MM-DD)"
 // @Param page query int false "Page number" default(0)
 // @Param limit query int false "Items per page" default(10)
-//
 // @Success 200 {object} types.FetchAllBookingsResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 401 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-//
-// @Router /booking/{customerId} [get]
+// @Router /booking [get]
 func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
-	// Read path parameter
-	customerId := c.Param("id")
+	customerId := c.Query("customerId")
+	if customerId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "customerId query parameter is required",
+		})
+		return
+	}
+
+	// Get date parameters
 	startDate := c.Query("startDate")
 	endDate := c.Query("endDate")
+
+	// Convert empty strings to empty strings (not nil)
+	// Keep them as strings, not pointers
+	var finalStartDate, finalEndDate string
+	if startDate != "" {
+		finalStartDate = startDate
+	}
+	if endDate != "" {
+		finalEndDate = endDate
+	}
 
 	// Pagination defaults
 	pageStr := c.DefaultQuery("page", "0")
@@ -154,7 +169,8 @@ func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	result, err := h.Service.GetBookingByUId(ctx, customerId, startDate, endDate, page, limit)
+	// Pass empty strings (not nil pointers)
+	result, err := h.Service.GetBookingByUId(ctx, customerId, finalStartDate, finalEndDate, page, limit)
 	if err != nil {
 		h.Logger.Error("failed to get customer bookings: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{

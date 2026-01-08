@@ -40,7 +40,7 @@ func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
 func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.POST("/", h.CreateBooking)
 	r.GET("/bookings", h.GetBookings)
-	r.GET("/:id", h.GetBookingByUId)
+	r.GET("/", h.GetBookingByUId)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)
 }
