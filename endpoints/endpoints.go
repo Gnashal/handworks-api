@@ -5,7 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-func AccountEndpoint(r* gin.RouterGroup, h * handlers.AccountHandler){
+
+func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	customer := r.Group("/customer")
 	{
 		customer.POST("/signup", h.SignUpCustomer)
@@ -26,7 +27,7 @@ func AccountEndpoint(r* gin.RouterGroup, h * handlers.AccountHandler){
 		employee.DELETE("/:id/:empId", h.DeleteEmployee)
 	}
 }
-func InventoryEndpoint(r* gin.RouterGroup, h * handlers.InventoryHandler){
+func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
 	r.POST("/", h.CreateItem)
 	r.GET("/:id", h.GetItem)
 	r.GET("/", h.GetItems)
@@ -36,14 +37,14 @@ func InventoryEndpoint(r* gin.RouterGroup, h * handlers.InventoryHandler){
 	r.PUT("/", h.UpdateItem)
 	r.DELETE("/:id", h.DeleteItem)
 }
-func BookingEndpoint(r* gin.RouterGroup, h * handlers.BookingHandler){
+func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.POST("/", h.CreateBooking)
-	r.GET("/id/:id", h.GetBookingById)
-	r.GET("/uid/:uid", h.GetBookingByUId)
+	r.GET("/bookings", h.GetBookings)
+	r.GET("/", h.GetBookingByUId)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)
 }
-func PaymentEndpoint(r* gin.RouterGroup, h * handlers.PaymentHandler){
+func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	r.POST("/quote", h.MakeQuotation)
 	r.POST("/quote/preview", h.MakePublicQuotation)
 	r.GET("/quotes", h.GetAllQuotesFromCustomer)

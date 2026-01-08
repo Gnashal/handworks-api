@@ -52,9 +52,9 @@ func main() {
 	logger.Info("Connected to Db")
 	defer conn.Close()
 	// public paths for Clerk middleware
-	publicPaths := []string{"/api/account/customer/signup", 
-	"/api/account/employee/signup", 
-	"/api/payment/quote/preview", "/health"}
+	publicPaths := []string{"/api/account/customer/signup",
+		"/api/account/employee/signup",
+		"/api/payment/quote/preview", "/health", "/api/booking/bookings"}
 
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
 
