@@ -11,7 +11,10 @@ import (
 
 type LoadTasks struct{}
 
-func loadBaseBooking(ctx context.Context, tx pgx.Tx, id string) (*types.BaseBookingDetails, error) {
+// Make functions public by capitalizing them if they're used elsewhere
+// Or comment them out if they're truly unused
+
+func LoadBaseBooking(ctx context.Context, tx pgx.Tx, id string) (*types.BaseBookingDetails, error) {
 	var base types.BaseBookingDetails
 
 	query := `
@@ -36,7 +39,7 @@ func loadBaseBooking(ctx context.Context, tx pgx.Tx, id string) (*types.BaseBook
 	return &base, nil
 }
 
-func loadServiceDetails(ctx context.Context, tx pgx.Tx, svcID string) (*types.ServiceDetails, error) {
+func LoadServiceDetails(ctx context.Context, tx pgx.Tx, svcID string) (*types.ServiceDetails, error) {
 	var svc types.ServiceDetails
 	var raw []byte
 	var svcType string
@@ -73,7 +76,7 @@ func loadServiceDetails(ctx context.Context, tx pgx.Tx, svcID string) (*types.Se
 	return &svc, nil
 }
 
-func loadAddOns(ctx context.Context, tx pgx.Tx, ids []string) ([]types.AddOns, error) {
+func LoadAddOns(ctx context.Context, tx pgx.Tx, ids []string) ([]types.AddOns, error) {
 	if len(ids) == 0 {
 		return []types.AddOns{}, nil
 	}
@@ -101,7 +104,7 @@ func loadAddOns(ctx context.Context, tx pgx.Tx, ids []string) ([]types.AddOns, e
 			return nil, fmt.Errorf("scan addon: %w", err)
 		}
 
-		svc, err := parseServiceFromRow(serviceID, svcType, raw)
+		svc, err := ParseServiceFromRow(serviceID, svcType, raw)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +123,7 @@ func loadAddOns(ctx context.Context, tx pgx.Tx, ids []string) ([]types.AddOns, e
 	return addons, nil
 }
 
-func parseServiceFromRow(id, svcType string, raw []byte) (*types.ServiceDetails, error) {
+func ParseServiceFromRow(id, svcType string, raw []byte) (*types.ServiceDetails, error) {
 	svc := types.ServiceDetails{
 		ID:          id,
 		ServiceType: svcType,
@@ -144,7 +147,7 @@ func parseServiceFromRow(id, svcType string, raw []byte) (*types.ServiceDetails,
 	return &svc, nil
 }
 
-func loadEquipments(ctx context.Context, tx pgx.Tx, ids []string) ([]types.CleaningEquipment, error) {
+func LoadEquipments(ctx context.Context, tx pgx.Tx, ids []string) ([]types.CleaningEquipment, error) {
 	if len(ids) == 0 {
 		return []types.CleaningEquipment{}, nil
 	}
@@ -170,7 +173,7 @@ func loadEquipments(ctx context.Context, tx pgx.Tx, ids []string) ([]types.Clean
 	return eq, rows.Err()
 }
 
-func loadResources(ctx context.Context, tx pgx.Tx, ids []string) ([]types.CleaningResources, error) {
+func LoadResources(ctx context.Context, tx pgx.Tx, ids []string) ([]types.CleaningResources, error) {
 	if len(ids) == 0 {
 		return []types.CleaningResources{}, nil
 	}
@@ -196,7 +199,7 @@ func loadResources(ctx context.Context, tx pgx.Tx, ids []string) ([]types.Cleani
 	return out, rows.Err()
 }
 
-func loadCleaners(ctx context.Context, tx pgx.Tx, ids []string) ([]types.CleanerAssigned, error) {
+func LoadCleaners(ctx context.Context, tx pgx.Tx, ids []string) ([]types.CleanerAssigned, error) {
 	if len(ids) == 0 {
 		return []types.CleanerAssigned{}, nil
 	}

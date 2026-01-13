@@ -197,10 +197,10 @@ type Booking struct {
 	ID          string              `json:"id"`
 	Base        BaseBookingDetails  `json:"base"`
 	MainService ServiceDetails      `json:"mainService"`
-	Addons      []AddOns            `json:"addons, omitempty"`
-	Equipments  []CleaningEquipment `json:"equipments, omitempty"`
-	Resources   []CleaningResources `json:"resources, omitempty"`
-	Cleaners    []CleanerAssigned   `json:"cleaners, omitempty"`
+	Addons      []AddOns            `json:"addons,omitempty"`
+	Equipments  []CleaningEquipment `json:"equipments,omitempty"`
+	Resources   []CleaningResources `json:"resources,omitempty"`
+	Cleaners    []CleanerAssigned   `json:"cleaners,omitempty"`
 	TotalPrice  float32             `json:"totalPrice"`
 }
 
