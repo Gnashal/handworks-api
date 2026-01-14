@@ -48,9 +48,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 		baseBook, err := s.Tasks.MakeBaseBooking(
 			ctx,
 			tx,
-			req.Base.CustID,
-			req.Base.CustomerFirstName,
-			req.Base.CustomerLastName,
+			req.AccountID,
 			req.Base.Address,
 			req.Base.StartSched,
 			req.Base.EndSched,
@@ -133,12 +131,48 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 
 	return createdBooking, nil
 }
-func (s *BookingService) GetBookingById(ctx context.Context) error {
-	return nil
+func (s *BookingService) GetBookings(
+	ctx context.Context,
+	startDate, endDate string,
+	page, limit int,
+) (*types.FetchAllBookingsResponse, error) {
+
+	var result *types.FetchAllBookingsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		result, err = s.Tasks.FetchAllBookings(ctx, tx, startDate, endDate, page, limit, s.Logger)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch Quotes: %v", err)
+		return nil, err
+	}
+
+	return result, nil
+
 }
+
 // TODO: change by customer ID
-func (s *BookingService) GetBookingByUId(ctx context.Context) error {
-	return nil
+func (s *BookingService) GetBookingByUId(
+	ctx context.Context,
+	customerId, startDate, endDate string,
+	page, limit int) (*types.FetchAllBookingsResponse, error) {
+
+	var result *types.FetchAllBookingsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		result, err = s.Tasks.FetchAllCustomerBookings(ctx, tx, customerId, startDate, endDate, page,
+			limit, s.Logger)
+
+		return err
+
+	}); err != nil {
+		s.Logger.Error("failed to fetch customer bookings: %v", err)
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (s *BookingService) UpdateBooking(ctx context.Context) error {

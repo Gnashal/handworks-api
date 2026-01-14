@@ -2,10 +2,10 @@ package types
 
 import "time"
 
-type BookingAllocation struct{
+type BookingAllocation struct {
 	CleaningAllocation *CleaningAllocation
-	CleanerAssigned []CleanerAssigned
-	CleaningPrices *CleaningPrices
+	CleanerAssigned    []CleanerAssigned
+	CleaningPrices     *CleaningPrices
 }
 type CleaningAllocation struct {
 	CleaningEquipment []CleaningEquipment
@@ -36,16 +36,16 @@ type AddonCleaningPrice struct {
 	AddonPrice float32 `json:"addonPrice"`
 }
 type CleaningPrices struct {
-	MainServicePrice float32               `json:"mainServicePrice"`
-	AddonPrices      []AddonCleaningPrice  `json:"addonPrices"`
+	MainServicePrice float32              `json:"mainServicePrice"`
+	AddonPrices      []AddonCleaningPrice `json:"addonPrices"`
 }
 
 type ServiceDetail struct {
-	General  *GeneralCleaningDetails      `json:"general,omitempty"`
-	Couch    *CouchCleaningDetails        `json:"couch,omitempty"`
-	Mattress *MattressCleaningDetails     `json:"mattress,omitempty"`
-	Car      *CarCleaningDetails         `json:"car,omitempty"`
-	Post     *PostConstructionDetails    `json:"post,omitempty"`
+	General  *GeneralCleaningDetails  `json:"general,omitempty"`
+	Couch    *CouchCleaningDetails    `json:"couch,omitempty"`
+	Mattress *MattressCleaningDetails `json:"mattress,omitempty"`
+	Car      *CarCleaningDetails      `json:"car,omitempty"`
+	Post     *PostConstructionDetails `json:"post,omitempty"`
 }
 
 type ServiceDetails struct {
@@ -183,9 +183,10 @@ type AddOnRequest struct {
 }
 
 type CreateBookingRequest struct {
+	AccountID   string                    `json:"accountId"`
 	Base        BaseBookingDetailsRequest `json:"base"`
-	MainService ServicesRequest    `json:"mainService"`
-	Addons      []AddOnRequest     `json:"addons"`
+	MainService ServicesRequest           `json:"mainService"`
+	Addons      []AddOnRequest            `json:"addons"`
 }
 type AddOns struct {
 	ID            string         `json:"id"`
@@ -196,9 +197,15 @@ type Booking struct {
 	ID          string              `json:"id"`
 	Base        BaseBookingDetails  `json:"base"`
 	MainService ServiceDetails      `json:"mainService"`
-	Addons      []AddOns            `json:"addons"`
-	Equipments  []CleaningEquipment `json:"equipments"`
-	Resources   []CleaningResources `json:"resources"`
-	Cleaners    []CleanerAssigned   `json:"cleaners"`
+	Addons      []AddOns            `json:"addons,omitempty"`
+	Equipments  []CleaningEquipment `json:"equipments,omitempty"`
+	Resources   []CleaningResources `json:"resources,omitempty"`
+	Cleaners    []CleanerAssigned   `json:"cleaners,omitempty"`
 	TotalPrice  float32             `json:"totalPrice"`
+}
+
+type FetchAllBookingsResponse struct {
+	TotalBookings     int       `json:"totalBookings"`
+	BookingsRequested int       `json:"bookingsRequested"`
+	Bookings          []Booking `json:"bookings"`
 }
