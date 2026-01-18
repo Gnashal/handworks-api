@@ -58,6 +58,16 @@ func (t *AccountTasks) CreateEmployee(c context.Context, tx pgx.Tx, id, position
 	}
 	return &emp, nil
 }
+func (t *AccountTasks) CreateAdmin(c context.Context, tx pgx.Tx, id string) (string, error) {
+	var adminId string
+	if err := tx.QueryRow(c,
+		`INSERT INTO account.admins (account_id)
+		VALUES ($1)
+		RETURNING id`, id).Scan(&adminId); err != nil {
+		return "", fmt.Errorf("could not insert into admin table: %w", err)
+	}
+	return adminId, nil
+}
 
 func (t* AccountTasks) FetchAccountData(c context.Context, tx pgx.Tx, ID string) (*types.Account, error) {
 	var acc types.Account

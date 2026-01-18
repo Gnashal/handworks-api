@@ -54,54 +54,11 @@ func (s *InventoryService) GetItem(ctx context.Context, id string) (*types.Inven
 	}
 	return &item, nil
 }
-func (s *InventoryService) GetItems(ctx context.Context) ([]*types.InventoryItem, error) {
-	var items []*types.InventoryItem
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
-		invs, err := s.Tasks.FetchFilter(ctx, tx, &types.InventoryFilter{})
-		if err != nil {
-			return err
-		}
-		items = invs
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-func (s *InventoryService) ListItemsByType(ctx context.Context, itemType string) ([]*types.InventoryItem, error) {
-	var items []*types.InventoryItem
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
-		invs, err := s.Tasks.FetchFilter(ctx, tx, &types.InventoryFilter{Type: &itemType})
-		if err != nil {
-			return err
-		}
-		items = invs
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-func (s *InventoryService) ListItemsByStatus(ctx context.Context, status string) ([]*types.InventoryItem, error) {
-	var items []*types.InventoryItem
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
-		invs, err := s.Tasks.FetchFilter(ctx, tx, &types.InventoryFilter{Status: &status})
-		if err != nil {
-			return err
-		}
-		items = invs
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-func (s *InventoryService) ListItemsByCategory(ctx context.Context, category string) ([]*types.InventoryItem, error) {
-	var items []*types.InventoryItem
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
-		invs, err := s.Tasks.FetchFilter(ctx, tx, &types.InventoryFilter{Category: &category})
+// ListItems returns items using the provided filter (supports multiple filters, pagination, date range)
+func (s *InventoryService) ListItems(ctx context.Context, filter *types.InventoryFilter) (*types.InventoryListResponse, error) {
+	var items *types.InventoryListResponse
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		invs, err := s.Tasks.FetchItems(ctx, tx, filter)
 		if err != nil {
 			return err
 		}

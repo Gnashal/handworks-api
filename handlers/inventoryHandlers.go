@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"handworks-api/types"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -60,89 +62,73 @@ func (h *InventoryHandler) GetItem(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
-// GetItem godoc
-// @Summary Get all items
-// @Description Retrieve all inventory items
+// GetItems godoc
+// @Summary Get inventory items
+// @Description Retrieve inventory items with optional filters and pagination
 // @Security BearerAuth
 // @Tags Inventory
 // @Produce json
-// @Success 200 {object} []types.InventoryItem
+//
+// @Param type query string false "Item type"
+// @Param status query string false "Item status"
+// @Param category query string false "Item category"
+// @Param startDate query string false "Filter items created after this date"
+// @Param endDate query string false "Filter items created before this date"
+// @Param page query int false "Page number (zero-based)" default(0)
+// @Param limit query int false "Number of items per page" default(10)
+//
+// @Success 200 {object} types.InventoryListResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 401 {object} types.ErrorResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /inventory/ [get]
+// @Router /inventory/items [get]
 func (h *InventoryHandler) GetItems(c *gin.Context) {
+	itemType := c.Query("type")
+	status := c.Query("status")
+	category := c.Query("category")
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+
+	pageStr := c.DefaultQuery("page", "0")
+	limitStr := c.DefaultQuery("limit", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+		return
+	}
+
+	// build filter
+	var f types.InventoryFilter
+	if itemType != "" {
+		f.Type = &itemType
+	}
+	if status != "" {
+		f.Status = &status
+	}
+	if category != "" {
+		f.Category = &category
+	}
+	if startDate != "" {
+		f.StartDate = &startDate
+	}
+	if endDate != "" {
+		f.EndDate = &endDate
+	}
+	f.Page = &page
+	f.Limit = &limit
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	resp, err := h.Service.GetItems(ctx)
+	resp, err := h.Service.ListItems(ctx, &f)
 	if err != nil {
 		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
-		return
-	}
-
-	c.JSON(http.StatusOK, resp)
-}
-// ListItemsByType godoc
-// @Summary List items filtered by type
-// @Description Get all inventory items matching the given type
-// @Security BearerAuth
-// @Tags Inventory
-// @Produce json
-// @Param type path string true "Item type (resource, equipment)"
-// @Success 200 {object} []types.InventoryItem
-// @Failure 400 {object} types.ErrorResponse
-// @Router /inventory/type/{type} [get]
-func (h *InventoryHandler) ListItemsByType(c *gin.Context) {
-	itemType := c.Param("type")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	resp, err := h.Service.ListItemsByType(ctx, itemType)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
-		return
-	}
-
-	c.JSON(http.StatusOK, resp)
-}
-
-// ListItemsByStatus godoc
-// @Summary List items filtered by status
-// @Description Get all inventory items with the given stock status
-// @Security BearerAuth
-// @Tags Inventory
-// @Produce json
-// @Param status path string true "Status (high, low, danger, out_of_stock)"
-// @Success 200 {object} []types.InventoryItem
-// @Failure 400 {object} types.ErrorResponse
-// @Router /inventory/status/{status} [get]
-func (h *InventoryHandler) ListItemsByStatus(c *gin.Context) {
-	status := c.Param("status")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	resp, err := h.Service.ListItemsByStatus(ctx, status)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
-		return
-	}
-
-	c.JSON(http.StatusOK, resp)
-}
-
-// ListItemsByCategory godoc
-// @Summary List items filtered by category
-// @Description Retrieve all inventory items in a category
-// @Security BearerAuth
-// @Tags Inventory
-// @Produce json
-// @Param category path string true "Category (general, electronics, furniture, etc)"
-// @Success 200 {object} []types.InventoryItem
-// @Failure 400 {object} types.ErrorResponse
-// @Router /inventory/category/{category} [get]
-func (h *InventoryHandler) ListItemsByCategory(c *gin.Context) {
-	category := c.Param("category")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	resp, err := h.Service.ListItemsByCategory(ctx, category)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
 		return
 	}
 

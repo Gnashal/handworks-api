@@ -53,6 +53,13 @@ definitions:
       addressLng:
         type: number
     type: object
+  types.Admin:
+    properties:
+      account:
+        $ref: '#/definitions/types.Account'
+      id:
+        type: string
+    type: object
   types.BaseBookingDetails:
     properties:
       address:
@@ -215,6 +222,8 @@ definitions:
     type: object
   types.CreateBookingRequest:
     properties:
+      accountId:
+        type: string
       addons:
         items:
           $ref: '#/definitions/types.AddOnRequest'
@@ -360,6 +369,17 @@ definitions:
         type: string
       updated_at:
         type: string
+    type: object
+  types.InventoryListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/types.InventoryItem'
+        type: array
+      itemsReturned:
+        type: integer
+      totalItems:
+        type: integer
     type: object
   types.ItemCategory:
     enum:
@@ -538,6 +558,33 @@ definitions:
       serviceType:
         $ref: '#/definitions/types.MainServiceType'
     type: object
+  types.SignUpAdminRequest:
+    properties:
+      clerk_id:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      provider:
+        type: string
+      role:
+        type: string
+    required:
+    - clerk_id
+    - email
+    - first_name
+    - last_name
+    - provider
+    - role
+    type: object
+  types.SignUpAdminResponse:
+    properties:
+      admin:
+        $ref: '#/definitions/types.Admin'
+    type: object
   types.SignUpCustomerRequest:
     properties:
       clerk_id:
@@ -701,6 +748,36 @@ info:
   title: Handworks API
   version: "1.0"
 paths:
+  /account/admin/signup:
+    post:
+      consumes:
+      - application/json
+      description: Create a new admin account
+      parameters:
+      - description: Admin signup data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.SignUpAdminRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SignUpAdminResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: Sign up a new admin
+      tags:
+      - Account
   /account/customer/{id}:
     get:
       description: Retrieve customer info
@@ -1234,26 +1311,6 @@ paths:
       tags:
       - Inventory
   /inventory/:
-    get:
-      description: Retrieve all inventory items
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/types.InventoryItem'
-            type: array
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get all items
-      tags:
-      - Inventory
     put:
       consumes:
       - application/json
@@ -1336,85 +1393,62 @@ paths:
       summary: Get an item by ID
       tags:
       - Inventory
-  /inventory/category/{category}:
+  /inventory/items:
     get:
-      description: Retrieve all inventory items in a category
+      description: Retrieve inventory items with optional filters and pagination
       parameters:
-      - description: Category (general, electronics, furniture, etc)
-        in: path
-        name: category
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/types.InventoryItem'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: List items filtered by category
-      tags:
-      - Inventory
-  /inventory/status/{status}:
-    get:
-      description: Get all inventory items with the given stock status
-      parameters:
-      - description: Status (high, low, danger, out_of_stock)
-        in: path
-        name: status
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/types.InventoryItem'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: List items filtered by status
-      tags:
-      - Inventory
-  /inventory/type/{type}:
-    get:
-      description: Get all inventory items matching the given type
-      parameters:
-      - description: Item type (resource, equipment)
-        in: path
+      - description: Item type
+        in: query
         name: type
-        required: true
         type: string
+      - description: Item status
+        in: query
+        name: status
+        type: string
+      - description: Item category
+        in: query
+        name: category
+        type: string
+      - description: Filter items created after this date
+        in: query
+        name: startDate
+        type: string
+      - description: Filter items created before this date
+        in: query
+        name: endDate
+        type: string
+      - default: 0
+        description: Page number (zero-based)
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/types.InventoryItem'
-            type: array
+            $ref: '#/definitions/types.InventoryListResponse'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/types.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: List items filtered by type
+      summary: Get inventory items
       tags:
       - Inventory
   /payment/quote:

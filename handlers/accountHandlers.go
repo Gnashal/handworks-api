@@ -36,6 +36,33 @@ func (h *AccountHandler) SignUpCustomer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+// SignUpAdmin godoc
+// @Summary Sign up a new admin
+// @Description Create a new admin account
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param input body types.SignUpAdminRequest true "Admin signup data"
+// @Success 200 {object} types.SignUpAdminResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/admin/signup [post]
+func (h *AccountHandler) SignUpAdmin(c *gin.Context) {
+	var req types.SignUpAdminRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	resp, err := h.Service.SignUpAdmin(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	
+	c.JSON(http.StatusOK, resp)
+}
 
 // GetCustomer godoc
 // @Summary Get a customer by ID
