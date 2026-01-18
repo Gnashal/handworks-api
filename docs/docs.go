@@ -15,6 +15,52 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/account/admin/signup": {
+            "post": {
+                "description": "Create a new admin account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Sign up a new admin",
+                "parameters": [
+                    {
+                        "description": "Admin signup data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.SignUpAdminRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.SignUpAdminResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/account/customer/signup": {
             "post": {
                 "description": "Create a new customer account",
@@ -847,38 +893,6 @@ const docTemplate = `{
             }
         },
         "/inventory/": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieve all inventory items",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Inventory"
-                ],
-                "summary": "Get all items",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/types.InventoryItem"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/types.ErrorResponse"
-                        }
-                    }
-                }
-            },
             "put": {
                 "security": [
                     {
@@ -929,128 +943,88 @@ const docTemplate = `{
                 }
             }
         },
-        "/inventory/category/{category}": {
+        "/inventory/items": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all inventory items in a category",
+                "description": "Retrieve inventory items with optional filters and pagination",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Inventory"
                 ],
-                "summary": "List items filtered by category",
+                "summary": "Get inventory items",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Category (general, electronics, furniture, etc)",
-                        "name": "category",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/types.InventoryItem"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/types.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/status/{status}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get all inventory items with the given stock status",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Inventory"
-                ],
-                "summary": "List items filtered by status",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Status (high, low, danger, out_of_stock)",
-                        "name": "status",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/types.InventoryItem"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/types.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/inventory/type/{type}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get all inventory items matching the given type",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Inventory"
-                ],
-                "summary": "List items filtered by type",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Item type (resource, equipment)",
+                        "description": "Item type",
                         "name": "type",
-                        "in": "path",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Item status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Item category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter items created after this date",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter items created before this date",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number (zero-based)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/types.InventoryItem"
-                            }
+                            "$ref": "#/definitions/types.InventoryListResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/types.ErrorResponse"
                         }
@@ -1395,6 +1369,17 @@ const docTemplate = `{
                 }
             }
         },
+        "types.Admin": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "$ref": "#/definitions/types.Account"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
         "types.BaseBookingDetails": {
             "type": "object",
             "properties": {
@@ -1643,6 +1628,9 @@ const docTemplate = `{
         "types.CreateBookingRequest": {
             "type": "object",
             "properties": {
+                "accountId": {
+                    "type": "string"
+                },
                 "addons": {
                     "type": "array",
                     "items": {
@@ -1862,6 +1850,23 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "types.InventoryListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.InventoryItem"
+                    }
+                },
+                "itemsReturned": {
+                    "type": "integer"
+                },
+                "totalItems": {
+                    "type": "integer"
                 }
             }
         },
@@ -2119,6 +2124,45 @@ const docTemplate = `{
                 },
                 "serviceType": {
                     "$ref": "#/definitions/types.MainServiceType"
+                }
+            }
+        },
+        "types.SignUpAdminRequest": {
+            "type": "object",
+            "required": [
+                "clerk_id",
+                "email",
+                "first_name",
+                "last_name",
+                "provider",
+                "role"
+            ],
+            "properties": {
+                "clerk_id": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.SignUpAdminResponse": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "$ref": "#/definitions/types.Admin"
                 }
             }
         },

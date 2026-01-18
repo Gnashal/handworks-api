@@ -160,7 +160,22 @@ func (s *AccountService) SignUpEmployee(ctx context.Context, req types.SignUpEmp
 	}); err != nil {
 		return nil, fmt.Errorf("failed to sign up employee: %w", err)
 	}
+	// metadata to store in clerk
+	metadata := map[string]string{"empId": employee.ID}
+	jsonData, err := json.Marshal(metadata)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	raw := json.RawMessage(jsonData)
 
+	_, err = user.UpdateMetadata(ctx, req.ClerkID, &user.UpdateMetadataParams{
+		PublicMetadata: &raw,
+	})
+	if err != nil {
+		s.Logger.Error("Failed to update Clerk Metadata: %v", err)
+		return nil, fmt.Errorf("failed to update clerk metadata: %w", err)
+	}
+	s.Logger.Info("Updated Clerk Metadata")
 	resp := &types.SignUpEmployeeResponse{
 		Employee: employee,
 	}
@@ -253,5 +268,43 @@ func (s *AccountService) DeleteEmployee(ctx context.Context, id, accId string) (
 		Ok:       true,
 		Message:  "Success",
 		Employee: employee,
+	}, nil
+}
+func (s* AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminRequest) (*types.SignUpAdminResponse, error) {
+	var admin types.Admin
+	
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		acc, err := s.Tasks.CreateAccount(ctx, tx, req.FirstName, req.LastName, req.Email, req.Provider, req.ClerkID, req.Role)
+		if err != nil {
+			return err
+		}
+		admin.Account = *acc
+		id, err := s.Tasks.CreateAdmin(ctx, tx, acc.ID)
+		if err != nil {
+			return  err
+		}
+		admin.ID = id
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not create admin: %w", err)
+	}
+	// metadata to store in clerk
+	metadata := map[string]string{"adminId": admin.ID}
+	jsonData, err := json.Marshal(metadata)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	raw := json.RawMessage(jsonData)
+
+	_, err = user.UpdateMetadata(ctx, req.ClerkID, &user.UpdateMetadataParams{
+		PublicMetadata: &raw,
+	})
+	if err != nil {
+		s.Logger.Error("Failed to update Clerk Metadata: %v", err)
+		return nil, fmt.Errorf("failed to update clerk metadata: %w", err)
+	}
+	s.Logger.Info("Updated Clerk Metadata")
+	return &types.SignUpAdminResponse{
+		Admin: admin,
 	}, nil
 }

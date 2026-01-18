@@ -10,7 +10,7 @@ import (
 	"handworks-api/utils"
 	"os"
 
-	_ "handworks-api/docs" // Import generated docs
+	_ "handworks-api/docs"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/gin-contrib/cors"
@@ -53,7 +53,8 @@ func main() {
 	defer conn.Close()
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
-		"/api/account/employee/signup",
+		"/api/inventory/items",
+		"/api/account/employee/signup","/api/account/admin/signup",
 		"/api/payment/quote/preview", "/health", "/api/booking/bookings"}
 
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))

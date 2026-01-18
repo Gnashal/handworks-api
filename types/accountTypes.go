@@ -28,6 +28,18 @@ type Employee struct {
 	HireDate         time.Time `json:"hire_date"`
 	NumRatings       int32     `json:"num_ratings"`
 }
+type Admin struct {
+	ID string `json:"id"`
+	Account Account `json:"account"`
+}
+type SignUpAdminRequest struct {
+	FirstName string `json:"first_name" binding:"required"`
+	LastName  string `json:"last_name"  binding:"required"`
+	Email     string `json:"email"      binding:"required,email"`
+	Provider  string `json:"provider"   binding:"required"`
+	ClerkID   string `json:"clerk_id"   binding:"required"`
+	Role      string `json:"role"       binding:"required"`
+}
 
 type SignUpCustomerRequest struct {
 	FirstName string `json:"first_name" binding:"required"`
@@ -91,6 +103,9 @@ type SignUpCustomerResponse struct {
 
 type SignUpEmployeeResponse struct {
 	Employee Employee `json:"employee"`
+}
+type SignUpAdminResponse struct {
+	Admin Admin `json:"admin"`
 }
 
 // READ

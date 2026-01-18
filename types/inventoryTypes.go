@@ -67,10 +67,19 @@ type UpdateItemRequest struct {
 	ImageURL    string `json:"image_url"`
 }
 
+type InventoryListResponse struct {
+	TotalItems    int32                  `json:"totalItems"`
+	ItemsReturned int32                  `json:"itemsReturned"`
+	Items         []*InventoryItem 		`json:"items"`
+}
 
 
 type InventoryFilter struct {
 	Type     *string `json:"type,omitempty" form:"type"`
 	Status   *string `json:"status,omitempty" form:"status"`
 	Category *string `json:"category,omitempty" form:"category"`
+	StartDate *string `json:"start_date,omitempty" form:"startDate"`
+	EndDate   *string `json:"end_date,omitempty" form:"endDate"`
+	Page      *int    `json:"page,omitempty" form:"page"`
+	Limit     *int    `json:"limit,omitempty" form:"limit"`
 }
