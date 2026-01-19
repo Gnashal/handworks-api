@@ -26,14 +26,15 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 		employee.PUT("/:id/status", h.UpdateEmployeeStatus)
 		employee.DELETE("/:id/:empId", h.DeleteEmployee)
 	}
+	admin := r.Group("/admin")
+	{
+		admin.POST("/signup", h.SignUpAdmin)
+	}
 }
 func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
-	r.POST("/", h.CreateItem)
+	r.POST("/create", h.CreateItem)
 	r.GET("/:id", h.GetItem)
-	r.GET("/", h.GetItems)
-	r.GET("/type/:type", h.ListItemsByType)
-	r.GET("/status/:status", h.ListItemsByStatus)
-	r.GET("/category/:category", h.ListItemsByCategory)
+	r.GET("/items", h.GetItems)
 	r.PUT("/", h.UpdateItem)
 	r.DELETE("/:id", h.DeleteItem)
 }

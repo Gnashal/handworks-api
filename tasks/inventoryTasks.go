@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"handworks-api/types"
 
@@ -73,176 +74,35 @@ func (t *InventoryTasks) FetchInventoryItem(
 
 	return &item, nil
 }
-func (t *InventoryTasks) FetchInventoryItems(
-	ctx context.Context,
-	tx pgx.Tx,
-) ([]*types.InventoryItem, error) {
-	rows, err := tx.Query(ctx, `
-        SELECT id, name, type, status, unit, category, quantity, max_quantity, is_available, created_at, updated_at
-        FROM inventory.items
-        ORDER BY created_at DESC
-    `)
+func (t *InventoryTasks) FetchItems(ctx context.Context,tx pgx.Tx,filter *types.InventoryFilter,) (*types.InventoryListResponse, error) {
+	var raw json.RawMessage
+
+	err := tx.QueryRow(
+		ctx,
+		`SELECT inventory.get_items(
+			$1, $2, $3, $4, $5, $6, $7
+		)`,
+		filter.Type,
+		filter.Status,
+		filter.Category,
+		filter.StartDate,
+		filter.EndDate,
+		*filter.Page,
+		*filter.Limit,
+	).Scan(&raw)
+
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch inventory items: %w", err)
-	}
-	defer rows.Close()
-
-	var items []*types.InventoryItem
-	for rows.Next() {
-		var item types.InventoryItem
-		if err := rows.Scan(
-			&item.ID,
-			&item.Name,
-			&item.Type,
-			&item.Status,
-			&item.Unit,
-			&item.Category,
-			&item.Quantity,
-			&item.MaxQuantity,
-			&item.IsAvailable,
-			&item.CreatedAt,
-			&item.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("could not scan inventory row: %w", err)
-		}
-		items = append(items, &item)
+		return nil, fmt.Errorf("failed to fetch inventory: %w", err)
 	}
 
-	return items, nil
+	var resp types.InventoryListResponse
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal inventory response: %w", err)
+	}
+
+	return &resp, nil
 }
-func (t *InventoryTasks) FetchFilter(ctx context.Context, tx pgx.Tx, filter * types.InventoryFilter) ([]*types.InventoryItem, error) {
-	var items []*types.InventoryItem
-	var err error
-	if filter.Type != nil && *filter.Type != "" {
-    items, err = t.FetchInventoryItemsByType(ctx, tx, *filter.Type)
-	} else if filter.Status != nil && *filter.Status != "" {
-		items, err = t.FetchInventoryItemsByStatus(ctx, tx, *filter.Status)
-	} else if filter.Category != nil && *filter.Category != "" {
-		items, err = t.FetchInventoryItemsByCategory(ctx, tx, *filter.Category)
-	} else {
-		items, err = t.FetchInventoryItems(ctx, tx)
-	}
 
-	return items, err
-	
-}
-func (t *InventoryTasks) FetchInventoryItemsByType(
-	ctx context.Context,
-	tx pgx.Tx,
-	itemType string,
-) ([]*types.InventoryItem, error) {
-	rows, err := tx.Query(ctx, `
-        SELECT id, name, type, status, unit, category, quantity, max_quantity, is_available, created_at, updated_at
-        FROM inventory.items
-		WHERE type = $1
-        ORDER BY created_at DESC
-    `, itemType)
-	if err != nil {
-		return nil, fmt.Errorf("could not fetch inventory items: %w", err)
-	}
-	defer rows.Close()
-
-	var items []*types.InventoryItem
-	for rows.Next() {
-		var item types.InventoryItem
-		if err := rows.Scan(
-			&item.ID,
-			&item.Name,
-			&item.Type,
-			&item.Status,
-			&item.Unit,
-			&item.Category,
-			&item.Quantity,
-			&item.MaxQuantity,
-			&item.IsAvailable,
-			&item.CreatedAt,
-			&item.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("could not scan inventory row: %w", err)
-		}
-		items = append(items, &item)
-	}
-
-	return items, nil
-}
-func (t *InventoryTasks) FetchInventoryItemsByCategory(
-	ctx context.Context,
-	tx pgx.Tx,
-	category string,
-) ([]*types.InventoryItem, error) {
-	rows, err := tx.Query(ctx, `
-        SELECT id, name, type, status, unit, category, quantity, max_quantity, is_available, created_at, updated_at
-        FROM inventory.items
-		WHERE category = $1
-        ORDER BY created_at DESC
-    `, category)
-	if err != nil {
-		return nil, fmt.Errorf("could not fetch inventory items: %w", err)
-	}
-	defer rows.Close()
-
-	var items []*types.InventoryItem
-	for rows.Next() {
-		var item types.InventoryItem
-		if err := rows.Scan(
-			&item.ID,
-			&item.Name,
-			&item.Type,
-			&item.Status,
-			&item.Unit,
-			&item.Category,
-			&item.Quantity,
-			&item.MaxQuantity,
-			&item.IsAvailable,
-			&item.CreatedAt,
-			&item.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("could not scan inventory row: %w", err)
-		}
-		items = append(items, &item)
-	}
-
-	return items, nil
-}
-func (t *InventoryTasks) FetchInventoryItemsByStatus(
-	ctx context.Context,
-	tx pgx.Tx,
-	status string,
-) ([]*types.InventoryItem, error) {
-	rows, err := tx.Query(ctx, `
-        SELECT id, name, type, status, unit, category, quantity, max_quantity, is_available, created_at, updated_at
-        FROM inventory.items
-		WHERE status = $1
-        ORDER BY created_at DESC
-    `, status)
-	if err != nil {
-		return nil, fmt.Errorf("could not fetch inventory items: %w", err)
-	}
-	defer rows.Close()
-
-	var items []*types.InventoryItem
-	for rows.Next() {
-		var item types.InventoryItem
-		if err := rows.Scan(
-			&item.ID,
-			&item.Name,
-			&item.Type,
-			&item.Status,
-			&item.Unit,
-			&item.Category,
-			&item.Quantity,
-			&item.MaxQuantity,
-			&item.IsAvailable,
-			&item.CreatedAt,
-			&item.UpdatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("could not scan inventory row: %w", err)
-		}
-		items = append(items, &item)
-	}
-
-	return items, nil
-}
 func (t *InventoryTasks) UpdateInventoryItem(
 	ctx context.Context,
 	tx pgx.Tx,
