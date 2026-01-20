@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"handworks-api/handlers"
+	"handworks-api/realtime"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,7 +42,7 @@ func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
 func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.POST("/", h.CreateBooking)
 	r.GET("/bookings", h.GetBookings)
-	r.GET("/", h.GetBookingByUId)
+	r.GET("/", h.GetCustomerBookings)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)
 }
@@ -50,4 +51,9 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	r.POST("/quote/preview", h.MakePublicQuotation)
 	r.GET("/quotes", h.GetAllQuotesFromCustomer)
 
+}
+
+func RealtimeEndpoint(r *gin.RouterGroup, hub *realtime.AdminHub) {
+	// admin websocket endpoint
+	r.GET("/ws/admin", realtime.AdminWS(hub))
 }

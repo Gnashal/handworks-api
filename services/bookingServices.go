@@ -152,8 +152,7 @@ func (s *BookingService) GetBookings(
 
 }
 
-// TODO: change by customer ID
-func (s *BookingService) GetBookingByUId(
+func (s *BookingService) GetCustomerBookings(
 	ctx context.Context,
 	customerId, startDate, endDate string,
 	page, limit int) (*types.FetchAllBookingsResponse, error) {
@@ -174,7 +173,20 @@ func (s *BookingService) GetBookingByUId(
 
 	return result, nil
 }
-
+func (s *BookingService) GetBookingByID(ctx context.Context, bookingID string) (*types.Booking, error)  {
+	var booking *types.Booking
+	
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		booking, err = s.Tasks.FetchBookingByID(ctx, tx, bookingID, s.Logger)
+		return err
+	}); err != nil {
+		s.Logger.Error("failed to fetch booking by ID: %v", err)
+		return nil, err
+	}
+	
+	return booking, nil
+}
 func (s *BookingService) UpdateBooking(ctx context.Context) error {
 	return nil
 }

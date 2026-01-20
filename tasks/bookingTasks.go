@@ -343,6 +343,26 @@ func (t *BookingTasks) SaveBooking(
 	return id, nil
 }
 
+func (t *BookingTasks) FetchBookingByID(ctx context.Context, tx pgx.Tx, bookingID string, logger *utils.Logger) (*types.Booking, error) {
+
+	var rawJSON []byte
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_booking_by_id($1)`,
+		bookingID).Scan(&rawJSON)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_booking_by_id: %w", err)
+	}
+
+	var booking types.Booking
+	if err := json.Unmarshal(rawJSON, &booking); err != nil {
+		logger.Error("failed to unmarshal booking JSON: %v", err)
+		return nil, fmt.Errorf("unmarhsal booking: %w", err)
+	}
+
+	return &booking, nil
+}
+
 func (t *BookingTasks) FetchAllBookings(
 	ctx context.Context,
 	tx pgx.Tx,
