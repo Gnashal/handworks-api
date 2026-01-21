@@ -120,7 +120,7 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 // @Failure 401 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /booking [get]
-func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
+func (h *BookingHandler) GetCustomerBookings(c *gin.Context) {
 	customerId := c.Query("customerId")
 	if customerId == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -133,16 +133,6 @@ func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
 	// Get date parameters
 	startDate := c.Query("startDate")
 	endDate := c.Query("endDate")
-
-	// Convert empty strings to empty strings (not nil)
-	// Keep them as strings, not pointers
-	var finalStartDate, finalEndDate string
-	if startDate != "" {
-		finalStartDate = startDate
-	}
-	if endDate != "" {
-		finalEndDate = endDate
-	}
 
 	// Pagination defaults
 	pageStr := c.DefaultQuery("page", "0")
@@ -170,7 +160,7 @@ func (h *BookingHandler) GetBookingByUId(c *gin.Context) {
 	defer cancel()
 
 	// Pass empty strings (not nil pointers)
-	result, err := h.Service.GetBookingByUId(ctx, customerId, finalStartDate, finalEndDate, page, limit)
+	result, err := h.Service.GetCustomerBookings(ctx, customerId, startDate, endDate, page, limit)
 	if err != nil {
 		h.Logger.Error("failed to get customer bookings: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{

@@ -6,6 +6,7 @@ import (
 	"handworks-api/endpoints"
 	"handworks-api/handlers"
 	"handworks-api/middleware"
+	"handworks-api/realtime"
 	"handworks-api/services"
 	"handworks-api/utils"
 	"os"
@@ -51,6 +52,12 @@ func main() {
 	}
 	logger.Info("Connected to Db")
 	defer conn.Close()
+
+	// websocket
+	hub := realtime.NewAdminHub()
+	go hub.Run()
+
+
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
 		"/api/inventory/items",
@@ -69,12 +76,21 @@ func main() {
 	bookingHandler := handlers.NewBookingHandler(bookingService, logger)
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
 
+	go realtime.ListenBookingEvents(
+    c,
+    os.Getenv("DB_CONN"),
+    bookingService, // reuse existing logic
+    hub,
+    logger,
+)
+
 	api := router.Group("/api")
 	{
 		endpoints.AccountEndpoint(api.Group("/account"), accountHandler)
 		endpoints.InventoryEndpoint(api.Group("/inventory"), inventoryHandler)
 		endpoints.BookingEndpoint(api.Group("/booking"), bookingHandler)
 		endpoints.PaymentEndpoint(api.Group("/payment"), paymentHandler)
+		endpoints.RealtimeEndpoint(api, hub)
 	}
 
 	port := "8080"
