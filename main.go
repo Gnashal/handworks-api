@@ -60,9 +60,8 @@ func main() {
 
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
-		"/api/inventory/items",
 		"/api/account/employee/signup","/api/account/admin/signup",
-		"/api/payment/quote/preview", "/health", "/api/booking/bookings"}
+		"/api/payment/quote/preview", "/health", }
 
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
 
@@ -78,8 +77,8 @@ func main() {
 
 	go realtime.ListenBookingEvents(
     c,
-    os.Getenv("DB_CONN"),
-    bookingService, // reuse existing logic
+	os.Getenv("DB_CONN_REALTIME"),
+    bookingService,
     hub,
     logger,
 )

@@ -109,8 +109,6 @@ definitions:
         type: integer
       endSched:
         type: string
-      id:
-        type: string
       photos:
         items:
           type: string

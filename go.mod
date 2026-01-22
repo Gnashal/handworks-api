@@ -14,6 +14,8 @@ require (
 	golang.org/x/sync v0.18.0
 )
 
+require github.com/lib/pq v1.10.9
+
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
