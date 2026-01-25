@@ -1454,9 +1454,6 @@ const docTemplate = `{
                 "endSched": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "string"
-                },
                 "photos": {
                     "type": "array",
                     "items": {

@@ -136,7 +136,6 @@ type BaseBookingDetails struct {
 	QuoteId           string     `json:"quoteId"`
 }
 type BaseBookingDetailsRequest struct {
-	ID                string     `json:"id"`
 	CustID            string     `json:"custId"`
 	CustomerFirstName string     `json:"customerFirstName"`
 	CustomerLastName  string     `json:"customerLastName"`
