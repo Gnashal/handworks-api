@@ -13,7 +13,6 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 		customer.POST("/signup", h.SignUpCustomer)
 		customer.GET("/:id", h.GetCustomer)
 		customer.PUT("/:id", h.UpdateCustomer)
-		// Route should be like this in your router:
 		customer.DELETE("/:id/:accId", h.DeleteCustomer)
 
 	}
@@ -53,7 +52,8 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 
 }
 
-func RealtimeEndpoint(r *gin.RouterGroup, hub *realtime.AdminHub) {
-	// admin websocket endpoint
-	r.GET("/ws/admin", realtime.AdminWS(hub))
+func RealtimeEndpoint(r *gin.RouterGroup,hubs * realtime.RealtimeHubs) {
+	r.GET("/ws/admin", realtime.AdminWS(hubs.AdminHub))
+	r.GET("/ws/employee", realtime.EmployeeWS(hubs.EmployeeHub))
+	r.GET("/ws/chat", realtime.ChatWS(hubs.ChatHub))
 }
