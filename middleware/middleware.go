@@ -47,9 +47,9 @@ func ClerkAuthMiddleware(publicPaths []string, logger * utils.Logger) gin.Handle
 		unsafeClaims, err := jwt.Decode(c.Request.Context(), &jwt.DecodeParams{
 			Token: token,
 		})
-		logger.Debug("Claims error: %s", err)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			logger.Debug("Claims error: %s", err)
 			return
 		}
 
@@ -58,9 +58,9 @@ func ClerkAuthMiddleware(publicPaths []string, logger * utils.Logger) gin.Handle
 			KeyID:      unsafeClaims.KeyID,
 			JWKSClient: jwksClient,
 		})
-		logger.Debug("JWK error: %s", err)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			logger.Debug("JWK error: %s", err)
 			return
 		}
 
@@ -69,9 +69,9 @@ func ClerkAuthMiddleware(publicPaths []string, logger * utils.Logger) gin.Handle
 			Token: token,
 			JWK:   jwk,
 		})
-		logger.Debug("Token verification error: %s", err)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			logger.Debug("Token verification error: %s", err)
 			return
 		}
 

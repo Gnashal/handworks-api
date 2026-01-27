@@ -136,7 +136,6 @@ type BaseBookingDetails struct {
 	QuoteId           string     `json:"quoteId"`
 }
 type BaseBookingDetailsRequest struct {
-	ID                string     `json:"id"`
 	CustID            string     `json:"custId"`
 	CustomerFirstName string     `json:"customerFirstName"`
 	CustomerLastName  string     `json:"customerLastName"`
@@ -208,4 +207,8 @@ type FetchAllBookingsResponse struct {
 	TotalBookings     int       `json:"totalBookings"`
 	BookingsRequested int       `json:"bookingsRequested"`
 	Bookings          []Booking `json:"bookings"`
+}
+type BookingEvent struct {
+	Type      string `json:"type"`
+	BookingID string `json:"bookingId"`
 }

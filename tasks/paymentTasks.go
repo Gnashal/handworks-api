@@ -168,15 +168,19 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 }
 func (t* PaymentTasks) MapAddonstoAddonBreakdown(addons* []*types.QuoteAddon) []types.AddOnBreakdown {
 	var breakdowns []types.AddOnBreakdown
-	for _, addon := range *addons {
+	if addons != nil && len(*addons) > 0 {
+		for _, addon := range *addons {
 		breakdown := types.AddOnBreakdown{
 			AddonID:   addon.ID,
 			AddonName: addon.ServiceType,
 			Price:     float64(addon.AddonPrice),
+			}
+			breakdowns = append(breakdowns, breakdown)
 		}
-		breakdowns = append(breakdowns, breakdown)
+		return breakdowns
+	} else {
+		return []types.AddOnBreakdown{}
 	}
-	return breakdowns
 }
 func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.QuoteRequest) (*types.Quote, error) {
 	var dbQuote types.Quote
