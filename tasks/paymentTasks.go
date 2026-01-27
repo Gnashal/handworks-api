@@ -367,3 +367,66 @@ func (t *PaymentTasks) FetchAllQuotes(
 
 	return &response, nil
 }
+
+func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, quoteId, customerId string) (*types.Quote, error) {
+	if quoteId == "" {
+		return nil, fmt.Errorf("quoteId is required")
+	}
+	if customerId == "" {
+		return nil, fmt.Errorf("customerId is required")
+	}
+
+	var dbQuote types.Quote
+
+	err := tx.QueryRow(ctx, `
+		SELECT id, customer_id, main_service_type, main_service_detail, subtotal, addon_total, total_price, is_valid, created_at, updated_at
+		FROM payment.quotes
+		WHERE id = $1 AND customer_id = $2
+	`, quoteId, customerId).Scan(
+		&dbQuote.ID,
+		&dbQuote.CustomerID,
+		&dbQuote.MainService,
+		&dbQuote.MainServiceDetail,
+		&dbQuote.Subtotal,
+		&dbQuote.AddonTotal,
+		&dbQuote.TotalPrice,
+		&dbQuote.IsValid,
+		&dbQuote.CreatedAt,
+		&dbQuote.UpdatedAt,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("quote not found for this customer")
+		}
+		return nil, fmt.Errorf("failed to fetch quote: %w", err)
+	}
+
+	rows, err := tx.Query(ctx, `
+		SELECT id, service_type, service_detail, addon_price, created_at
+		FROM payment.quote_addons
+		WHERE quote_id = $1
+	`, quoteId)
+	if err != nil {
+		return &dbQuote, fmt.Errorf("failed to fetch addons: %w", err)
+	}
+	defer rows.Close()
+
+	var addons []*types.QuoteAddon
+	for rows.Next() {
+		var addon types.QuoteAddon
+		if err := rows.Scan(
+			&addon.ID,
+			&addon.ServiceType,
+			&addon.ServiceDetail,
+			&addon.AddonPrice,
+			&addon.CreatedAt,
+		); err != nil {
+			return &dbQuote, fmt.Errorf("failed to scan addon: %w", err)
+		}
+		addon.QuoteID = dbQuote.ID
+		addons = append(addons, &addon)
+	}
+
+	dbQuote.Addons = addons
+	return &dbQuote, nil
+}

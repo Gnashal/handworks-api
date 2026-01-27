@@ -50,6 +50,7 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	r.POST("/quote", h.MakeQuotation)
 	r.POST("/quote/preview", h.MakePublicQuotation)
 	r.GET("/quotes", h.GetAllQuotesFromCustomer)
+	r.GET("/quote/:id", h.GetQuoteByIDForCustomer)
 
 }
 

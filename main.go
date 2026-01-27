@@ -57,11 +57,10 @@ func main() {
 	hub := realtime.NewAdminHub()
 	go hub.Run()
 
-
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
-		"/api/account/employee/signup","/api/account/admin/signup",
-		"/api/payment/quote/preview", "/health", }
+		"/api/account/employee/signup", "/api/account/admin/signup",
+		"/api/payment/quote/preview", "/health", "/api/payment/quote"}
 
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
 
@@ -76,12 +75,12 @@ func main() {
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
 
 	go realtime.ListenBookingEvents(
-    c,
-	os.Getenv("DB_CONN_REALTIME"),
-    bookingService,
-    hub,
-    logger,
-)
+		c,
+		os.Getenv("DB_CONN_REALTIME"),
+		bookingService,
+		hub,
+		logger,
+	)
 
 	api := router.Group("/api")
 	{

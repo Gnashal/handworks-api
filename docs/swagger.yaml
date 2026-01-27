@@ -473,7 +473,11 @@ definitions:
       isValid:
         type: boolean
       mainService:
+        description: the main type of service
         type: string
+      mainServiceDetail:
+        description: added
+        type: object
       subtotal:
         type: number
       totalPrice:
@@ -1450,6 +1454,46 @@ paths:
       tags:
       - Inventory
   /payment/quote:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific quotation for a customer, including main service
+        and addons
+      parameters:
+      - description: Quote ID
+        in: query
+        name: quoteId
+        required: true
+        type: string
+      - description: Customer ID
+        in: query
+        name: customerId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Quote'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a specific quotation by ID for a customer
+      tags:
+      - Payment
     post:
       consumes:
       - application/json

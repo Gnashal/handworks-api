@@ -107,3 +107,29 @@ func (s *PaymentService) GetAllQuotesFromCustomer(
 
 	return result, nil
 }
+
+func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, customerId string) (*types.Quote, error) {
+	if quoteId == "" {
+		return nil, fmt.Errorf("quoteId is required")
+	}
+	if customerId == "" {
+		return nil, fmt.Errorf("customerId is required")
+	}
+
+	var quote *types.Quote
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		quote, err = s.Tasks.FetchQuoteByIDbyCustomer(ctx, tx, quoteId, customerId)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch quote by ID for customer %s: %v", customerId, err)
+		return nil, err
+	}
+
+	if quote == nil {
+		return nil, fmt.Errorf("quote not found for this customer")
+	}
+
+	return quote, nil
+}
