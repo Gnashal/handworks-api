@@ -1093,58 +1093,6 @@ paths:
       tags:
       - Account
   /booking:
-    get:
-      consumes:
-      - application/json
-      description: Get bookings for a specific customer using query parameters
-      parameters:
-      - description: Customer ID
-        in: query
-        name: customerId
-        required: true
-        type: string
-      - description: Start date (YYYY-MM-DD)
-        in: query
-        name: startDate
-        type: string
-      - description: End date (YYYY-MM-DD)
-        in: query
-        name: endDate
-        type: string
-      - default: 0
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.FetchAllBookingsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get customer bookings
-      tags:
-      - Booking
     post:
       consumes:
       - application/json
@@ -1274,6 +1222,112 @@ paths:
       security:
       - BearerAuth: []
       summary: Get all bookings with filters
+      tags:
+      - Booking
+  /booking/customer:
+    get:
+      consumes:
+      - application/json
+      description: Get bookings for a specific customer using query parameters
+      parameters:
+      - description: Customer ID
+        in: query
+        name: customerId
+        required: true
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.FetchAllBookingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get customer bookings
+      tags:
+      - Booking
+  /booking/employee:
+    get:
+      consumes:
+      - application/json
+      description: Get bookings for a specific Employee using query parameters
+      parameters:
+      - description: Employee ID
+        in: query
+        name: employeeId
+        required: true
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.FetchAllBookingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get Employee bookings
       tags:
       - Booking
   /inventory:

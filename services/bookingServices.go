@@ -173,6 +173,27 @@ func (s *BookingService) GetCustomerBookings(
 
 	return result, nil
 }
+func (s *BookingService) GetEmployeeAssignedBookings(
+	ctx context.Context,
+	employeeId, startDate, endDate string,
+	page, limit int) (*types.FetchAllBookingsResponse, error) {
+
+	var result *types.FetchAllBookingsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		result, err = s.Tasks.FetchAllEmployeeAssignedBookings(ctx, tx, employeeId, startDate, endDate, page,
+			limit, s.Logger)
+
+		return err
+
+	}); err != nil {
+		s.Logger.Error("failed to fetch employee assigned bookings: %v", err)
+		return nil, err
+	}
+
+	return result, nil
+}
 func (s *BookingService) GetBookingByID(ctx context.Context, bookingID string) (*types.Booking, error)  {
 	var booking *types.Booking
 	

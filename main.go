@@ -7,6 +7,7 @@ import (
 	"handworks-api/handlers"
 	"handworks-api/middleware"
 	"handworks-api/realtime"
+	listeners "handworks-api/realtime/listeners"
 	"handworks-api/services"
 	"handworks-api/utils"
 	"os"
@@ -53,44 +54,59 @@ func main() {
 	logger.Info("Connected to Db")
 	defer conn.Close()
 
-	// websocket
-	hub := realtime.NewAdminHub()
-	go hub.Run()
-
-
+	
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
-		"/api/account/employee/signup","/api/account/admin/signup",
-		"/api/payment/quote/preview", "/health", }
-
+	"/api/account/employee/signup","/api/account/admin/signup",
+	"/api/payment/quote/preview", "/health", }
+	
+	// websocket
+	hubs := realtime.NewRealtimeHubs(logger)
+	
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
-
+	HealthCheck(router)
 	accountService := services.NewAccountService(conn, logger)
 	inventoryService := services.NewInventoryService(conn, logger)
 	paymentService := services.NewPaymentService(conn, logger)
 	bookingService := services.NewBookingService(conn, logger, paymentService)
-
+	
 	accountHandler := handlers.NewAccountHandler(accountService, logger)
 	inventoryHandler := handlers.NewInventoryHandler(inventoryService, logger)
 	bookingHandler := handlers.NewBookingHandler(bookingService, logger)
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
+	
 
-	go realtime.ListenBookingEvents(
-    c,
-	os.Getenv("DB_CONN_REALTIME"),
-    bookingService,
-    hub,
-    logger,
-)
-
+	
 	api := router.Group("/api")
 	{
 		endpoints.AccountEndpoint(api.Group("/account"), accountHandler)
 		endpoints.InventoryEndpoint(api.Group("/inventory"), inventoryHandler)
 		endpoints.BookingEndpoint(api.Group("/booking"), bookingHandler)
 		endpoints.PaymentEndpoint(api.Group("/payment"), paymentHandler)
-		endpoints.RealtimeEndpoint(api, hub)
+		endpoints.RealtimeEndpoint(api, hubs)
 	}
+	
+	// running websocket hubs
+	go hubs.EmployeeHub.Run()
+	go hubs.AdminHub.Run()
+	go hubs.ChatHub.Run()
+
+	// listeners
+	listener := listeners.NewListener(
+		c,
+		logger,
+		hubs,
+		os.Getenv("DB_CONN_REALTIME"),
+		bookingService,
+		inventoryService,
+	)
+	// listener events
+	go func() {
+		if err := listener.Start(); err != nil {
+			logger.Fatal("Listener failed: %v", err)
+		}
+	}()
+
 
 	port := "8080"
 	logger.Info("Starting server on port %s", port)

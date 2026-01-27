@@ -1,75 +1,86 @@
 package realtime
 
 import (
-	"encoding/json"
-	"net/http"
+	"handworks-api/utils"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool { return true },
+type RealtimeHubs struct {
+	EmployeeHub *EmployeeHub
+	AdminHub    *AdminHub
+	ChatHub     *ChatHub
 }
 
+func NewRealtimeHubs(log *utils.Logger) *RealtimeHubs {
+	return &RealtimeHubs{
+		EmployeeHub: NewEmployeeHub(log),
+		AdminHub:    NewAdminHub(log),
+		ChatHub:     NewChatHub(log),
+	}
+}
 type AdminHub struct {
+	log        *utils.Logger
 	clients    map[*websocket.Conn]bool
 	register   chan *websocket.Conn
 	unregister chan *websocket.Conn
 	broadcast  chan []byte
 }
 
-
-func NewAdminHub() *AdminHub {
+func NewAdminHub(log *utils.Logger) *AdminHub {
 	return &AdminHub{
+		log:        log,
 		clients:    make(map[*websocket.Conn]bool),
 		register:   make(chan *websocket.Conn),
 		unregister: make(chan *websocket.Conn),
 		broadcast:  make(chan []byte),
 	}
 }
-func (h *AdminHub) Run() {
-	for {
-		select {
-		case conn := <-h.register:
-			h.clients[conn] = true
-		case conn := <-h.unregister:
-			delete(h.clients, conn)
-			conn.Close()
+type EmployeeHub struct {
+	log        *utils.Logger
+	clients    map[string]map[*websocket.Conn]bool
+	register   chan employeeConn
+	unregister chan employeeConn
+}
 
-		case msg := <-h.broadcast:
-			for conn := range h.clients {
-				if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-					delete(h.clients, conn)
-					conn.Close()
-				}
-			}
-		}
+type employeeConn struct {
+	employeeID string
+	conn       *websocket.Conn
+}
+
+func NewEmployeeHub(log *utils.Logger) *EmployeeHub {
+	return &EmployeeHub{
+		log:        log,
+		clients:    make(map[string]map[*websocket.Conn]bool),
+		register:   make(chan employeeConn),
+		unregister: make(chan employeeConn),
 	}
 }
 
-func AdminWS(hub *AdminHub) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-		if err != nil {
-			return
-		}
-
-		hub.register <- conn
-	}
+type ChatHub struct {
+	log        *utils.Logger
+	rooms      map[string]map[*websocket.Conn]bool
+	register   chan chatConn
+	unregister chan chatConn
+	broadcast  chan chatMessage
 }
 
-func (h *AdminHub) Broadcast(event string, payload any) {
-	msg, err := json.Marshal(map[string]any{
-		"event": event,
-		"data":  payload,
-	})
-	if err != nil {
-		return
-	}
-	h.broadcast <- msg
+type chatConn struct {
+	roomID string
+	conn   *websocket.Conn
 }
 
+type chatMessage struct {
+	roomID string
+	data   []byte
+}
 
-
-
+func NewChatHub(log *utils.Logger) *ChatHub {
+	return &ChatHub{
+		log:        log,
+		rooms:      make(map[string]map[*websocket.Conn]bool),
+		register:   make(chan chatConn),
+		unregister: make(chan chatConn),
+		broadcast:  make(chan chatMessage),
+	}
+}

@@ -103,7 +103,7 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 
 }
 
-// GetBookingByUId godoc
+// GetCustomerBookings godoc
 // @Summary Get customer bookings
 // @Description Get bookings for a specific customer using query parameters
 // @Tags Booking
@@ -119,7 +119,7 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 401 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /booking [get]
+// @Router /booking/customer [get]
 func (h *BookingHandler) GetCustomerBookings(c *gin.Context) {
 	customerId := c.Query("customerId")
 	if customerId == "" {
@@ -163,6 +163,79 @@ func (h *BookingHandler) GetCustomerBookings(c *gin.Context) {
 	result, err := h.Service.GetCustomerBookings(ctx, customerId, startDate, endDate, page, limit)
 	if err != nil {
 		h.Logger.Error("failed to get customer bookings: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to fetch bookings",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   result,
+	})
+}
+
+// GetEmployeeAssignedBookings godoc
+// @Summary Get Employee bookings
+// @Description Get bookings for a specific Employee using query parameters
+// @Tags Booking
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param employeeId query string true "Employee ID"
+// @Param startDate query string false "Start date (YYYY-MM-DD)"
+// @Param endDate query string false "End date (YYYY-MM-DD)"
+// @Param page query int false "Page number" default(0)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} types.FetchAllBookingsResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 401 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/employee [get]
+func (h *BookingHandler) GetEmployeeAssignedBookings(c *gin.Context) {
+	employeeId := c.Query("employeeId")
+	if employeeId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "employeeId query parameter is required",
+		})
+		return
+	}
+
+	// Get date parameters
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+
+	// Pagination defaults
+	pageStr := c.DefaultQuery("page", "0")
+	limitStr := c.DefaultQuery("limit", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid page parameter",
+		})
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid limit parameter",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	// Pass empty strings (not nil pointers)
+	result, err := h.Service.GetEmployeeAssignedBookings(ctx, employeeId, startDate, endDate, page, limit)
+	if err != nil {
+		h.Logger.Error("failed to get employee bookings: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"message": "failed to fetch bookings",

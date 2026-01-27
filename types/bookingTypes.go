@@ -208,7 +208,4 @@ type FetchAllBookingsResponse struct {
 	BookingsRequested int       `json:"bookingsRequested"`
 	Bookings          []Booking `json:"bookings"`
 }
-type BookingEvent struct {
-	Type      string `json:"type"`
-	BookingID string `json:"bookingId"`
-}
+
