@@ -119,30 +119,36 @@ func (h *PaymentHandler) GetAllQuotesFromCustomer(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// Keep Swagger annotation as-is
 // GetQuoteByIDForCustomer godoc
-// @Summary Get a specific quotation by ID for a customer
-// @Security BearerAuth
-// @Description Retrieve a specific quotation for a customer, including main service and addons
-// @Tags Payment
+// @Summary Get quote by ID for a specific customer
+// @Description Retrieves a quote by ID that belongs to a specific customer
+// @Tags Quotes
 // @Accept json
 // @Produce json
-// @Param quoteId query string true "Quote ID"
+// @Param id path string true "Quote ID"
 // @Param customerId query string true "Customer ID"
 // @Success 200 {object} types.Quote
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 404 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/quote [get]
+// @Router /quote/{id} [get]
 func (h *PaymentHandler) GetQuoteByIDForCustomer(c *gin.Context) {
-	quoteId := c.Query("quoteId")
+	quoteId := c.Param("id")
 	customerId := c.Query("customerId")
 
+	h.Logger.Info("🔍 GetQuoteByIDForCustomer called")
+	h.Logger.Info("🔍 quoteId: %s", quoteId)
+	h.Logger.Info("🔍 customerId: %s", customerId)
+
 	if quoteId == "" {
+		h.Logger.Info("❌ quoteId is empty")
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("quoteId is required")))
 		return
 	}
 
 	if customerId == "" {
+		h.Logger.Info("❌ customerId is empty")
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("customerId is required")))
 		return
 	}
@@ -152,6 +158,7 @@ func (h *PaymentHandler) GetQuoteByIDForCustomer(c *gin.Context) {
 
 	quote, err := h.Service.GetQuoteByIDForCustomer(ctx, quoteId, customerId)
 	if err != nil {
+		h.Logger.Info("❌ Service error: %v", err)
 		if err.Error() == "quote not found for this customer" {
 			c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
 		} else {
@@ -160,5 +167,6 @@ func (h *PaymentHandler) GetQuoteByIDForCustomer(c *gin.Context) {
 		return
 	}
 
+	h.Logger.Info("✅ Found quote: %s", quote.ID)
 	c.JSON(http.StatusOK, quote)
 }
