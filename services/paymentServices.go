@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 )
+
 func (s *PaymentService) withTx(
 	ctx context.Context,
 	fn func(pgx.Tx) error,
@@ -33,7 +34,7 @@ func (s *PaymentService) GetQuotePrices(ctx context.Context, quoteId string) (*t
 	defer cancel()
 	var prices *types.CleaningPrices
 	if err := s.withTx(dbCtx, func(tx pgx.Tx) error {
-		cleaningPrices, err := s.Tasks.VerifyQuoteAndFetchPrices(ctx, tx, quoteId)
+		cleaningPrices, err := s.Tasks.VerifyQuoteAndFetchPrices(dbCtx, tx, quoteId)
 		if err != nil {
 			return err
 		}
@@ -46,7 +47,7 @@ func (s *PaymentService) GetQuotePrices(ctx context.Context, quoteId string) (*t
 	return prices, nil
 }
 
-func (s* PaymentService) MakePublicQuotation(ctx context.Context, req types.QuoteRequest) (*types.QuoteResponse, error) {
+func (s *PaymentService) MakePublicQuotation(ctx context.Context, req types.QuoteRequest) (*types.QuoteResponse, error) {
 	s.Logger.Info("Generating Quote Preview")
 	quotePrev, err := s.Tasks.CalculateQuotePreview(ctx, &req)
 	if err != nil {
@@ -55,19 +56,18 @@ func (s* PaymentService) MakePublicQuotation(ctx context.Context, req types.Quot
 	}
 	addonsBreakdown := s.Tasks.MapAddonstoAddonBreakdown(&quotePrev.Addons)
 	return &types.QuoteResponse{
-		QuoteId: quotePrev.ID,
-		MainServiceName: quotePrev.MainService,
-		MainServiceTotal: quotePrev.TotalPrice,
-		TotalPrice: quotePrev.TotalPrice,
-		AddonTotal: quotePrev.AddonTotal,
-		Addons: addonsBreakdown,
+		QuoteId:          quotePrev.ID,
+		MainServiceName:  quotePrev.MainService,
+		MainServiceTotal: quotePrev.Subtotal,
+		TotalPrice:       quotePrev.TotalPrice,
+		AddonTotal:       quotePrev.AddonTotal,
+		Addons:           addonsBreakdown,
 	}, nil
 }
 
-
 func (s *PaymentService) MakeQuotation(ctx context.Context, req types.QuoteRequest) (*types.QuoteResponse, error) {
 	var quoteResponse types.QuoteResponse
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		quote, err := s.Tasks.CreateQuote(ctx, tx, &req)
 		if err != nil {
 			return fmt.Errorf("failed to create Quote: %v", err)
@@ -87,24 +87,23 @@ func (s *PaymentService) MakeQuotation(ctx context.Context, req types.QuoteReque
 }
 
 func (s *PaymentService) GetAllQuotesFromCustomer(
-    ctx context.Context,
-    customerId, startDate, endDate string,
-    page, limit int,
+	ctx context.Context,
+	customerId, startDate, endDate string,
+	page, limit int,
 ) (*types.FetchAllQuotesResponse, error) {
 
-    var result *types.FetchAllQuotesResponse
+	var result *types.FetchAllQuotesResponse
 
-    if err := s.withTx(ctx, func(tx pgx.Tx) error {
-        var err error
-        result, err = s.Tasks.FetchAllQuotes(
-            ctx, tx, customerId, startDate, endDate, page, limit, s.Logger,
-        )
-        return err
-    }); err != nil {
-        s.Logger.Error("Failed to fetch Quotes: %v", err)
-        return nil, err
-    }
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		result, err = s.Tasks.FetchAllQuotes(
+			ctx, tx, customerId, startDate, endDate, page, limit, s.Logger,
+		)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch Quotes: %v", err)
+		return nil, err
+	}
 
-    return result, nil
+	return result, nil
 }
-

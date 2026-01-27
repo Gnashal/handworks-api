@@ -11,8 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-type PaymentTasks struct {}
-
+type PaymentTasks struct{}
 
 func CalculateGeneralCleaning(details *types.GeneralCleaningDetails) float32 {
 	if details == nil {
@@ -127,6 +126,11 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 		Details:     in.Service.Details,
 	}
 
+	mainServiceDetail, err := json.Marshal(in.Service)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal main service: %v", err)
+	}
+
 	subtotal := t.CalculatePriceByServiceType(mainService)
 	var addonTotal float32 = 0
 
@@ -153,27 +157,28 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 	}
 
 	dbQuote = types.Quote{
-		ID: 		"",	
-		CustomerID:  in.CustomerID, // will be empty
-		MainService: string(in.Service.ServiceType),
-		Subtotal:    subtotal,
-		AddonTotal:  addonTotal,
-		TotalPrice:  subtotal + addonTotal,
-		IsValid:     false, // marked as preview only so di siya valid
-		CreatedAt:   time.Now(),
-		Addons:      dbAddons,
+		ID:                "",
+		CustomerID:        in.CustomerID, // will be empty
+		MainService:       string(in.Service.ServiceType),
+		MainServiceDetail: mainServiceDetail,
+		Subtotal:          subtotal,
+		AddonTotal:        addonTotal,
+		TotalPrice:        subtotal + addonTotal,
+		IsValid:           false, // marked as preview only so di siya valid
+		CreatedAt:         time.Now(),
+		Addons:            dbAddons,
 	}
 
 	return &dbQuote, nil
 }
-func (t* PaymentTasks) MapAddonstoAddonBreakdown(addons* []*types.QuoteAddon) []types.AddOnBreakdown {
+func (t *PaymentTasks) MapAddonstoAddonBreakdown(addons *[]*types.QuoteAddon) []types.AddOnBreakdown {
 	var breakdowns []types.AddOnBreakdown
 	if addons != nil && len(*addons) > 0 {
 		for _, addon := range *addons {
-		breakdown := types.AddOnBreakdown{
-			AddonID:   addon.ID,
-			AddonName: addon.ServiceType,
-			Price:     float64(addon.AddonPrice),
+			breakdown := types.AddOnBreakdown{
+				AddonID:   addon.ID,
+				AddonName: addon.ServiceType,
+				Price:     float64(addon.AddonPrice),
 			}
 			breakdowns = append(breakdowns, breakdown)
 		}
@@ -185,10 +190,16 @@ func (t* PaymentTasks) MapAddonstoAddonBreakdown(addons* []*types.QuoteAddon) []
 func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.QuoteRequest) (*types.Quote, error) {
 	var dbQuote types.Quote
 	var dbAddons []*types.QuoteAddon
+	var mainServiceDetail []byte
 
 	mainService := &types.ServicesRequest{
 		ServiceType: in.Service.ServiceType,
 		Details:     in.Service.Details,
+	}
+
+	mainServiceDetail, marshalErr := json.Marshal(in.Service)
+	if marshalErr != nil {
+		return nil, fmt.Errorf("failed to marshal main service: %v", marshalErr)
 	}
 
 	// Calc subtotal for main service
@@ -225,12 +236,22 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 
 	// Insert into quote table
 	err := tx.QueryRow(c, `
-		INSERT INTO payment.quotes (customer_id, main_service_type, subtotal, addon_total, total_price, is_valid)
-		VALUES ($1, $2, $3, $4, $5, TRUE)
-		RETURNING id, customer_id, main_service_type, subtotal, addon_total, total_price, is_valid, created_at, updated_at
+		INSERT INTO payment.quotes (
+			customer_id,
+			main_service_type,
+			main_service_detail,
+			subtotal,
+			addon_total,
+			total_price,
+			is_valid
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+		RETURNING id, customer_id, main_service_type, main_service_detail,
+		          subtotal, addon_total, total_price, is_valid, created_at, updated_at
 	`,
 		in.CustomerID,
 		in.Service.ServiceType,
+		mainServiceDetail,
 		subtotal,
 		addonTotal,
 		totalPrice,
@@ -238,6 +259,7 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 		&dbQuote.ID,
 		&dbQuote.CustomerID,
 		&dbQuote.MainService,
+		&dbQuote.MainServiceDetail,
 		&dbQuote.Subtotal,
 		&dbQuote.AddonTotal,
 		&dbQuote.TotalPrice,
@@ -245,10 +267,10 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 		&dbQuote.CreatedAt,
 		&dbQuote.UpdatedAt,
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert quote: %v", err)
 	}
-
 	// insert addons
 	for _, addon := range dbAddons {
 		err := tx.QueryRow(c, `
@@ -271,7 +293,7 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 	dbQuote.Addons = dbAddons
 	return &dbQuote, nil
 }
-func(t* PaymentTasks) VerifyQuoteAndFetchPrices(ctx context.Context, tx pgx.Tx, quoteId string) (*types.CleaningPrices, error) {
+func (t *PaymentTasks) VerifyQuoteAndFetchPrices(ctx context.Context, tx pgx.Tx, quoteId string) (*types.CleaningPrices, error) {
 	var prices types.CleaningPrices
 
 	var dbQuote types.Quote
@@ -320,29 +342,28 @@ func(t* PaymentTasks) VerifyQuoteAndFetchPrices(ctx context.Context, tx pgx.Tx, 
 	return &prices, nil
 }
 func (t *PaymentTasks) FetchAllQuotes(
-    ctx context.Context,
-    tx pgx.Tx,
-    customerId, startDate, endDate string,
-    page, limit int,
-    logger *utils.Logger,
+	ctx context.Context,
+	tx pgx.Tx,
+	customerId, startDate, endDate string,
+	page, limit int,
+	logger *utils.Logger,
 ) (*types.FetchAllQuotesResponse, error) {
 
-    var rawJSON []byte
-    err := tx.QueryRow(ctx,
-        `SELECT payment.get_quotes_by_customer($1, $2, $3, $4, $5)`,
-        customerId, startDate, endDate, page, limit,
-    ).Scan(&rawJSON)
+	var rawJSON []byte
+	err := tx.QueryRow(ctx,
+		`SELECT payment.get_quotes_by_customer($1, $2, $3, $4, $5)`,
+		customerId, startDate, endDate, page, limit,
+	).Scan(&rawJSON)
 
-    if err != nil {
-        return nil, fmt.Errorf("failed calling sproc get_quotes_by_customer: %w", err)
-    }
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_quotes_by_customer: %w", err)
+	}
 
-    var response types.FetchAllQuotesResponse
-    if err := json.Unmarshal(rawJSON, &response); err != nil {
-        logger.Error("failed to unmarshal quotes JSON: %v", err)
-        return nil, fmt.Errorf("unmarshal quotes: %w", err)
-    }
+	var response types.FetchAllQuotesResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal quotes JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal quotes: %w", err)
+	}
 
-    return &response, nil
+	return &response, nil
 }
-
