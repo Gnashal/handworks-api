@@ -12,67 +12,210 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func ListenBookingEvents(
-	ctx context.Context,
-	connString string,
-	bookingService *services.BookingService,
-	hub *realtime.AdminHub,
-	logger *utils.Logger,
-) {
+type Listener struct {
+	ctx context.Context;
+	log *utils.Logger;
+	hub *realtime.RealtimeHubs;
+	listener *pq.Listener;
+	bookingService *services.BookingService;
+}
 
-	listener := pq.NewListener(
-		connString,
-		10*time.Second,
-		time.Minute,
-		func(ev pq.ListenerEventType, err error) {
-			if err != nil {
-				logger.Error("Listener error: %v", err)
-			}
-		},
-	)
-	err := listener.Listen("booking_created")
-	if err != nil {
-		logger.Fatal("Failed to start listening to booking_created: %v", err)
-		return
+func NewListener(ctx context.Context, log *utils.Logger, hub *realtime.RealtimeHubs, connString string, bookingService *services.BookingService) *Listener {
+	return &Listener{
+		ctx: ctx,
+		log: log,
+		hub: hub,
+		listener: pq.NewListener(
+			connString,
+			10*time.Second,
+			time.Minute,
+			func(ev pq.ListenerEventType, err error) {
+				if err != nil {
+					log.Error("Listener error: %v", err)
+				}
+			},
+		),
+		bookingService:	bookingService,
+	}
+}
+func (l *Listener) Start() error {
+	if err := l.listener.Listen("booking_created"); err != nil {
+		return err
+	}
+	if err := l.listener.Listen("booking_accepted"); err != nil {
+		return err
 	}
 
-	logger.Info("Listening to booking_created events via lib/pq")
+	l.log.Info("Started listening to booking_created and booking_accepted")
 
 	go func() {
 		for {
 			select {
-			case <-ctx.Done():
-				logger.Info("Shutting down booking listener")
-				_ = listener.UnlistenAll()
+			case <-l.ctx.Done():
+				l.log.Info("Shutting down PG listener")
+				_ = l.listener.UnlistenAll()
 				return
-			case n := <-listener.Notify:
+
+			case n := <-l.listener.Notify:
 				if n == nil {
 					continue
 				}
-				logger.Debug("Listen payload: %s", n.Extra)
 
-				var evt = struct {
-					Type      string `json:"type"`
-					BookingID string `json:"bookingId"`
-				}{}
-				if err := json.Unmarshal([]byte(n.Extra), &evt); err != nil {
-					logger.Error("Failed to unmarshal booking event: %v", err)
-					continue
-				}
+				l.dispatch(n.Channel, n.Extra)
 
-				booking, err := bookingService.GetBookingByID(ctx, evt.BookingID)
-				if err != nil {
-					logger.Error("Failed to get booking by ID: %v", err)
-					continue
-				}
-
-				hub.SendToAdmin("booking.created", booking)
 			case <-time.After(90 * time.Second):
-				err := listener.Ping()
-				if err != nil {
-					logger.Error("Listener ping error: %v", err)
+				if err := l.listener.Ping(); err != nil {
+					l.log.Error("Listener ping error: %v", err)
 				}
 			}
 		}
 	}()
+
+	return nil
 }
+func (l *Listener) dispatch(channel string, payload string) {
+	switch channel {
+
+	case "booking_created":
+		l.handleBookingCreated(payload)
+
+	case "booking_accepted":
+		l.handleBookingAccepted(payload)
+
+	default:
+		l.log.Warn("Unhandled channel: %s", channel)
+	}
+}
+func (l *Listener) handleBookingAccepted(payload string) {
+	l.log.Debug("booking_accepted payload: %s", payload)
+
+	var evt = struct {
+		Event      string   `json:"event"`
+		BookingID string   `json:"bookingId"`
+		CleanerIDs []string `json:"cleanerIds"`
+	}{}
+
+	if err := json.Unmarshal([]byte(payload), &evt); err != nil {
+		l.log.Error("Invalid booking_accepted payload: %v", err)
+		return
+	}
+
+	booking, err := l.bookingService.GetBookingByID(l.ctx, evt.BookingID)
+	if err != nil {
+		l.log.Error("Failed to fetch booking: %v", err)
+		return
+	}
+
+	for _, cleanerID := range evt.CleanerIDs {
+		l.hub.EmployeeHub.SendToEmployee(cleanerID, "booking.accepted", booking)
+	}
+}
+func (l *Listener) handleBookingCreated(payload string) {
+	l.log.Debug("booking_created payload: %s", payload)
+	var evt = struct {
+		Type      string `json:"type"`
+		BookingID string `json:"bookingId"`
+	}{}
+	if err := json.Unmarshal([]byte(payload), &evt); err != nil {
+		l.log.Error("Failed to unmarshal booking event: %v", err)
+			return	
+		}
+	booking, err := l.bookingService.GetBookingByID(l.ctx, evt.BookingID)
+		if err != nil {
+			l.log.Error("Failed to get booking by ID: %v", err)
+			return
+		}
+
+		l.hub.AdminHub.SendToAdmin("booking.created", booking)
+	}
+
+
+// func (l *Listener) ListenBookingEvents(bookingService *services.BookingService) error {
+// 	err := l.listener.Listen("booking_created")
+// 	if err != nil {
+// 		l.log.Fatal("Failed to start listening to booking_created: %v", err)
+// 		return err
+// 	}
+// 	l.log.Info("Started listening to booking_created events")
+// 		for {
+// 			select {
+// 			case <-l.ctx.Done():
+// 				l.log.Info("Shutting down booking listener")
+// 				_ = l.listener.UnlistenAll()
+// 				return err
+// 			case n := <-l.listener.Notify:
+// 				if n == nil {
+// 					continue
+// 				}
+// 				l.log.Debug("Listen payload: %s", n.Extra)
+
+// 				var evt = struct {
+// 					Type      string `json:"type"`
+// 					BookingID string `json:"bookingId"`
+// 				}{}
+// 				if err := json.Unmarshal([]byte(n.Extra), &evt); err != nil {
+// 					l.log.Error("Failed to unmarshal booking event: %v", err)
+// 					continue
+// 				}
+
+// 				booking, err := bookingService.GetBookingByID(l.ctx, evt.BookingID)
+// 				if err != nil {
+// 					l.log.Error("Failed to get booking by ID: %v", err)
+// 					continue
+// 				}
+
+// 				l.hub.AdminHub.SendToAdmin("booking.created", booking)
+// 			case <-time.After(90 * time.Second):
+// 				err := l.listener.Ping()
+// 				if err != nil {
+// 					l.log.Error("Listener ping error: %v", err)
+// 				}
+// 			}
+// 		}
+// }
+// func (l* Listener) ListenBookingAcceptedEvents(bookingService *services.BookingService) error {
+// 	err := l.listener.Listen("booking_accepted")
+// 	if err != nil {
+// 		l.log.Fatal("Failed to start listening to booking_accepted: %v", err)
+// 		return err
+// 	}
+// 	l.log.Info("Started listening to booking_accepted events")
+// 		for {
+// 			select {
+// 			case <-l.ctx.Done():
+// 				l.log.Info("Shutting down booking accepted listener")
+// 				_ = l.listener.UnlistenAll()
+// 				return err
+// 			case n := <-l.listener.Notify:
+// 				if n == nil {
+// 					continue
+// 				}
+// 				l.log.Debug("Listen payload: %s", n.Extra)
+
+// 				var evt = struct {
+// 					Event      	string 	`json:"event"`
+// 					EmployeeIds []string `json:"cleanerIds"`
+// 					BookingID 	string `json:"bookingId"`
+// 				}{}
+// 				if err := json.Unmarshal([]byte(n.Extra), &evt); err != nil {
+// 					l.log.Error("Failed to unmarshal booking accepted event: %v", err)
+// 					continue
+// 				}
+
+// 				booking, err := bookingService.GetBookingByID(l.ctx, evt.BookingID)
+// 				if err != nil {
+// 					l.log.Error("Failed to get booking by ID: %v", err)
+// 					continue
+// 				}
+// 				for _, empId := range evt.EmployeeIds {
+// 					l.hub.EmployeeHub.SendToEmployee(empId, "booking.accepted", booking)
+// 				}
+// 			case <-time.After(90 * time.Second):
+// 				err := l.listener.Ping()
+// 				if err != nil {
+// 					l.log.Error("Listener ping error: %v", err)
+// 				}
+// 			}
+// 		}
+// }
+

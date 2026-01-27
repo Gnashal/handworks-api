@@ -75,13 +75,7 @@ func main() {
 	bookingHandler := handlers.NewBookingHandler(bookingService, logger)
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
 	
-	go listeners.ListenBookingEvents(
-		c,
-		os.Getenv("DB_CONN_REALTIME"),
-		bookingService,
-		hubs.AdminHub,
-		logger,
-	)
+
 	
 	api := router.Group("/api")
 	{
@@ -96,6 +90,21 @@ func main() {
 	go hubs.EmployeeHub.Run()
 	go hubs.AdminHub.Run()
 	go hubs.ChatHub.Run()
+
+	// listeners
+	listener := listeners.NewListener(
+		c,
+		logger,
+		hubs,
+		os.Getenv("DB_CONN_REALTIME"),
+		bookingService,
+	)
+	// listener events
+	go func() {
+		if err := listener.Start(); err != nil {
+			logger.Fatal("Listener failed: %v", err)
+		}
+	}()
 
 
 	port := "8080"
