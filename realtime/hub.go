@@ -84,4 +84,3 @@ func NewChatHub(log *utils.Logger) *ChatHub {
 		broadcast:  make(chan chatMessage),
 	}
 }
-

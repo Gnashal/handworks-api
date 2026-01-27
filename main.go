@@ -98,6 +98,7 @@ func main() {
 		hubs,
 		os.Getenv("DB_CONN_REALTIME"),
 		bookingService,
+		inventoryService,
 	)
 	// listener events
 	go func() {
