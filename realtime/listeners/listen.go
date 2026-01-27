@@ -46,7 +46,7 @@ func (l *Listener) Start() error {
 		return err
 	}
 
-	l.log.Info("Started listening to booking_created and booking_accepted")
+	l.log.Info("Started listening to events")
 
 	go func() {
 		for {
