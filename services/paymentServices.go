@@ -108,7 +108,7 @@ func (s *PaymentService) GetAllQuotesFromCustomer(
 	return result, nil
 }
 
-func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, customerId string) (*types.Quote, error) {
+func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, customerId string) (*types.QuoteResponse, error) {
 	if quoteId == "" {
 		return nil, fmt.Errorf("quoteId is required")
 	}
@@ -116,7 +116,7 @@ func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, c
 		return nil, fmt.Errorf("customerId is required")
 	}
 
-	var quote *types.Quote
+	var quote *types.QuoteResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error

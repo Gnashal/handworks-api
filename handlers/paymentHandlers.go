@@ -123,7 +123,7 @@ func (h *PaymentHandler) GetAllQuotesFromCustomer(c *gin.Context) {
 // GetQuoteByIDForCustomer godoc
 // @Summary Get quote by ID for a specific customer
 // @Description Retrieves a quote by ID that belongs to a specific customer
-// @Tags Quotes
+// @Tags Payment
 // @Accept json
 // @Produce json
 // @Param id path string true "Quote ID"
@@ -132,11 +132,10 @@ func (h *PaymentHandler) GetAllQuotesFromCustomer(c *gin.Context) {
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 404 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /quote/{id} [get]
+// @Router /payment/quote/{id} [get]
 func (h *PaymentHandler) GetQuoteByIDForCustomer(c *gin.Context) {
 	quoteId := c.Param("id")
 	customerId := c.Query("customerId")
-
 	h.Logger.Info("🔍 GetQuoteByIDForCustomer called")
 	h.Logger.Info("🔍 quoteId: %s", quoteId)
 	h.Logger.Info("🔍 customerId: %s", customerId)
@@ -167,6 +166,7 @@ func (h *PaymentHandler) GetQuoteByIDForCustomer(c *gin.Context) {
 		return
 	}
 
-	h.Logger.Info("✅ Found quote: %s", quote.ID)
+	// FIXED: Changed from quote.ID to quote.QuoteId
+	h.Logger.Info("✅ Found quote: %s", quote.QuoteId)
 	c.JSON(http.StatusOK, quote)
 }

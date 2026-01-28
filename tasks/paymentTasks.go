@@ -158,13 +158,13 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 
 	dbQuote = types.Quote{
 		ID:                "",
-		CustomerID:        in.CustomerID, // will be empty
+		CustomerID:        in.CustomerID,
 		MainService:       string(in.Service.ServiceType),
 		MainServiceDetail: mainServiceDetail,
 		Subtotal:          subtotal,
 		AddonTotal:        addonTotal,
 		TotalPrice:        subtotal + addonTotal,
-		IsValid:           false, // marked as preview only so di siya valid
+		IsValid:           false,
 		CreatedAt:         time.Now(),
 		Addons:            dbAddons,
 	}
@@ -368,7 +368,7 @@ func (t *PaymentTasks) FetchAllQuotes(
 	return &response, nil
 }
 
-func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, quoteId, customerId string) (*types.Quote, error) {
+func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, quoteId, customerId string) (*types.QuoteResponse, error) {
 	if quoteId == "" {
 		return nil, fmt.Errorf("quoteId is required")
 	}
@@ -376,24 +376,14 @@ func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, 
 		return nil, fmt.Errorf("customerId is required")
 	}
 
-	var dbQuote types.Quote
+	var quoteResponse types.QuoteResponse
+	var responseJSON []byte
 
+	// Call the stored procedure
 	err := tx.QueryRow(ctx, `
-		SELECT id, customer_id, main_service_type, main_service_detail, subtotal, addon_total, total_price, is_valid, created_at, updated_at
-		FROM payment.quotes
-		WHERE id = $1 AND customer_id = $2
-	`, quoteId, customerId).Scan(
-		&dbQuote.ID,
-		&dbQuote.CustomerID,
-		&dbQuote.MainService,
-		&dbQuote.MainServiceDetail,
-		&dbQuote.Subtotal,
-		&dbQuote.AddonTotal,
-		&dbQuote.TotalPrice,
-		&dbQuote.IsValid,
-		&dbQuote.CreatedAt,
-		&dbQuote.UpdatedAt,
-	)
+		SELECT payment.get_customer_quote($1::uuid, $2::uuid)
+	`, quoteId, customerId).Scan(&responseJSON)
+
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("quote not found for this customer")
@@ -401,32 +391,10 @@ func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, 
 		return nil, fmt.Errorf("failed to fetch quote: %w", err)
 	}
 
-	rows, err := tx.Query(ctx, `
-		SELECT id, service_type, service_detail, addon_price, created_at
-		FROM payment.quote_addons
-		WHERE quote_id = $1
-	`, quoteId)
-	if err != nil {
-		return &dbQuote, fmt.Errorf("failed to fetch addons: %w", err)
-	}
-	defer rows.Close()
-
-	var addons []*types.QuoteAddon
-	for rows.Next() {
-		var addon types.QuoteAddon
-		if err := rows.Scan(
-			&addon.ID,
-			&addon.ServiceType,
-			&addon.ServiceDetail,
-			&addon.AddonPrice,
-			&addon.CreatedAt,
-		); err != nil {
-			return &dbQuote, fmt.Errorf("failed to scan addon: %w", err)
-		}
-		addon.QuoteID = dbQuote.ID
-		addons = append(addons, &addon)
+	// Parse JSON into QuoteResponse struct
+	if err := json.Unmarshal(responseJSON, &quoteResponse); err != nil {
+		return nil, fmt.Errorf("failed to parse quote response: %w", err)
 	}
 
-	dbQuote.Addons = addons
-	return &dbQuote, nil
+	return &quoteResponse, nil
 }

@@ -42,12 +42,13 @@ type QuoteCleaningPrices struct {
 	AddonPrices      []AddonCleaningPrice `json:"addonPrices"`
 }
 type QuoteResponse struct {
-	QuoteId          string           `json:"quote_id"`
-	MainServiceName  string           `json:"mainServiceName"`
-	MainServiceTotal float32          `json:"mainServiceTotal"`
-	AddonTotal       float32          `json:"addonTotal"`
-	TotalPrice       float32          `json:"totalPrice"`
-	Addons           []AddOnBreakdown `json:"addons"`
+	QuoteId           string           `json:"quoteId" db:"quote_id"`
+	MainServiceName   string           `json:"mainServiceName"`
+	MainServiceDetail json.RawMessage  `json:"mainServiceDetail" swaggertype:"object"`
+	MainServiceTotal  float32          `json:"mainServiceTotal"`
+	AddonTotal        float32          `json:"addonTotal"`
+	TotalPrice        float32          `json:"totalPrice"`
+	Addons            []AddOnBreakdown `json:"addons"`
 }
 
 // QuoteRequest represents the data needed to build a quotation.
