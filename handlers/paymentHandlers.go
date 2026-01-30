@@ -122,19 +122,20 @@ func (h *PaymentHandler) GetAllQuotesFromCustomer(c *gin.Context) {
 // Keep Swagger annotation as-is
 // GetQuoteByIDForCustomer godoc
 // @Summary Get quote by ID for a specific customer
+// @Security BearerAuth
 // @Description Retrieves a quote by ID that belongs to a specific customer
 // @Tags Payment
 // @Accept json
 // @Produce json
-// @Param id path string true "Quote ID"
+// @Param quoteId query string true "Quote ID"
 // @Param customerId query string true "Customer ID"
 // @Success 200 {object} types.Quote
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 404 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/quote/{id} [get]
+// @Router /payment/quote [get]
 func (h *PaymentHandler) GetQuoteByIDForCustomer(c *gin.Context) {
-	quoteId := c.Param("id")
+	quoteId := c.Query("quoteId")
 	customerId := c.Query("customerId")
 	h.Logger.Info("🔍 GetQuoteByIDForCustomer called")
 	h.Logger.Info("🔍 quoteId: %s", quoteId)
