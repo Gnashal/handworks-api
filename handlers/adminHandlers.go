@@ -15,7 +15,8 @@ import (
 // @Tags Admin
 // @Accept json
 // @Produce json
-// @Param input body types.AdminDashboardRequest true "Admin dashboard data"
+// @Param adminId query string true "Admin ID"
+// @Param dateFilter query string false "Date filter (year, month, week)"
 // @Success 200 {object} types.AdminDashboardResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
@@ -23,6 +24,12 @@ import (
 func (h *AdminHandler) GetAdminDashboard(c *gin.Context) {
 	adminId := c.Query("adminId")
 	dateFilter := c.Query("dateFilter")
+
+	// if (adminId == "") {
+	// 	c.JSON(http.StatusForbidden, types.NewErrorResponse(errors.New("You are not an admin")))
+	// 	return
+	// }
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	req := &types.AdminDashboardRequest {

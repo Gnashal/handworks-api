@@ -29,5 +29,16 @@ func (s *AdminService) withTx(
 }
 
 func (s *AdminService) GetAdminDashboard(ctx context.Context, req *types.AdminDashboardRequest) (*types.AdminDashboardResponse, error) {
-	return nil, nil
+		var res *types.AdminDashboardResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		res, err = s.Tasks.FetchAdminDashboardData(ctx, tx, s.Logger, req.DateFilter)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch Quotes: %v", err)
+		return nil, err
+	}
+
+	return res, nil
 }

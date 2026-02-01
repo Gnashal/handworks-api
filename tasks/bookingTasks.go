@@ -420,6 +420,7 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 	logger *utils.Logger,
 ) (*types.FetchAllBookingsResponse, error) {
 	var rawJSON []byte
+	var response types.FetchAllBookingsResponse
 	err := tx.QueryRow(ctx,
 		`SELECT booking.get_bookings_by_cleaner($1, $2, $3, $4, $5)`,
 		employeeId, startDate, endDate, page, limit,
@@ -428,7 +429,6 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 		return nil, fmt.Errorf("failed calling sproc get_bookings_by_employee: %w", err)
 	}
 
-	var response types.FetchAllBookingsResponse
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}
