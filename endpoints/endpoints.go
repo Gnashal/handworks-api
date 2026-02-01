@@ -59,6 +59,10 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 
 }
 
+func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
+	r.GET("/dashboard", h.GetAdminDashboard)
+}
+
 func RealtimeEndpoint(r *gin.RouterGroup,hubs * realtime.RealtimeHubs) {
 	r.GET("/ws/admin", realtime.AdminWS(hubs.AdminHub))
 	r.GET("/ws/employee", realtime.EmployeeWS(hubs.EmployeeHub))
