@@ -396,5 +396,21 @@ func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, 
 		return nil, fmt.Errorf("failed to parse quote response: %w", err)
 	}
 
+	// Filter out empty addons
+	var validAddons []types.AddOnBreakdown
+	for _, addon := range quoteResponse.Addons {
+		if addon.AddonName != "" && addon.Price > 0 {
+			validAddons = append(validAddons, addon)
+		}
+	}
+	quoteResponse.Addons = validAddons
+
+	// Also ensure addonTotal matches filtered addons
+	var filteredAddonTotal float32 = 0
+	for _, addon := range validAddons {
+		filteredAddonTotal += float32(addon.Price)
+	}
+	quoteResponse.AddonTotal = filteredAddonTotal
+
 	return &quoteResponse, nil
 }
