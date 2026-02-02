@@ -58,7 +58,7 @@ func main() {
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
 	"/api/account/employee/signup","/api/account/admin/signup",
-	"/api/payment/quote/preview", "/health", }
+	"/api/payment/quote/preview", "/health", "/api/admin/dashboard" }
 	
 	// websocket
 	hubs := realtime.NewRealtimeHubs(logger)
@@ -69,11 +69,13 @@ func main() {
 	inventoryService := services.NewInventoryService(conn, logger)
 	paymentService := services.NewPaymentService(conn, logger)
 	bookingService := services.NewBookingService(conn, logger, paymentService)
+	adminServie := services.NewAdminService(conn, logger)
 	
 	accountHandler := handlers.NewAccountHandler(accountService, logger)
 	inventoryHandler := handlers.NewInventoryHandler(inventoryService, logger)
 	bookingHandler := handlers.NewBookingHandler(bookingService, logger)
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
+	adminHandler := handlers.NewAdminHandler(adminServie, logger)
 	
 
 	
@@ -83,6 +85,7 @@ func main() {
 		endpoints.InventoryEndpoint(api.Group("/inventory"), inventoryHandler)
 		endpoints.BookingEndpoint(api.Group("/booking"), bookingHandler)
 		endpoints.PaymentEndpoint(api.Group("/payment"), paymentHandler)
+		endpoints.AdminEndpoint(api.Group("/admin"), adminHandler)
 		endpoints.RealtimeEndpoint(api, hubs)
 	}
 	

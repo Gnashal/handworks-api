@@ -101,5 +101,6 @@ func (s *InventoryService) DeleteItem(ctx context.Context, id string) (*types.In
 }
 func (s *InventoryService) AssignEquipmentAndResources (ctx context.Context, req* types.CreateBookingRequest) (*types.CleaningAllocation, error) {
 	// TODO: implement assignment logic
+	
 	return nil, nil
 }

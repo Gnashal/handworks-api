@@ -555,6 +555,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/dashboard": {
+            "get": {
+                "description": "Fetch data for admin dashboard",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Fetch data for admin dashboard",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Admin ID",
+                        "name": "adminId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Date filter (year, month, week)",
+                        "name": "dateFilter",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AdminDashboardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking": {
             "post": {
                 "security": [
@@ -1460,6 +1510,23 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                }
+            }
+        },
+        "types.AdminDashboardResponse": {
+            "type": "object",
+            "properties": {
+                "activeSessions": {
+                    "type": "integer"
+                },
+                "bookings": {
+                    "type": "integer"
+                },
+                "clients": {
+                    "type": "integer"
+                },
+                "sales": {
+                    "type": "integer"
                 }
             }
         },
