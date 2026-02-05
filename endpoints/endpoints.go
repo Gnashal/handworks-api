@@ -13,7 +13,6 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 		customer.POST("/signup", h.SignUpCustomer)
 		customer.GET("/:id", h.GetCustomer)
 		customer.PUT("/:id", h.UpdateCustomer)
-		// Route should be like this in your router:
 		customer.DELETE("/:id/:accId", h.DeleteCustomer)
 
 	}
@@ -42,9 +41,16 @@ func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
 func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.POST("/", h.CreateBooking)
 	r.GET("/bookings", h.GetBookings)
-	r.GET("/", h.GetCustomerBookings)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)
+	customers := r.Group("/customer")
+	{
+		customers.GET("/", h.GetCustomerBookings)
+	}
+	employees := r.Group("/employee")
+	{
+		employees.GET("/", h.GetEmployeeAssignedBookings)
+	}
 }
 func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	r.POST("/quote", h.MakeQuotation)
@@ -53,7 +59,12 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	r.GET("/quote", h.GetQuoteByIDForCustomer)
 }
 
-func RealtimeEndpoint(r *gin.RouterGroup, hub *realtime.AdminHub) {
-	// admin websocket endpoint
-	r.GET("/ws/admin", realtime.AdminWS(hub))
+func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
+	r.GET("/dashboard", h.GetAdminDashboard)
+}
+
+func RealtimeEndpoint(r *gin.RouterGroup,hubs * realtime.RealtimeHubs) {
+	r.GET("/ws/admin", realtime.AdminWS(hubs.AdminHub))
+	r.GET("/ws/employee", realtime.EmployeeWS(hubs.EmployeeHub))
+	r.GET("/ws/chat", realtime.ChatWS(hubs.ChatHub))
 }

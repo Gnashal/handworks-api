@@ -54,3 +54,14 @@ type PaymentService struct {
 func NewPaymentService(db *pgxpool.Pool, logger *utils.Logger) *PaymentService {
 	return &PaymentService{DB: db, Logger: logger, Tasks: &tasks.PaymentTasks{}}
 }
+
+// Admin Service
+type AdminService struct {
+	DB     *pgxpool.Pool
+	Logger *utils.Logger
+	Tasks * tasks.AdminTasks
+}
+
+func NewAdminService(db *pgxpool.Pool, logger *utils.Logger) *AdminService {
+	return &AdminService{DB: db, Logger: logger, Tasks: &tasks.AdminTasks{}}
+}	

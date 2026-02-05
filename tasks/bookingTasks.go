@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"handworks-api/types"
 	"handworks-api/utils"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -396,33 +395,40 @@ func (t *BookingTasks) FetchAllCustomerBookings(
 	page, limit int,
 	logger *utils.Logger,
 ) (*types.FetchAllBookingsResponse, error) {
-
-	// Convert empty strings to nil
-	var startDateParam, endDateParam interface{}
-
-	if strings.TrimSpace(startDate) == "" {
-		startDateParam = nil
-	} else {
-		startDateParam = startDate
-	}
-
-	if strings.TrimSpace(endDate) == "" {
-		endDateParam = nil
-	} else {
-		endDateParam = endDate
-	}
-
 	var rawJSON []byte
-	// Pass nil for empty dates instead of empty strings
 	err := tx.QueryRow(ctx,
 		`SELECT booking.get_bookings_by_customer($1, $2, $3, $4, $5)`,
-		customerId, startDateParam, endDateParam, page, limit,
+		customerId, startDate, endDate, page, limit,
 	).Scan(&rawJSON)
 	if err != nil {
 		return nil, fmt.Errorf("failed calling sproc get_bookings_by_customer: %w", err)
 	}
 
 	var response types.FetchAllBookingsResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
+	}
+
+	return &response, nil
+}
+
+func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
+	ctx context.Context,
+	tx pgx.Tx,
+	employeeId, startDate, endDate string,
+	page, limit int,
+	logger *utils.Logger,
+) (*types.FetchAllBookingsResponse, error) {
+	var rawJSON []byte
+	var response types.FetchAllBookingsResponse
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_bookings_by_cleaner($1, $2, $3, $4, $5)`,
+		employeeId, startDate, endDate, page, limit,
+	).Scan(&rawJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_bookings_by_employee: %w", err)
+	}
+
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}

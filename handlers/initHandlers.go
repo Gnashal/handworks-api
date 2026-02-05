@@ -56,3 +56,15 @@ func NewPaymentHandler(service *services.PaymentService, logger *utils.Logger) *
 		Logger:  logger,
 	}
 }
+
+type AdminHandler struct {
+	Service *services.AdminService
+	Logger  *utils.Logger
+}
+
+func NewAdminHandler(service *services.AdminService, logger *utils.Logger) *AdminHandler {
+	return &AdminHandler{
+		Service: service,
+		Logger:  logger,
+	}
+}
