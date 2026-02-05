@@ -59,9 +59,10 @@ type QuoteRequest struct {
 }
 
 type AddOnBreakdown struct {
-	AddonID   string  `json:"addonId" db:"addon_id"`
-	AddonName string  `json:"addonName" db:"addon_name"`
-	Price     float64 `json:"price" db:"price"`
+	AddonID       string          `json:"addonId" db:"addon_id"`
+	ServiceType   string          `json:"serviceType" db:"service_type"`
+	ServiceDetail json.RawMessage `json:"serviceDetail" db:"service_detail" swaggertype:"object"`
+	Price         float64         `json:"price" db:"addon_price"`
 }
 
 // CustomerRequest fetches all quotes belonging to a customer.

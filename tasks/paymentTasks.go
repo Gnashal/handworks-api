@@ -176,9 +176,10 @@ func (t *PaymentTasks) MapAddonstoAddonBreakdown(addons *[]*types.QuoteAddon) []
 	if addons != nil && len(*addons) > 0 {
 		for _, addon := range *addons {
 			breakdown := types.AddOnBreakdown{
-				AddonID:   addon.ID,
-				AddonName: addon.ServiceType,
-				Price:     float64(addon.AddonPrice),
+				AddonID:       addon.ID,
+				ServiceType:   addon.ServiceType,
+				ServiceDetail: addon.ServiceDetail,
+				Price:         float64(addon.AddonPrice),
 			}
 			breakdowns = append(breakdowns, breakdown)
 		}
@@ -391,21 +392,18 @@ func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, 
 		return nil, fmt.Errorf("failed to fetch quote: %w", err)
 	}
 
-	// Parse JSON into QuoteResponse struct
 	if err := json.Unmarshal(responseJSON, &quoteResponse); err != nil {
 		return nil, fmt.Errorf("failed to parse quote response: %w", err)
 	}
 
-	// Filter out empty addons
 	var validAddons []types.AddOnBreakdown
 	for _, addon := range quoteResponse.Addons {
-		if addon.AddonName != "" && addon.Price > 0 {
+		if addon.AddonID != "" && addon.Price > 0 {
 			validAddons = append(validAddons, addon)
 		}
 	}
 	quoteResponse.Addons = validAddons
 
-	// Also ensure addonTotal matches filtered addons
 	var filteredAddonTotal float32 = 0
 	for _, addon := range validAddons {
 		filteredAddonTotal += float32(addon.Price)
