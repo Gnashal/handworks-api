@@ -68,6 +68,8 @@ definitions:
         type: integer
       clients:
         type: integer
+      growthIndex:
+        $ref: '#/definitions/types.GrowthIndex'
       sales:
         type: integer
     type: object
@@ -351,6 +353,15 @@ definitions:
     properties:
       employee:
         $ref: '#/definitions/types.Employee'
+    type: object
+  types.GrowthIndex:
+    properties:
+      activeSessionsGrowthIndex:
+        type: number
+      bookingsGrowthIndex:
+        type: number
+      salesGrowthIndex:
+        type: number
     type: object
   types.InventoryItem:
     properties:

@@ -1525,6 +1525,9 @@ const docTemplate = `{
                 "clients": {
                     "type": "integer"
                 },
+                "growthIndex": {
+                    "$ref": "#/definitions/types.GrowthIndex"
+                },
                 "sales": {
                     "type": "integer"
                 }
@@ -1956,6 +1959,20 @@ const docTemplate = `{
             "properties": {
                 "employee": {
                     "$ref": "#/definitions/types.Employee"
+                }
+            }
+        },
+        "types.GrowthIndex": {
+            "type": "object",
+            "properties": {
+                "activeSessionsGrowthIndex": {
+                    "type": "number"
+                },
+                "bookingsGrowthIndex": {
+                    "type": "number"
+                },
+                "salesGrowthIndex": {
+                    "type": "number"
                 }
             }
         },

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"handworks-api/types"
 	"handworks-api/utils"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -30,22 +31,70 @@ func (t *AdminTasks) resolveDateRange(filter string) (time.Time, time.Time, erro
 	}
 }
 
+func (t *AdminTasks) resolvePreviousRange(
+	start time.Time,
+	end time.Time,
+) (time.Time, time.Time) {
+	duration := end.Sub(start)
+	prevEnd := start
+	prevStart := start.Add(-duration)
+	return prevStart, prevEnd
+}
+
+func calcGrowth(current, previous int32) float64 {
+	if previous == 0 {
+		if current == 0 {
+			return 0
+		}
+		return 100
+	}
+	return math.Round((float64(current-previous) / float64(previous)) * 100) / 100
+}
+
 func (t *AdminTasks) FetchAdminDashboardData(ctx context.Context, tx pgx.Tx, logger *utils.Logger, dateFilter string) (*types.AdminDashboardResponse, error) {
 	start, end, err := t.resolveDateRange(dateFilter)
 	if err != nil {
 		logger.Error("invalid date format")
 		return nil, fmt.Errorf("invalid date filter format: %s", err)
 	}
-	var rawJSON []byte
-	var res types.AdminDashboardResponse
-	err = tx.QueryRow(ctx, `SELECT admin.get_admin_dashboard_stats($1, $2)`, 
-	start, end).Scan(&rawJSON)
-	if err != nil {
-		return nil, fmt.Errorf("failed calling sproc get_admin_dashboard_stats: %w", err)
+	prevStart, prevEnd := t.resolvePreviousRange(start, end)
+	var curRaw []byte
+	if err := tx.QueryRow(
+		ctx,
+		`SELECT admin.get_admin_dashboard_stats($1, $2)`,
+		start, end,
+	).Scan(&curRaw); err != nil {
+		return nil, err
 	}
-	if err = json.Unmarshal(rawJSON, &res); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
+
+	var prevRaw []byte
+	if err := tx.QueryRow(
+		ctx,
+		`SELECT admin.get_admin_dashboard_stats($1, $2)`,
+		prevStart, prevEnd,
+	).Scan(&prevRaw); err != nil {
+		return nil, err
 	}
-	return &res, nil
+
+	var cur, prev types.DashboardData
+	if err := json.Unmarshal(curRaw, &cur); err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(prevRaw, &prev); err != nil {
+		return nil, err
+	}
+	growthIndex := &types.GrowthIndex{
+		SalesGrowthIndex:          calcGrowth(cur.Sales, prev.Sales),
+		BookingsGrowthIndex:       calcGrowth(cur.Bookings, prev.Bookings),
+		ActiveSessionsGrowthIndex: calcGrowth(cur.ActiveSessions, prev.ActiveSessions),
+	}
+	
+	return &types.AdminDashboardResponse{
+		Sales: cur.Sales,
+		Bookings: cur.Bookings,
+		ActiveSessions: cur.ActiveSessions,
+		Clients: cur.Clients,
+		GrowthIndex: *growthIndex,
+	}, nil
 }
 
