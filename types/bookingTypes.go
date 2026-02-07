@@ -77,6 +77,7 @@ var DetailFactories = map[DetailType]func() any{
 type GeneralCleaningDetails struct {
 	HomeType string `json:"homeType"`
 	SQM      int32  `json:"sqm"`
+	Hours    int32  `json:"hours"`
 }
 
 // Couch cleaning
@@ -208,4 +209,3 @@ type FetchAllBookingsResponse struct {
 	BookingsRequested int       `json:"bookingsRequested"`
 	Bookings          []Booking `json:"bookings"`
 }
-

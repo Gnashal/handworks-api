@@ -10,8 +10,10 @@ type Quote struct {
 	CustomerID        string          `json:"customerId"`
 	MainService       string          `json:"mainService"`                            //the main type of service
 	MainServiceDetail json.RawMessage `json:"mainServiceDetail" swaggertype:"object"` //added
+	MainServiceHours  int32           `json:"mainServiceHours"`                       //added
 	Subtotal          float32         `json:"subtotal"`
 	AddonTotal        float32         `json:"addonTotal"`
+	TotalServiceHours int32           `json:"totalServiceHours"` //added
 	TotalPrice        float32         `json:"totalPrice"`
 	IsValid           bool            `json:"isValid"`
 	CreatedAt         time.Time       `json:"createdAt"`
@@ -24,6 +26,7 @@ type QuoteAddon struct {
 	QuoteID       string          `json:"quoteId"`
 	ServiceType   string          `json:"serviceType"`
 	ServiceDetail json.RawMessage `json:"serviceDetail" swaggertype:"object"` // serialized ServicesRequest
+	ServiceHours  int32           `json:"serviceHours"`
 	AddonPrice    float32         `json:"addonPrice"`
 	CreatedAt     time.Time       `json:"createdAt"`
 }
@@ -46,8 +49,10 @@ type QuoteResponse struct {
 	MainServiceName   string           `json:"mainServiceName"`
 	MainServiceDetail json.RawMessage  `json:"mainServiceDetail" swaggertype:"object"`
 	MainServiceTotal  float32          `json:"mainServiceTotal"`
+	MainServiceHours  int32            `json:"mainServiceHours"`
 	AddonTotal        float32          `json:"addonTotal"`
 	TotalPrice        float32          `json:"totalPrice"`
+	TotalServiceHours int32            `json:"totalServiceHours"`
 	Addons            []AddOnBreakdown `json:"addons"`
 }
 
@@ -62,6 +67,7 @@ type AddOnBreakdown struct {
 	AddonID       string          `json:"addonId" db:"addon_id"`
 	ServiceType   string          `json:"serviceType" db:"service_type"`
 	ServiceDetail json.RawMessage `json:"serviceDetail" db:"service_detail" swaggertype:"object"`
+	ServiceHours  int32           `json:"serviceHours" db:"service_hours"`
 	Price         float64         `json:"price" db:"addon_price"`
 }
 

@@ -13,108 +13,177 @@ import (
 
 type PaymentTasks struct{}
 
-func CalculateGeneralCleaning(details *types.GeneralCleaningDetails) float32 {
+func CalculateGeneralCleaning(details *types.GeneralCleaningDetails) (float32, int32) {
 	if details == nil {
-		return 0.0
+		return 0.0, 0
 	}
 	sqm := details.SQM
 	homeType := details.HomeType
 
+	var price float32
+	var hours int32
+
 	switch {
 	case homeType == "CONDO_ROOM" || (sqm > 0 && sqm <= 30):
-		return 2000.00
+		price = 2000.00
+		hours = 2
 	case homeType == "HOUSE" || (sqm > 30 && sqm <= 50):
-		return 2500.00
+		price = 2500.00
+		hours = 4
 	case sqm > 50 && sqm <= 100:
-		return 5000.00
+		price = 5000.00
+		hours = 8
 	default:
-		return float32(sqm * 50)
+		price = float32(sqm * 50)
+		calculatedHours := int32(sqm * 1)
+		if calculatedHours < 8 {
+			hours = 8
+		} else {
+			hours = calculatedHours
+		}
 	}
+
+	return price, hours
 }
 
-func CalculateCarCleaning(details *types.CarCleaningDetails) float32 {
+func CalculateCarCleaning(details *types.CarCleaningDetails) (float32, int32) {
 	if details == nil {
-		return 0.0
+		return 0.0, 0
 	}
 
 	var total float32
+	var totalHours int32
+
 	for _, spec := range details.CleaningSpecs {
 		price := types.CarPrices[spec.CarType]
 		total += price * float32(spec.Quantity)
+
+		// Add hours based on car type
+		var carHours int32
+		switch spec.CarType {
+		case "VAN":
+			carHours = 2
+		default:
+			carHours = 1
+		}
+		totalHours += carHours * int32(spec.Quantity)
 	}
 
 	if details.ChildSeats > 0 {
 		total += float32(details.ChildSeats) * 250.00
+		totalHours += int32(details.ChildSeats)
 	}
 
-	return total
+	return total, totalHours
 }
 
-func CalculateCouchCleaning(details *types.CouchCleaningDetails) float32 {
+func CalculateCouchCleaning(details *types.CouchCleaningDetails) (float32, int32) {
 	if details == nil {
-		return 0.0
+		return 0.0, 0
 	}
 
 	var total float32
+	var totalHours int32
+
 	for _, spec := range details.CleaningSpecs {
 		price := types.CouchPrices[spec.CouchType]
 		total += price * float32(spec.Quantity)
+
+		var couchHours int32
+		switch spec.CouchType {
+		case "SEATER_4_LTYPE_LARGE", "SEATER_5_LTYPE", "SEATER_6_LTYPE":
+			couchHours = 2
+		default:
+			couchHours = 1
+		}
+		totalHours += couchHours * int32(spec.Quantity)
 	}
 
 	if details.BedPillows > 0 {
 		total += float32(details.BedPillows) * 100.00
+		pillowHours := float64(details.BedPillows) * 0.25
+		totalHours += int32(pillowHours)
+		if totalHours == 0 && details.BedPillows > 0 {
+			totalHours = 1
+		}
 	}
 
-	return total
+	return total, totalHours
 }
 
-func CalculateMattressCleaning(details *types.MattressCleaningDetails) float32 {
+func CalculateMattressCleaning(details *types.MattressCleaningDetails) (float32, int32) {
 	if details == nil {
-		return 0.0
+		return 0.0, 0
 	}
 
 	var total float32
+	var totalHours int32
+
 	for _, spec := range details.CleaningSpecs {
 		price := types.MattressPrices[spec.BedType]
 		total += price * float32(spec.Quantity)
+
+		var bedHours int32
+		if spec.BedType == "KING_HEADBAND" || spec.BedType == "QUEEN_HEADBAND" {
+			bedHours = 2
+		} else {
+			bedHours = 1
+		}
+		totalHours += bedHours * int32(spec.Quantity)
 	}
-	return total
-}
-func CalculatePostConstructionCleaning(details *types.PostConstructionDetails) float32 {
-	if details == nil {
-		return 0.0
-	}
-	return float32(details.SQM * 50.00)
+
+	return total, totalHours
 }
 
-func (t *PaymentTasks) CalculatePriceByServiceType(service *types.ServicesRequest) float32 {
+func CalculatePostConstructionCleaning(details *types.PostConstructionDetails) (float32, int32) {
+	if details == nil {
+		return 0.0, 0
+	}
+
+	price := float32(details.SQM * 50.00)
+
+	var hours int32
+
+	if details.SQM <= 50 && details.SQM > 0 {
+		hours = 2
+	} else if details.SQM > 50 && details.SQM <= 100 {
+		hours = 4
+	} else if details.SQM > 100 && details.SQM <= 200 {
+		hours = 8
+	}
+
+	return price, hours
+}
+
+func (t *PaymentTasks) CalculatePriceByServiceType(service *types.ServicesRequest) (float32, int32) {
 	if service == nil {
-		return 0
+		return 0, 0
 	}
 
 	var calculatedPrice float32 = 0.00
+	var calculatedHours int32 = 0
 
 	switch service.ServiceType {
 	case types.GeneralCleaning:
-		calculatedPrice = CalculateGeneralCleaning(service.Details.General)
+		calculatedPrice, calculatedHours = CalculateGeneralCleaning(service.Details.General)
 
 	case types.CouchCleaning:
-		calculatedPrice = CalculateCouchCleaning(service.Details.Couch)
+		calculatedPrice, calculatedHours = CalculateCouchCleaning(service.Details.Couch)
 
 	case types.MattressCleaning:
-		calculatedPrice = CalculateMattressCleaning(service.Details.Mattress)
+		calculatedPrice, calculatedHours = CalculateMattressCleaning(service.Details.Mattress)
 
 	case types.CarCleaning:
-		calculatedPrice = CalculateCarCleaning(service.Details.Car)
+		calculatedPrice, calculatedHours = CalculateCarCleaning(service.Details.Car)
 
 	case types.PostCleaning:
-		calculatedPrice = CalculatePostConstructionCleaning(service.Details.Post)
+		calculatedPrice, calculatedHours = CalculatePostConstructionCleaning(service.Details.Post)
 
 	default:
 		// no default action
 	}
 
-	return calculatedPrice
+	return calculatedPrice, calculatedHours
 }
 
 func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteRequest) (*types.Quote, error) {
@@ -131,15 +200,16 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 		return nil, fmt.Errorf("failed to marshal main service: %v", err)
 	}
 
-	subtotal := t.CalculatePriceByServiceType(mainService)
+	subtotal, mainHours := t.CalculatePriceByServiceType(mainService)
 	var addonTotal float32 = 0
+	var addonTotalHours int32 = 0
 
 	for _, addon := range in.Addons {
 		addonService := &types.ServicesRequest{
 			ServiceType: addon.ServiceDetail.ServiceType,
 			Details:     addon.ServiceDetail.Details,
 		}
-		addonPrice := t.CalculatePriceByServiceType(addonService)
+		addonPrice, addonHours := t.CalculatePriceByServiceType(addonService)
 
 		serviceDetail, err := json.Marshal(addon.ServiceDetail)
 		if err != nil {
@@ -147,22 +217,29 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 		}
 
 		addonTotal += addonPrice
+		addonTotalHours += addonHours
+
 		dbAddon := &types.QuoteAddon{
 			ServiceType:   string(addon.ServiceDetail.ServiceType),
 			ServiceDetail: serviceDetail,
+			ServiceHours:  addonHours,
 			AddonPrice:    addonPrice,
 			CreatedAt:     time.Now(),
 		}
 		dbAddons = append(dbAddons, dbAddon)
 	}
 
+	totalServiceHours := mainHours + addonTotalHours
+
 	dbQuote = types.Quote{
 		ID:                "",
 		CustomerID:        in.CustomerID,
 		MainService:       string(in.Service.ServiceType),
 		MainServiceDetail: mainServiceDetail,
+		MainServiceHours:  mainHours,
 		Subtotal:          subtotal,
 		AddonTotal:        addonTotal,
+		TotalServiceHours: totalServiceHours,
 		TotalPrice:        subtotal + addonTotal,
 		IsValid:           false,
 		CreatedAt:         time.Now(),
@@ -171,6 +248,7 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 
 	return &dbQuote, nil
 }
+
 func (t *PaymentTasks) MapAddonstoAddonBreakdown(addons *[]*types.QuoteAddon) []types.AddOnBreakdown {
 	var breakdowns []types.AddOnBreakdown
 	if addons != nil && len(*addons) > 0 {
@@ -179,15 +257,16 @@ func (t *PaymentTasks) MapAddonstoAddonBreakdown(addons *[]*types.QuoteAddon) []
 				AddonID:       addon.ID,
 				ServiceType:   addon.ServiceType,
 				ServiceDetail: addon.ServiceDetail,
+				ServiceHours:  addon.ServiceHours,
 				Price:         float64(addon.AddonPrice),
 			}
 			breakdowns = append(breakdowns, breakdown)
 		}
 		return breakdowns
-	} else {
-		return []types.AddOnBreakdown{}
 	}
+	return []types.AddOnBreakdown{}
 }
+
 func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.QuoteRequest) (*types.Quote, error) {
 	var dbQuote types.Quote
 	var dbAddons []*types.QuoteAddon
@@ -203,30 +282,29 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 		return nil, fmt.Errorf("failed to marshal main service: %v", marshalErr)
 	}
 
-	// Calc subtotal for main service
-	subtotal := p.CalculatePriceByServiceType(mainService)
+	subtotal, mainHours := p.CalculatePriceByServiceType(mainService)
 	var addonTotal float32 = 0
+	var addonTotalHours int32 = 0
 
-	// Calculate each addon price
 	for _, addon := range in.Addons {
-		// i genuinely dunno why addon.ServiceDetail wont work lmao
 		addonService := &types.ServicesRequest{
 			ServiceType: addon.ServiceDetail.ServiceType,
 			Details:     addon.ServiceDetail.Details,
 		}
-		addonPrice := p.CalculatePriceByServiceType(addonService)
+		addonPrice, addonHours := p.CalculatePriceByServiceType(addonService)
 
-		// serialize the full addon service detail
 		serviceDetail, err := json.Marshal(addon.ServiceDetail)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal addon service: %v", err)
 		}
 
 		addonTotal += addonPrice
+		addonTotalHours += addonHours
 
 		dbAddon := &types.QuoteAddon{
 			ServiceType:   string(addon.ServiceDetail.ServiceType),
 			ServiceDetail: serviceDetail,
+			ServiceHours:  addonHours,
 			AddonPrice:    addonPrice,
 			CreatedAt:     time.Now(),
 		}
@@ -234,35 +312,42 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 	}
 
 	totalPrice := subtotal + addonTotal
+	totalServiceHours := mainHours + addonTotalHours
 
-	// Insert into quote table
 	err := tx.QueryRow(c, `
 		INSERT INTO payment.quotes (
 			customer_id,
 			main_service_type,
 			main_service_detail,
+			main_service_hours,
 			subtotal,
 			addon_total,
+			total_service_hours,
 			total_price,
 			is_valid
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
 		RETURNING id, customer_id, main_service_type, main_service_detail,
-		          subtotal, addon_total, total_price, is_valid, created_at, updated_at
+		          main_service_hours, subtotal, addon_total, total_service_hours,
+		          total_price, is_valid, created_at, updated_at
 	`,
 		in.CustomerID,
 		in.Service.ServiceType,
 		mainServiceDetail,
+		mainHours,
 		subtotal,
 		addonTotal,
+		totalServiceHours,
 		totalPrice,
 	).Scan(
 		&dbQuote.ID,
 		&dbQuote.CustomerID,
 		&dbQuote.MainService,
 		&dbQuote.MainServiceDetail,
+		&dbQuote.MainServiceHours,
 		&dbQuote.Subtotal,
 		&dbQuote.AddonTotal,
+		&dbQuote.TotalServiceHours,
 		&dbQuote.TotalPrice,
 		&dbQuote.IsValid,
 		&dbQuote.CreatedAt,
@@ -272,16 +357,17 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert quote: %v", err)
 	}
-	// insert addons
+
 	for _, addon := range dbAddons {
 		err := tx.QueryRow(c, `
-			INSERT INTO payment.quote_addons (quote_id, service_type, service_detail, addon_price)
-			VALUES ($1, $2, $3, $4)
+			INSERT INTO payment.quote_addons (quote_id, service_type, service_detail, service_hours, addon_price)
+			VALUES ($1, $2, $3, $4, $5)
 			RETURNING id, created_at
 		`,
 			dbQuote.ID,
 			addon.ServiceType,
 			addon.ServiceDetail,
+			addon.ServiceHours,
 			addon.AddonPrice,
 		).Scan(&addon.ID, &addon.CreatedAt)
 		if err != nil {
@@ -294,6 +380,7 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 	dbQuote.Addons = dbAddons
 	return &dbQuote, nil
 }
+
 func (t *PaymentTasks) VerifyQuoteAndFetchPrices(ctx context.Context, tx pgx.Tx, quoteId string) (*types.CleaningPrices, error) {
 	var prices types.CleaningPrices
 
@@ -310,8 +397,9 @@ func (t *PaymentTasks) VerifyQuoteAndFetchPrices(ctx context.Context, tx pgx.Tx,
 		return &prices, fmt.Errorf("fetch main quote: %w", err)
 	}
 	if !dbQuote.IsValid {
-		return &types.CleaningPrices{}, fmt.Errorf("quote is no longer valied")
+		return &types.CleaningPrices{}, fmt.Errorf("quote is no longer valid")
 	}
+
 	rows, err := tx.Query(ctx, `
 		SELECT service_type, addon_price
 		FROM payment.quote_addons
@@ -342,6 +430,7 @@ func (t *PaymentTasks) VerifyQuoteAndFetchPrices(ctx context.Context, tx pgx.Tx,
 	prices.MainServicePrice = dbQuote.TotalPrice
 	return &prices, nil
 }
+
 func (t *PaymentTasks) FetchAllQuotes(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -380,7 +469,6 @@ func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, 
 	var quoteResponse types.QuoteResponse
 	var responseJSON []byte
 
-	// Call the stored procedure
 	err := tx.QueryRow(ctx, `
 		SELECT payment.get_customer_quote($1::uuid, $2::uuid)
 	`, quoteId, customerId).Scan(&responseJSON)
