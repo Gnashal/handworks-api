@@ -1,1 +1,6 @@
 *.env
+tmp/
+bin/
+*.exe
+*.out
+*.log
