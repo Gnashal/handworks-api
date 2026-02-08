@@ -85,8 +85,6 @@ func (t *InventoryTasks) FetchItems(ctx context.Context,tx pgx.Tx,filter *types.
 		filter.Type,
 		filter.Status,
 		filter.Category,
-		filter.StartDate,
-		filter.EndDate,
 		*filter.Page,
 		*filter.Limit,
 	).Scan(&raw)
