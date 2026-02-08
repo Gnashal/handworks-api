@@ -1148,6 +1148,36 @@ paths:
       tags:
       - Admin
   /booking:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve booking
+      parameters:
+      - description: Booking ID
+        in: query
+        name: bookingId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Booking'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get booking with specific id
+      tags:
+      - Booking
     post:
       consumes:
       - application/json
@@ -1249,7 +1279,7 @@ paths:
         in: query
         name: endDate
         type: string
-      - default: 1
+      - default: 0
         description: Page number
         in: query
         name: page
