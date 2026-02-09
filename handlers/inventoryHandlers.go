@@ -86,8 +86,6 @@ func (h *InventoryHandler) GetItems(c *gin.Context) {
 	itemType := c.Query("type")
 	status := c.Query("status")
 	category := c.Query("category")
-	startDate := c.Query("startDate")
-	endDate := c.Query("endDate")
 
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
@@ -115,12 +113,7 @@ func (h *InventoryHandler) GetItems(c *gin.Context) {
 	if category != "" {
 		f.Category = &category
 	}
-	if startDate != "" {
-		f.StartDate = &startDate
-	}
-	if endDate != "" {
-		f.EndDate = &endDate
-	}
+	
 	f.Page = &page
 	f.Limit = &limit
 

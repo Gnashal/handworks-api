@@ -606,6 +606,53 @@ const docTemplate = `{
             }
         },
         "/booking": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get booking with specific id",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "bookingId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Booking"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -689,7 +736,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "default": 1,
+                        "default": 0,
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
@@ -1585,6 +1632,9 @@ const docTemplate = `{
                 "clients": {
                     "type": "integer"
                 },
+                "growthIndex": {
+                    "$ref": "#/definitions/types.GrowthIndex"
+                },
                 "sales": {
                     "type": "integer"
                 }
@@ -2016,6 +2066,20 @@ const docTemplate = `{
             "properties": {
                 "employee": {
                     "$ref": "#/definitions/types.Employee"
+                }
+            }
+        },
+        "types.GrowthIndex": {
+            "type": "object",
+            "properties": {
+                "activeSessionsGrowthIndex": {
+                    "type": "number"
+                },
+                "bookingsGrowthIndex": {
+                    "type": "number"
+                },
+                "salesGrowthIndex": {
+                    "type": "number"
                 }
             }
         },

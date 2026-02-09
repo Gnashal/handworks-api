@@ -40,6 +40,31 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 }
 
 // GetBookings godoc
+// @Summary Get booking with specific id
+// @Description Retrieve booking
+// @Tags Booking
+// @Accept json
+// @Produce json
+// @Param bookingId query string true "Booking ID"
+// @Success 200 {object} types.Booking
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking [get]
+// @Security BearerAuth
+func (h *BookingHandler) GetBookingById(c *gin.Context) {
+	bookingId := c.Query("bookingId")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := h.Service.GetBookingByID(ctx, bookingId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// GetBookingById godoc
 // @Summary Get all bookings with filters
 // @Description Retrieve all bookings with optional date filtering and pagination
 // @Tags Booking
@@ -47,7 +72,7 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 // @Produce json
 // @Param startDate query string false "Start date (YYYY-MM-DD)"
 // @Param endDate query string false "End date (YYYY-MM-DD)"
-// @Param page query int false "Page number" default(1)
+// @Param page query int false "Page number" default(0)
 // @Param limit query int false "Items per page" default(10)
 // @Success 200 {object} types.FetchAllBookingsResponse
 // @Failure 400 {object} types.ErrorResponse

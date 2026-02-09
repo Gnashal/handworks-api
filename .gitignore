@@ -1,4 +1,10 @@
 *.env
+tmp/
+bin/
+*.exe
+*.out
+*.log
+
 *node_modules/
 dist/
 .gitignore

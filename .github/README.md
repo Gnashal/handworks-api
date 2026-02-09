@@ -31,6 +31,11 @@ A Go-based REST API for Handworks Cleaning Services, built with Gin, PostgreSQL,
 - PostgreSQL
 - Gin framework
 - Clerk (OAuth/JWT) for authentication
+- Install Go Air for hot reload tooling
+
+```bash
+go install github.com/air-verse/air@latest
+```
 
 ---
 
