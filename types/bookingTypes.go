@@ -125,6 +125,7 @@ type BaseBookingDetails struct {
 	CustID            string     `json:"custId"`
 	CustomerFirstName string     `json:"customerFirstName"`
 	CustomerLastName  string     `json:"customerLastName"`
+	CustomerPhone     string     `json:"customerPhone"`
 	Address           Address    `json:"address"`
 	StartSched        time.Time  `json:"startSched"`
 	EndSched          time.Time  `json:"endSched"`
@@ -140,6 +141,7 @@ type BaseBookingDetailsRequest struct {
 	CustID            string     `json:"custId"`
 	CustomerFirstName string     `json:"customerFirstName"`
 	CustomerLastName  string     `json:"customerLastName"`
+	CustomerPhone     string     `json:"customerPhone"`
 	Address           Address    `json:"address"`
 	StartSched        time.Time  `json:"startSched"`
 	EndSched          time.Time  `json:"endSched"`
