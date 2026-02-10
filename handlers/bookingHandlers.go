@@ -84,7 +84,7 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 	startDate := c.Query("startDate")
 	endDate := c.Query("endDate")
 
-	pageStr := c.DefaultQuery("page", "1")
+	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
 
 	page, err := strconv.Atoi(pageStr)

@@ -344,6 +344,13 @@ definitions:
       sqm:
         type: integer
     type: object
+  types.GetAllCustomersResponse:
+    properties:
+      customers:
+        items:
+          $ref: '#/definitions/types.Customer'
+        type: array
+    type: object
   types.GetCustomerResponse:
     properties:
       customer:
@@ -798,6 +805,36 @@ paths:
       summary: Sign up a new admin
       tags:
       - Account
+  /account/customer:
+    get:
+      description: Retrieve all customer info
+      parameters:
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAllCustomersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
+      tags:
+      - Account
   /account/customer/{id}:
     get:
       description: Retrieve customer info
@@ -917,6 +954,36 @@ paths:
           schema:
             $ref: '#/definitions/types.ErrorResponse'
       summary: Sign up a new customer
+      tags:
+      - Account
+  /account/employee:
+    get:
+      description: Retrieve all customer info
+      parameters:
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAllCustomersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
       tags:
       - Account
   /account/employee/{id}:

@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"handworks-api/types"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -79,6 +81,41 @@ func (h *AccountHandler) GetCustomer(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()	
 	resp, err := h.Service.GetCustomer(ctx, id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+// GetCustomers godoc
+// @Summary Get all customers 
+// @Description Retrieve all customer info
+// @Security BearerAuth
+// @Tags Account
+// @Produce json
+// @Param page query int false "Page number" default(0)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} types.GetAllCustomersResponse
+// @Failure 404 {object} types.ErrorResponse
+// @Router /account/customer [get]
+func (h *AccountHandler) GetCustomers(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "0")
+	limitStr := c.DefaultQuery("limit", "10")
+	page, err := strconv.Atoi(pageStr)
+    if err != nil || page < 0 {
+        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+        return
+    }
+
+    limit, err := strconv.Atoi(limitStr)
+    if err != nil || limit <= 0 {
+        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+        return
+    }
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()	
+	resp, err := h.Service.GetCustomers(ctx, page, limit)
 	if err != nil {
 		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
 		return
@@ -187,6 +224,42 @@ func (h *AccountHandler) GetEmployee(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	resp, err := h.Service.GetEmployee(ctx, id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+// GetEmployees godoc
+// @Summary Get all customers 
+// @Description Retrieve all customer info
+// @Security BearerAuth
+// @Tags Account
+// @Produce json
+// @Param page query int false "Page number" default(0)
+// @Param limit query int false "Items per page" default(10)
+// @Success 200 {object} types.GetAllCustomersResponse
+// @Failure 404 {object} types.ErrorResponse
+// @Router /account/employee [get]
+func (h *AccountHandler) GetEmployees(c *gin.Context) {
+	pageStr := c.DefaultQuery("page", "0")
+	limitStr := c.DefaultQuery("limit", "10")
+	page, err := strconv.Atoi(pageStr)
+    if err != nil || page < 0 {
+        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+        return
+    }
+
+    limit, err := strconv.Atoi(limitStr)
+    if err != nil || limit <= 0 {
+        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+        return
+    }
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()	
+	resp, err := h.Service.GetEmployees(ctx, page, limit)
 	if err != nil {
 		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
 		return
