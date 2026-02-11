@@ -95,6 +95,7 @@ func (t *BookingTasks) MakeBaseBooking(
 	tx pgx.Tx,
 	accountID string,
 	address types.Address,
+	customerPhoneNo string,
 	startSched time.Time,
 	endSched time.Time,
 	dirtyScale int32,
@@ -109,6 +110,7 @@ func (t *BookingTasks) MakeBaseBooking(
             cust_id,
             customer_first_name,
             customer_last_name,
+			customer_phone_no,
             address,
             start_sched,
             end_sched,
@@ -128,10 +130,11 @@ func (t *BookingTasks) MakeBaseBooking(
         FROM account.accounts a
         JOIN account.customers c ON a.id = c.account_id
         WHERE a.id = $1
-        RETURNING id, cust_id, customer_first_name, customer_last_name, address, 
+        RETURNING id, cust_id, customer_first_name, customer_last_name, customer_phone_no, address, 
             start_sched, end_sched, dirty_scale, payment_status, review_status, 
             photos, created_at, updated_at, quote_id`,
-		accountID,  // $1 - account.accounts.id
+		accountID, // $1 - account.accounts.id
+		customerPhoneNo,
 		address,    // $2
 		startSched, // $3
 		endSched,   // $4
@@ -143,6 +146,7 @@ func (t *BookingTasks) MakeBaseBooking(
 		&createdBaseBook.CustID,
 		&createdBaseBook.CustomerFirstName,
 		&createdBaseBook.CustomerLastName,
+		&createdBaseBook.CustomerPhoneNo,
 		&createdBaseBook.Address,
 		&createdBaseBook.StartSched,
 		&createdBaseBook.EndSched,
@@ -431,6 +435,96 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
+	}
+
+	return &response, nil
+}
+
+func (t *BookingTasks) FetchSlots(
+	ctx context.Context,
+	tx pgx.Tx,
+	startDate, endDate string,
+	logger *utils.Logger,
+) ([]types.BookedSlot, error) {
+
+	var rawJSON []byte
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_booked_slots($1, $2)`,
+		startDate, endDate,
+	).Scan(&rawJSON)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_booked_slots: %w", err)
+	}
+
+	var slots []types.BookedSlot
+	if err := json.Unmarshal(rawJSON, &slots); err != nil {
+		logger.Error("failed to unmarshal booked slots: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal booked slots: %w", err)
+	}
+
+	return slots, nil
+}
+
+func (t *BookingTasks) FetchDailyAvailability(
+	ctx context.Context,
+	tx pgx.Tx,
+	date string,
+	logger *utils.Logger,
+) (*types.AvailabilityResponse, error) {
+
+	var rawJSON []byte
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_daily_availability($1)`,
+		date,
+	).Scan(&rawJSON)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_daily_availability: %w", err)
+	}
+
+	var response types.AvailabilityResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal daily availability: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal daily availability: %w", err)
+	}
+
+	return &response, nil
+}
+
+func (t *BookingTasks) FetchAvailableTimeSlots(
+	ctx context.Context,
+	tx pgx.Tx,
+	startDate, endDate string,
+	duration *int32,
+	logger *utils.Logger,
+) (*types.AvailabilityResponse, error) {
+
+	var rawJSON []byte
+
+	// If duration is provided, include it in the query
+	if duration != nil {
+		err := tx.QueryRow(ctx,
+			`SELECT booking.get_available_slots($1, $2, $3)`,
+			startDate, endDate, *duration,
+		).Scan(&rawJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed calling sproc get_available_slots: %w", err)
+		}
+	} else {
+		err := tx.QueryRow(ctx,
+			`SELECT booking.get_available_slots($1, $2)`,
+			startDate, endDate,
+		).Scan(&rawJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed calling sproc get_available_slots: %w", err)
+		}
+	}
+
+	var response types.AvailabilityResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal available slots: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal available slots: %w", err)
 	}
 
 	return &response, nil

@@ -274,6 +274,131 @@ func (h *BookingHandler) GetEmployeeAssignedBookings(c *gin.Context) {
 	})
 }
 
+// GetBookedSlots godoc
+// @Summary Get booked time slots
+// @Description Get all booked schedules within date range
+// @Tags Booking
+// @Security BearerAuth
+// @Produce json
+// @Param startDate query string true "Start date (YYYY-MM-DD)"
+// @Param endDate query string true "End date (YYYY-MM-DD)"
+// @Success 200 {array} types.BookedSlot
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/booked-slots [get]
+func (h *BookingHandler) GetBookedSlots(c *gin.Context) {
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+
+	if startDate == "" || endDate == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "startDate and endDate query parameters are required",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	slots, err := h.Service.GetBookedSlots(ctx, startDate, endDate)
+	if err != nil {
+		h.Logger.Error("failed to get booked slots: %v", err)
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, slots)
+}
+
+// GetDailyAvailability godoc
+// @Summary Get daily availability
+// @Description Check if a specific date has available slots
+// @Tags Booking
+// @Security BearerAuth
+// @Produce json
+// @Param date query string true "Date (YYYY-MM-DD)"
+// @Success 200 {object} types.AvailabilityResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/daily-availability [get]
+func (h *BookingHandler) GetDailyAvailability(c *gin.Context) {
+	date := c.Query("date")
+
+	if date == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "date query parameter is required",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	availability, err := h.Service.GetDailyAvailability(ctx, date)
+	if err != nil {
+		h.Logger.Error("failed to get daily availability: %v", err)
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, availability)
+}
+
+// GetAvailableTimeSlots godoc
+// @Summary Get available time slots
+// @Description Get all available time slots within a date range
+// @Tags Booking
+// @Security BearerAuth
+// @Produce json
+// @Param startDate query string true "Start date (YYYY-MM-DD)"
+// @Param endDate query string true "End date (YYYY-MM-DD)"
+// @Param duration query int false "Slot duration in hours"
+// @Success 200 {object} types.AvailabilityResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/available-slots [get]
+func (h *BookingHandler) GetAvailableTimeSlots(c *gin.Context) {
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+	durationStr := c.Query("duration")
+
+	if startDate == "" || endDate == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "startDate and endDate query parameters are required",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	var duration *int32
+	if durationStr != "" {
+		d, err := strconv.Atoi(durationStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"status":  "error",
+				"message": "invalid duration parameter",
+			})
+			return
+		}
+		dVal := int32(d)
+		duration = &dVal
+	}
+
+	slots, err := h.Service.GetAvailableTimeSlots(ctx, startDate, endDate, duration)
+	if err != nil {
+		h.Logger.Error("failed to get available time slots: %v", err)
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, slots)
+}
+
 // UpdateBooking godoc
 // @Summary Update a booking
 // @Description Update booking information

@@ -125,7 +125,7 @@ type BaseBookingDetails struct {
 	CustID            string     `json:"custId"`
 	CustomerFirstName string     `json:"customerFirstName"`
 	CustomerLastName  string     `json:"customerLastName"`
-	CustomerPhone     string     `json:"customerPhone"`
+	CustomerPhoneNo   string     `json:"customerPhoneNo"`
 	Address           Address    `json:"address"`
 	StartSched        time.Time  `json:"startSched"`
 	EndSched          time.Time  `json:"endSched"`
@@ -141,7 +141,7 @@ type BaseBookingDetailsRequest struct {
 	CustID            string     `json:"custId"`
 	CustomerFirstName string     `json:"customerFirstName"`
 	CustomerLastName  string     `json:"customerLastName"`
-	CustomerPhone     string     `json:"customerPhone"`
+	CustomerPhoneNo   string     `json:"customerPhoneNo"`
 	Address           Address    `json:"address"`
 	StartSched        time.Time  `json:"startSched"`
 	EndSched          time.Time  `json:"endSched"`
@@ -210,4 +210,20 @@ type FetchAllBookingsResponse struct {
 	TotalBookings     int       `json:"totalBookings"`
 	BookingsRequested int       `json:"bookingsRequested"`
 	Bookings          []Booking `json:"bookings"`
+}
+
+type BookedSlot struct {
+	StartSched   time.Time `json:"startSched"`
+	EndSched     time.Time `json:"endSched"`
+	Status       string    `json:"status"`
+	CustomerName string    `json:"customerName,omitempty"`
+}
+
+type AvailabilityResponse struct {
+	Date           string       `json:"date,omitempty"`
+	StartDate      string       `json:"startDate,omitempty"`
+	EndDate        string       `json:"endDate,omitempty"`
+	Available      bool         `json:"available,omitempty"`
+	BookedSlots    []BookedSlot `json:"bookedSlots"`
+	AvailableDates []string     `json:"availableDates,omitempty"`
 }
