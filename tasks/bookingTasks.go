@@ -372,11 +372,11 @@ func (t *BookingTasks) FetchAllBookings(
 
 	var rawJSON []byte
 	err := tx.QueryRow(ctx,
-		`SELECT booking.get_all_bookings($1, $2, $3, $4)`,
+		`SELECT booking.fetch_all_bookings($1, $2, $3, $4)`,
 		startDate, endDate, page, limit).Scan(&rawJSON)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed calling sproc get_all_bookings: %w", err)
+		return nil, fmt.Errorf("failed calling sproc fetch_all_bookings: %w", err)
 	}
 
 	var response types.FetchAllBookingsResponse

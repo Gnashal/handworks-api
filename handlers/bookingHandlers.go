@@ -52,7 +52,7 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 // @Router /booking [get]
 // @Security BearerAuth
 func (h *BookingHandler) GetBookingById(c *gin.Context) {
-	bookingId := c.Query("bookingId")
+	bookingId := c.Param("bookingId")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

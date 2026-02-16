@@ -72,8 +72,6 @@ func (h *InventoryHandler) GetItem(c *gin.Context) {
 // @Param type query string false "Item type"
 // @Param status query string false "Item status"
 // @Param category query string false "Item category"
-// @Param startDate query string false "Filter items created after this date"
-// @Param endDate query string false "Filter items created before this date"
 // @Param page query int false "Page number (zero-based)" default(0)
 // @Param limit query int false "Number of items per page" default(10)
 //

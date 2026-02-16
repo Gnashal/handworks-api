@@ -1252,18 +1252,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Filter items created after this date",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter items created before this date",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "default": 0,
                         "description": "Page number (zero-based)",
