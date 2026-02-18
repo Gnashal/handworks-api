@@ -45,7 +45,9 @@ func main() {
 	if err := router.SetTrustedProxies(nil); err != nil {
 		logger.Fatal("Failed to set trusted proxies: %v", err)
 	}
+	// this sets the clerk server sdk
 	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
+
 	router.Use(cors.New(config.NewCors()))
 	conn, err := config.InitDB(logger, c)
 	if err != nil {
@@ -56,9 +58,9 @@ func main() {
 
 	
 	// public paths for Clerk middleware
-	publicPaths := []string{"/api/account/customer/signup","/api/inventory/items","/api/booking/bookings",
+	publicPaths := []string{"/api/account/customer/signup",
 	"/api/account/employee/signup","/api/account/admin/signup",
-	"/api/payment/quote/preview", "/health", "/api/admin/dashboard" }
+	"/api/payment/quote/preview", "/health", "/api/admin/dashboard","/api/admin/employee/onboard"}
 	
 	// websocket
 	hubs := realtime.NewRealtimeHubs(logger)
@@ -69,7 +71,7 @@ func main() {
 	inventoryService := services.NewInventoryService(conn, logger)
 	paymentService := services.NewPaymentService(conn, logger)
 	bookingService := services.NewBookingService(conn, logger, paymentService)
-	adminServie := services.NewAdminService(conn, logger)
+	adminServie := services.NewAdminService(conn, logger, accountService)
 	
 	accountHandler := handlers.NewAccountHandler(accountService, logger)
 	inventoryHandler := handlers.NewInventoryHandler(inventoryService, logger)

@@ -9,9 +9,17 @@ import (
 	"math"
 	"time"
 
+	"github.com/clerk/clerk-sdk-go/v2"
+	"github.com/clerk/clerk-sdk-go/v2/organizationmembership"
+	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jackc/pgx/v5"
 )
 type AdminTasks struct {}
+type AccountPort interface {
+	SignUpCustomer(ctx context.Context, req types.SignUpCustomerRequest) (*types.SignUpCustomerResponse, error)
+	SignUpEmployee(ctx context.Context, req types.SignUpEmployeeRequest) (*types.SignUpEmployeeResponse, error)
+	SignUpAdmin(ctx context.Context, req types.SignUpAdminRequest) (*types.SignUpAdminResponse, error)
+}
 
 func (t *AdminTasks) resolveDateRange(filter string) (time.Time, time.Time, error) {
 	now := time.Now()
@@ -96,5 +104,32 @@ func (t *AdminTasks) FetchAdminDashboardData(ctx context.Context, tx pgx.Tx, log
 		Clients: cur.Clients,
 		GrowthIndex: *growthIndex,
 	}, nil
+}
+func (t *AdminTasks) CreateClerkUser(ctx context.Context, req* types.OnboardEmployeeRequest) (*clerk.User, error) {
+	params := &user.CreateParams{
+		EmailAddresses: &[]string{req.Email},
+		FirstName: &req.FirstName,
+		LastName: &req.LastName,
+		SkipPasswordRequirement: clerk.Bool(true),
+
+	}
+	newUser, err := user.Create(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create clerk user: %w", err)
+	}
+	return newUser, nil
+}
+func (t *AdminTasks) AddToClerkOrganization(ctx context.Context, clerkUserID, organizationID, role string) (*clerk.OrganizationMembership, error) {
+	params := &organizationmembership.CreateParams{
+        OrganizationID: *clerk.String(organizationID),
+        UserID:         clerk.String(clerkUserID),
+        Role:           clerk.String(role), 
+    }
+
+    membership, err := organizationmembership.Create(ctx, params)
+    if err != nil {
+        return nil, fmt.Errorf("failed to add user to organization: %w", err)
+    }
+    return membership, nil
 }
 

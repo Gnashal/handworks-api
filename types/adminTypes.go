@@ -28,3 +28,13 @@ type ClientsGrowthIndex struct {
 	Inactive int32 `json:"inactive"`
 	GrowthIndex float64 `json:"growthIndex"`
 }
+
+type OnboardEmployeeRequest struct {
+	Role string `json:"role" binding:"required"`
+	FirstName string `json:"firstName" binding:"required"`
+	LastName string `json:"lastName" binding:"required"`
+	Email string `json:"email" binding:"required,email"`
+	OrganizationID string `json:"organizationId" binding:"required"`
+	HireDate string `json:"hireDate" binding:"required"`
+	Position string `json:"position" binding:"required"`
+}
