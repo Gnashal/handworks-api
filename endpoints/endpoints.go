@@ -44,6 +44,7 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.GET("/bookings", h.GetBookings)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)
+	r.GET("/slots", h.GetBookedSlots)
 	customers := r.Group("/customer")
 	{
 		customers.GET("/", h.GetCustomerBookings)
@@ -64,7 +65,7 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	r.GET("/dashboard", h.GetAdminDashboard)
 }
 
-func RealtimeEndpoint(r *gin.RouterGroup,hubs * realtime.RealtimeHubs) {
+func RealtimeEndpoint(r *gin.RouterGroup, hubs *realtime.RealtimeHubs) {
 	r.GET("/ws/admin", realtime.AdminWS(hubs.AdminHub))
 	r.GET("/ws/employee", realtime.EmployeeWS(hubs.EmployeeHub))
 	r.GET("/ws/chat", realtime.ChatWS(hubs.ChatHub))

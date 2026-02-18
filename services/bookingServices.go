@@ -210,62 +210,19 @@ func (s *BookingService) GetBookingByID(ctx context.Context, bookingID string) (
 	return booking, nil
 }
 
-func (s *BookingService) GetBookedSlots(
-	ctx context.Context,
-	startDate, endDate string,
-) ([]types.BookedSlot, error) {
-
-	var slots []types.BookedSlot
+func (s *BookingService) GetBookedSlots(ctx context.Context, date string) (*types.FetchSlotsResponse, error) {
+	var result *types.FetchSlotsResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		slots, err = s.Tasks.FetchSlots(ctx, tx, startDate, endDate, s.Logger)
+		result, err = s.Tasks.FetchBookingSlots(ctx, tx, date, s.Logger)
 		return err
 	}); err != nil {
 		s.Logger.Error("failed to fetch booked slots: %v", err)
 		return nil, fmt.Errorf("failed to get booked slots: %w", err)
 	}
 
-	return slots, nil
-}
-
-func (s *BookingService) GetAvailableTimeSlots(
-	ctx context.Context,
-	startDate, endDate string,
-	duration *int32,
-) (*types.AvailabilityResponse, error) {
-
-	var slots *types.AvailabilityResponse
-
-	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		var err error
-		slots, err = s.Tasks.FetchAvailableTimeSlots(ctx, tx, startDate, endDate, duration, s.Logger)
-		return err
-	}); err != nil {
-		s.Logger.Error("failed to fetch available time slots: %v", err)
-		return nil, fmt.Errorf("failed to get available time slots: %w", err)
-	}
-
-	return slots, nil
-}
-
-func (s *BookingService) GetDailyAvailability(
-	ctx context.Context,
-	date string,
-) (*types.AvailabilityResponse, error) {
-
-	var availability *types.AvailabilityResponse
-
-	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		var err error
-		availability, err = s.Tasks.FetchDailyAvailability(ctx, tx, date, s.Logger)
-		return err
-	}); err != nil {
-		s.Logger.Error("failed to fetch daily availability: %v", err)
-		return nil, fmt.Errorf("failed to get daily availability: %w", err)
-	}
-
-	return availability, nil
+	return result, nil
 }
 
 func (s *BookingService) UpdateBooking(ctx context.Context) error {

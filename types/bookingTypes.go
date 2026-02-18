@@ -138,18 +138,19 @@ type BaseBookingDetails struct {
 	QuoteId           string     `json:"quoteId"`
 }
 type BaseBookingDetailsRequest struct {
-	CustID            string     `json:"custId"`
-	CustomerFirstName string     `json:"customerFirstName"`
-	CustomerLastName  string     `json:"customerLastName"`
-	CustomerPhoneNo   string     `json:"customerPhoneNo"`
-	Address           Address    `json:"address"`
-	StartSched        time.Time  `json:"startSched"`
-	EndSched          time.Time  `json:"endSched"`
-	DirtyScale        int32      `json:"dirtyScale"`
-	Photos            []string   `json:"photos"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	UpdatedAt         *time.Time `json:"updatedAt,omitempty"`
-	QuoteId           string     `json:"quoteId"`
+	CustID               string     `json:"custId"`
+	CustomerFirstName    string     `json:"customerFirstName"`
+	CustomerLastName     string     `json:"customerLastName"`
+	CustomerPhoneNo      string     `json:"customerPhoneNo"`
+	Address              Address    `json:"address"`
+	StartSched           time.Time  `json:"startSched"`
+	EndSched             time.Time  `json:"endSched"`
+	ServiceDurationHours float64    `json:"serviceDurationHours"`
+	DirtyScale           int32      `json:"dirtyScale"`
+	Photos               []string   `json:"photos"`
+	CreatedAt            time.Time  `json:"createdAt"`
+	UpdatedAt            *time.Time `json:"updatedAt,omitempty"`
+	QuoteId              string     `json:"quoteId"`
 }
 type Address struct {
 	AddressHuman string  `json:"addressHuman"`
@@ -213,17 +214,12 @@ type FetchAllBookingsResponse struct {
 }
 
 type BookedSlot struct {
-	StartSched   time.Time `json:"startSched"`
-	EndSched     time.Time `json:"endSched"`
-	Status       string    `json:"status"`
-	CustomerName string    `json:"customerName,omitempty"`
+	StartSched    time.Time `json:"startSched"`
+	EndSched      time.Time `json:"endSched"`
+	BookingID     string    `json:"bookingID"`
+	DurationHours float64   `json:"durationHours,omitempty"` // optional if frontend needs it
 }
 
-type AvailabilityResponse struct {
-	Date           string       `json:"date,omitempty"`
-	StartDate      string       `json:"startDate,omitempty"`
-	EndDate        string       `json:"endDate,omitempty"`
-	Available      bool         `json:"available,omitempty"`
-	BookedSlots    []BookedSlot `json:"bookedSlots"`
-	AvailableDates []string     `json:"availableDates,omitempty"`
+type FetchSlotsResponse struct {
+	OccupiedSlots []BookedSlot `json:"occupiedSlots"`
 }

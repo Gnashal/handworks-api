@@ -927,6 +927,60 @@
                 }
             }
         },
+        "/booking/slots": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all occupied booking slots for the specified date. If no date is provided, defaults to today.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get booked slots by date",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Date in YYYY-MM-DD format (defaults to today)",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FetchSlotsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid date format",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/{id}": {
             "put": {
                 "security": [
@@ -1559,11 +1613,17 @@
                 "addonId": {
                     "type": "string"
                 },
-                "addonName": {
-                    "type": "string"
-                },
                 "price": {
                     "type": "number"
+                },
+                "serviceDetail": {
+                    "type": "object"
+                },
+                "serviceHours": {
+                    "type": "integer"
+                },
+                "serviceType": {
+                    "type": "string"
                 }
             }
         },
@@ -1652,6 +1712,9 @@
                 "customerLastName": {
                     "type": "string"
                 },
+                "customerPhoneNo": {
+                    "type": "string"
+                },
                 "dirtyScale": {
                     "type": "integer"
                 },
@@ -1702,6 +1765,9 @@
                 "customerLastName": {
                     "type": "string"
                 },
+                "customerPhoneNo": {
+                    "type": "string"
+                },
                 "dirtyScale": {
                     "type": "integer"
                 },
@@ -1721,6 +1787,24 @@
                     "type": "string"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.BookedSlot": {
+            "type": "object",
+            "properties": {
+                "bookingID": {
+                    "type": "string"
+                },
+                "durationHours": {
+                    "description": "optional if frontend needs it",
+                    "type": "number"
+                },
+                "endSched": {
+                    "type": "string"
+                },
+                "startSched": {
                     "type": "string"
                 }
             }
@@ -2036,11 +2120,25 @@
                 }
             }
         },
+        "types.FetchSlotsResponse": {
+            "type": "object",
+            "properties": {
+                "occupiedSlots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.BookedSlot"
+                    }
+                }
+            }
+        },
         "types.GeneralCleaningDetails": {
             "type": "object",
             "properties": {
                 "homeType": {
                     "type": "string"
+                },
+                "hours": {
+                    "type": "integer"
                 },
                 "sqm": {
                     "type": "integer"
@@ -2270,11 +2368,19 @@
                     "description": "added",
                     "type": "object"
                 },
+                "mainServiceHours": {
+                    "description": "added",
+                    "type": "integer"
+                },
                 "subtotal": {
                     "type": "number"
                 },
                 "totalPrice": {
                     "type": "number"
+                },
+                "totalServiceHours": {
+                    "description": "added",
+                    "type": "integer"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -2299,6 +2405,9 @@
                 "serviceDetail": {
                     "description": "serialized ServicesRequest",
                     "type": "object"
+                },
+                "serviceHours": {
+                    "type": "integer"
                 },
                 "serviceType": {
                     "type": "string"
@@ -2343,6 +2452,9 @@
                 "mainServiceDetail": {
                     "type": "object"
                 },
+                "mainServiceHours": {
+                    "type": "integer"
+                },
                 "mainServiceName": {
                     "type": "string"
                 },
@@ -2354,6 +2466,9 @@
                 },
                 "totalPrice": {
                     "type": "number"
+                },
+                "totalServiceHours": {
+                    "type": "integer"
                 }
             }
         },

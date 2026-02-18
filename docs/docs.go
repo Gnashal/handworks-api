@@ -933,6 +933,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/booking/slots": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all occupied booking slots for the specified date. If no date is provided, defaults to today.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get booked slots by date",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Date in YYYY-MM-DD format (defaults to today)",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FetchSlotsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid date format",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/{id}": {
             "put": {
                 "security": [
@@ -1565,11 +1619,17 @@ const docTemplate = `{
                 "addonId": {
                     "type": "string"
                 },
-                "addonName": {
-                    "type": "string"
-                },
                 "price": {
                     "type": "number"
+                },
+                "serviceDetail": {
+                    "type": "object"
+                },
+                "serviceHours": {
+                    "type": "integer"
+                },
+                "serviceType": {
+                    "type": "string"
                 }
             }
         },
@@ -1658,6 +1718,9 @@ const docTemplate = `{
                 "customerLastName": {
                     "type": "string"
                 },
+                "customerPhoneNo": {
+                    "type": "string"
+                },
                 "dirtyScale": {
                     "type": "integer"
                 },
@@ -1708,6 +1771,9 @@ const docTemplate = `{
                 "customerLastName": {
                     "type": "string"
                 },
+                "customerPhoneNo": {
+                    "type": "string"
+                },
                 "dirtyScale": {
                     "type": "integer"
                 },
@@ -1727,6 +1793,24 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.BookedSlot": {
+            "type": "object",
+            "properties": {
+                "bookingID": {
+                    "type": "string"
+                },
+                "durationHours": {
+                    "description": "optional if frontend needs it",
+                    "type": "number"
+                },
+                "endSched": {
+                    "type": "string"
+                },
+                "startSched": {
                     "type": "string"
                 }
             }
@@ -2042,11 +2126,25 @@ const docTemplate = `{
                 }
             }
         },
+        "types.FetchSlotsResponse": {
+            "type": "object",
+            "properties": {
+                "occupiedSlots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.BookedSlot"
+                    }
+                }
+            }
+        },
         "types.GeneralCleaningDetails": {
             "type": "object",
             "properties": {
                 "homeType": {
                     "type": "string"
+                },
+                "hours": {
+                    "type": "integer"
                 },
                 "sqm": {
                     "type": "integer"
@@ -2276,11 +2374,19 @@ const docTemplate = `{
                     "description": "added",
                     "type": "object"
                 },
+                "mainServiceHours": {
+                    "description": "added",
+                    "type": "integer"
+                },
                 "subtotal": {
                     "type": "number"
                 },
                 "totalPrice": {
                     "type": "number"
+                },
+                "totalServiceHours": {
+                    "description": "added",
+                    "type": "integer"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -2305,6 +2411,9 @@ const docTemplate = `{
                 "serviceDetail": {
                     "description": "serialized ServicesRequest",
                     "type": "object"
+                },
+                "serviceHours": {
+                    "type": "integer"
                 },
                 "serviceType": {
                     "type": "string"
@@ -2349,6 +2458,9 @@ const docTemplate = `{
                 "mainServiceDetail": {
                     "type": "object"
                 },
+                "mainServiceHours": {
+                    "type": "integer"
+                },
                 "mainServiceName": {
                     "type": "string"
                 },
@@ -2360,6 +2472,9 @@ const docTemplate = `{
                 },
                 "totalPrice": {
                     "type": "number"
+                },
+                "totalServiceHours": {
+                    "type": "integer"
                 }
             }
         },
