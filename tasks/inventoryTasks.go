@@ -80,7 +80,7 @@ func (t *InventoryTasks) FetchItems(ctx context.Context,tx pgx.Tx,filter *types.
 	err := tx.QueryRow(
 		ctx,
 		`SELECT inventory.get_items(
-			$1, $2, $3, $4, $5, $6, $7
+			$1, $2, $3, $4, $5
 		)`,
 		filter.Type,
 		filter.Status,

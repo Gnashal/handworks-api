@@ -1613,14 +1613,6 @@ paths:
         in: query
         name: category
         type: string
-      - description: Filter items created after this date
-        in: query
-        name: startDate
-        type: string
-      - description: Filter items created before this date
-        in: query
-        name: endDate
-        type: string
       - default: 0
         description: Page number (zero-based)
         in: query
