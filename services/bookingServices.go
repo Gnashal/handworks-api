@@ -27,6 +27,7 @@ func (s *BookingService) withTx(
 	}()
 	return fn(tx)
 }
+
 func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBookingRequest) (*types.Booking, error) {
 	s.Logger.Info("Creating booking for customer: %s...", req.Base.CustomerFirstName)
 
@@ -45,12 +46,15 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			return err
 		}
 
+		// Updated MakeBaseBooking call with all required parameters
 		baseBook, err := s.Tasks.MakeBaseBooking(
 			ctx,
 			tx,
-			req.AccountID,
-			req.Base.Address,
+			req.Base.CustID,            // Use CustID from request instead of AccountID
+			req.Base.CustomerFirstName, // Pass first name
+			req.Base.CustomerLastName,  // Pass last name
 			req.Base.CustomerPhoneNo,
+			req.Base.Address,
 			req.Base.StartSched,
 			req.Base.EndSched,
 			req.Base.DirtyScale,
@@ -132,6 +136,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 
 	return createdBooking, nil
 }
+
 func (s *BookingService) GetBookings(
 	ctx context.Context,
 	startDate, endDate string,

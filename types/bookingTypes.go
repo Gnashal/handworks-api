@@ -121,37 +121,39 @@ type PostConstructionDetails struct {
 	SQM int32 `json:"sqm"`
 }
 type BaseBookingDetails struct {
-	ID                string     `json:"id"`
-	CustID            string     `json:"custId"`
-	CustomerFirstName string     `json:"customerFirstName"`
-	CustomerLastName  string     `json:"customerLastName"`
-	CustomerPhoneNo   string     `json:"customerPhoneNo"`
+	ID                string     `json:"id" db:"id"`
+	CustID            string     `json:"custId" db:"custid"`
+	CustomerFirstName string     `json:"customerFirstName" db:"customerfirstname"`
+	CustomerLastName  string     `json:"customerLastName" db:"customerlastname"`
+	CustomerPhoneNo   string     `json:"customerPhoneNo" db:"customer_phone_no"`
 	Address           Address    `json:"address"`
-	StartSched        time.Time  `json:"startSched"`
-	EndSched          time.Time  `json:"endSched"`
-	DirtyScale        int32      `json:"dirtyScale"`
-	PaymentStatus     string     `json:"paymentStatus"`
-	ReviewStatus      string     `json:"reviewStatus"`
-	Photos            []string   `json:"photos"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	UpdatedAt         *time.Time `json:"updatedAt,omitempty"`
-	QuoteId           string     `json:"quoteId"`
+	StartSched        time.Time  `json:"startSched" db:"startsched"`
+	EndSched          time.Time  `json:"endSched" db:"endsched"`
+	DirtyScale        int32      `json:"dirtyScale" db:"dirtyscale"`
+	PaymentStatus     string     `json:"paymentStatus" db:"paymentstatus"`
+	ReviewStatus      string     `json:"reviewStatus" db:"reviewstatus"`
+	Photos            []string   `json:"photos" db:"photos"`
+	CreatedAt         time.Time  `json:"createdAt" db:"createdat"`
+	UpdatedAt         *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
+	QuoteId           string     `json:"quoteId" db:"quoteid"`
 }
+
 type BaseBookingDetailsRequest struct {
-	CustID               string     `json:"custId"`
-	CustomerFirstName    string     `json:"customerFirstName"`
-	CustomerLastName     string     `json:"customerLastName"`
-	CustomerPhoneNo      string     `json:"customerPhoneNo"`
+	CustID               string     `json:"custId" db:"custid"`
+	CustomerFirstName    string     `json:"customerFirstName" db:"customerfirstname"`
+	CustomerLastName     string     `json:"customerLastName" db:"customerlastname"`
+	CustomerPhoneNo      string     `json:"customerPhoneNo" db:"customer_phone_no"`
 	Address              Address    `json:"address"`
-	StartSched           time.Time  `json:"startSched"`
-	EndSched             time.Time  `json:"endSched"`
+	StartSched           time.Time  `json:"startSched" db:"startsched"`
+	EndSched             time.Time  `json:"endSched" db:"endsched"`
 	ServiceDurationHours float64    `json:"serviceDurationHours"`
-	DirtyScale           int32      `json:"dirtyScale"`
-	Photos               []string   `json:"photos"`
-	CreatedAt            time.Time  `json:"createdAt"`
-	UpdatedAt            *time.Time `json:"updatedAt,omitempty"`
-	QuoteId              string     `json:"quoteId"`
+	DirtyScale           int32      `json:"dirtyScale" db:"dirtyscale"`
+	Photos               []string   `json:"photos" db:"photos"`
+	CreatedAt            time.Time  `json:"createdAt" db:"createdat"`
+	UpdatedAt            *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
+	QuoteId              string     `json:"quoteId" db:"quoteid"`
 }
+
 type Address struct {
 	AddressHuman string  `json:"addressHuman"`
 	AddressLat   float64 `json:"addressLat"`
@@ -186,11 +188,12 @@ type AddOnRequest struct {
 }
 
 type CreateBookingRequest struct {
-	AccountID   string                    `json:"accountId"`
 	Base        BaseBookingDetailsRequest `json:"base"`
 	MainService ServicesRequest           `json:"mainService"`
 	Addons      []AddOnRequest            `json:"addons"`
+	QuoteId     string                    `json:"quoteId"`
 }
+
 type AddOns struct {
 	ID            string         `json:"id"`
 	ServiceDetail ServiceDetails `json:"serviceDetail"`
