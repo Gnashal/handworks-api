@@ -58,8 +58,11 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	r.POST("/quote", h.MakeQuotation)
 	r.POST("/quote/preview", h.MakePublicQuotation)
-	r.GET("/quotes", h.GetAllQuotesFromCustomer)
-
+	r.GET("/quotes", h.GetAllQuotes)
+	customer := r.Group("/customer")
+	{
+		customer.GET("/quotes", h.GetAllQuotesFromCustomer)
+	}
 }
 
 func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {

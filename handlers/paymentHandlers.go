@@ -117,3 +117,49 @@ func (h *PaymentHandler) GetAllQuotesFromCustomer(c *gin.Context) {
 
     c.JSON(http.StatusOK, res)
 }
+
+// GetAllQuotes godoc
+// @Summary Get all quotations
+// @Security BearerAuth
+// @Description Retrieve all quotations with optional date filtering and pagination.
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param startDate query string false "Start date (YYYY-MM-DD)"
+// @Param endDate query string false "End date (YYYY-MM-DD)"
+// @Param page query int false "Page number (starting at 0)" default(0)
+// @Param limit query int false "Number of quotes per page" default(10)
+// @Success 200 {object} types.FetchAllQuotesResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/quotes [get]
+func (h *PaymentHandler) GetAllQuotes(c *gin.Context) {
+    startDate := c.Query("startDate")
+    endDate := c.Query("endDate")
+
+    pageStr := c.DefaultQuery("page", "0")
+    limitStr := c.DefaultQuery("limit", "10")
+
+    page, err := strconv.Atoi(pageStr)
+    if err != nil || page < 0 {
+        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+        return
+    }
+
+    limit, err := strconv.Atoi(limitStr)
+    if err != nil || limit <= 0 {
+        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+        return
+    }
+
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+	res, err := h.Service.GetAllQuotes(ctx, startDate, endDate, page, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+    c.JSON(http.StatusOK, res)
+}

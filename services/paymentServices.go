@@ -96,9 +96,28 @@ func (s *PaymentService) GetAllQuotesFromCustomer(
 
     if err := s.withTx(ctx, func(tx pgx.Tx) error {
         var err error
-        result, err = s.Tasks.FetchAllQuotes(
+        result, err = s.Tasks.FetchAllQuotesFromCustomer(
             ctx, tx, customerId, startDate, endDate, page, limit, s.Logger,
         )
+        return err
+    }); err != nil {
+        s.Logger.Error("Failed to fetch Quotes: %v", err)
+        return nil, err
+    }
+
+    return result, nil
+}
+func (s *PaymentService) GetAllQuotes(
+    ctx context.Context,
+    startDate, endDate string,
+    page, limit int,
+) (*types.FetchAllQuotesResponse, error) {
+
+    var result *types.FetchAllQuotesResponse
+
+    if err := s.withTx(ctx, func(tx pgx.Tx) error {
+        var err error
+        result, err = s.Tasks.FetchAllQuotes(ctx, tx, startDate, endDate, page, limit, s.Logger)
         return err
     }); err != nil {
         s.Logger.Error("Failed to fetch Quotes: %v", err)

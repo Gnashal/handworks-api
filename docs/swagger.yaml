@@ -1266,7 +1266,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
-      summary: Sign up a new employee
+      summary: Onboard a new employee
       tags:
       - Admin
   /booking:
@@ -1768,14 +1768,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve all quotations associated with a specific customer with
-        optional date filtering and pagination.
+      description: Retrieve all quotations with optional date filtering and pagination.
       parameters:
-      - description: Customer ID
-        in: query
-        name: customerId
-        required: true
-        type: string
       - description: Start date (YYYY-MM-DD)
         in: query
         name: startDate
@@ -1811,7 +1805,7 @@ paths:
             $ref: '#/definitions/types.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get all quotations for a customer
+      summary: Get all quotations
       tags:
       - Payment
 securityDefinitions:
