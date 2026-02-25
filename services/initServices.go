@@ -60,8 +60,9 @@ type AdminService struct {
 	DB     *pgxpool.Pool
 	Logger *utils.Logger
 	Tasks * tasks.AdminTasks
+	AccountPort tasks.AccountPort
 }
 
-func NewAdminService(db *pgxpool.Pool, logger *utils.Logger) *AdminService {
-	return &AdminService{DB: db, Logger: logger, Tasks: &tasks.AdminTasks{}}
+func NewAdminService(db *pgxpool.Pool, logger *utils.Logger, accountService tasks.AccountPort) *AdminService {
+	return &AdminService{DB: db, Logger: logger, Tasks: &tasks.AdminTasks{}, AccountPort: accountService}
 }	

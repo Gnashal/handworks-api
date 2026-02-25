@@ -172,7 +172,7 @@ func (s *AccountService) SignUpEmployee(ctx context.Context, req types.SignUpEmp
 		if err != nil {
 			return err
 		}
-		parsedDate, err := time.Parse("2006-01-02", req.HireDate)
+		parsedDate, err := time.Parse(time.RFC3339, req.HireDate)
 		if err != nil {
 			return fmt.Errorf("invalid hire date format: %w", err)
 		}

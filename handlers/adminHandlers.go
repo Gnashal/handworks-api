@@ -43,3 +43,30 @@ func (h *AdminHandler) GetAdminDashboard(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
+// OnboardEmployee godoc
+// @Summary Onboard a new employee
+// @Description Create a new employee account
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param input body types.OnboardEmployeeRequest true "Employee onboard data"
+// @Success 200 {object} types.SignUpEmployeeResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/employee/onboard [post]
+func (h *AdminHandler) OnboardEmployee(c *gin.Context) {
+	var req types.OnboardEmployeeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := h.Service.OnboardEmployee(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
