@@ -397,7 +397,7 @@ func (t *BookingTasks) FetchAllBookings(
 		startDateArg, endDateArg, page, limit).Scan(&rawJSON)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed calling sproc get_all_bookings: %w", err)
+		return nil, fmt.Errorf("failed calling sproc fetch_all_bookings: %w", err)
 	}
 
 	var response types.FetchAllBookingsResponse

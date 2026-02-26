@@ -95,6 +95,34 @@ func (s *AccountService) GetCustomer(ctx context.Context, id string) (*types.Get
 	return resp, nil
 }
 
+func (s *AccountService) GetCustomers(ctx context.Context, page, limit int) (*types.GetAllCustomersResponse, error) {
+	var res *types.GetAllCustomersResponse
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		customers, err := s.Tasks.FetchAllCustomers(ctx, tx, page, limit)
+		if err != nil {
+			return err
+		}
+		res = customers
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+func (s *AccountService) GetEmployees(ctx context.Context, page, limit int) (*types.GetAllEmployeesResponse, error) {
+	var res *types.GetAllEmployeesResponse
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		employees, err := s.Tasks.FetchAllEmployees(ctx, tx, page, limit)
+		if err != nil {
+			return err
+		}
+		res = employees
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
 func (s *AccountService) UpdateCustomer(ctx context.Context, req types.UpdateCustomerRequest) (*types.UpdateCustomerResponse, error) {
 	var customer types.Customer
 
@@ -144,7 +172,7 @@ func (s *AccountService) SignUpEmployee(ctx context.Context, req types.SignUpEmp
 		if err != nil {
 			return err
 		}
-		parsedDate, err := time.Parse("2006-01-02", req.HireDate)
+		parsedDate, err := time.Parse(time.RFC3339, req.HireDate)
 		if err != nil {
 			return fmt.Errorf("invalid hire date format: %w", err)
 		}

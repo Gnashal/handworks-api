@@ -150,7 +150,7 @@ func (s *BookingService) GetBookings(
 		result, err = s.Tasks.FetchAllBookings(ctx, tx, startDate, endDate, page, limit, s.Logger)
 		return err
 	}); err != nil {
-		s.Logger.Error("Failed to fetch Quotes: %v", err)
+		s.Logger.Error("Failed to fetch Bookings: %v", err)
 		return nil, err
 	}
 

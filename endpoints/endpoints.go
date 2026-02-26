@@ -12,6 +12,7 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	{
 		customer.POST("/signup", h.SignUpCustomer)
 		customer.GET("/:id", h.GetCustomer)
+		customer.GET("/", h.GetCustomers)
 		customer.PUT("/:id", h.UpdateCustomer)
 		customer.DELETE("/:id/:accId", h.DeleteCustomer)
 
@@ -21,6 +22,7 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	{
 		employee.POST("/signup", h.SignUpEmployee)
 		employee.GET("/:id", h.GetEmployee)
+		employee.GET("/", h.GetEmployees)
 		employee.PUT("/:id", h.UpdateEmployee)
 		employee.PUT("/:id/performance", h.UpdateEmployeePerformanceScore)
 		employee.PUT("/:id/status", h.UpdateEmployeeStatus)
@@ -63,6 +65,10 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 
 func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	r.GET("/dashboard", h.GetAdminDashboard)
+	employees := r.Group("/employee")
+	{
+		employees.POST("/onboard", h.OnboardEmployee)
+	}
 }
 
 func RealtimeEndpoint(r *gin.RouterGroup, hubs *realtime.RealtimeHubs) {

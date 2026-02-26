@@ -117,6 +117,13 @@ type GetEmployeeResponse struct {
 	Employee Employee `json:"employee"`
 }
 
+type GetAllCustomersResponse struct {
+	Customers []Customer `json:"customers"`
+}
+type GetAllEmployeesResponse struct {
+	Employees []Employee `json:"employees"`
+}
+
 // UPDATE
 type UpdateCustomerResponse struct {
 	Customer Customer `json:"customer"`

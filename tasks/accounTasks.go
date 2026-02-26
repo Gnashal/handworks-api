@@ -2,10 +2,12 @@ package tasks
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"handworks-api/types"
 	"time"
 
+	"github.com/bytedance/gopkg/util/logger"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -100,6 +102,44 @@ func (t *AccountTasks) FetchCustomerData(c context.Context, tx pgx.Tx, ID string
 		return nil, fmt.Errorf("could not query customer table: %w", err)
 	}
 	return &customer, nil
+}
+func (t *AccountTasks) FetchAllCustomers(c context.Context, tx pgx.Tx, page, limit int) (*types.GetAllCustomersResponse, error) {
+	var rawJSON []byte
+    err := tx.QueryRow(c,
+        `SELECT account.get_all_customers($1, $2)`,
+        page, limit,
+    ).Scan(&rawJSON)
+
+    if err != nil {
+        return nil, fmt.Errorf("failed calling sproc get_all_customers: %w", err)
+    }
+
+    var response types.GetAllCustomersResponse
+    if err := json.Unmarshal(rawJSON, &response); err != nil {
+        logger.Error("failed to unmarshal quotes JSON: %v", err)
+        return nil, fmt.Errorf("unmarshal quotes: %w", err)
+    }
+
+    return &response, nil
+}
+func (t *AccountTasks) FetchAllEmployees(c context.Context, tx pgx.Tx, page, limit int) (*types.GetAllEmployeesResponse, error) {
+	var rawJSON []byte
+    err := tx.QueryRow(c,
+        `SELECT account.get_all_employees($1, $2)`,
+        page, limit,
+    ).Scan(&rawJSON)
+
+    if err != nil {
+        return nil, fmt.Errorf("failed calling sproc get_all_employees: %w", err)
+    }
+
+    var response types.GetAllEmployeesResponse
+    if err := json.Unmarshal(rawJSON, &response); err != nil {
+        logger.Error("failed to unmarshal quotes JSON: %v", err)
+        return nil, fmt.Errorf("unmarshal quotes: %w", err)
+    }
+
+    return &response, nil
 }
 func (t *AccountTasks) FetchEmployeeData(c context.Context, tx pgx.Tx, ID string) (*types.Employee, error) {
 	var emp types.Employee

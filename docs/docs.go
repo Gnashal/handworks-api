@@ -61,6 +61,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/account/customer": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all customer info",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Get all customers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetAllCustomersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/account/customer/signup": {
             "post": {
                 "description": "Create a new customer account",
@@ -243,6 +290,53 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/account/employee": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all customer info",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Get all customers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetAllCustomersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/types.ErrorResponse"
                         }
@@ -588,6 +682,52 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.AdminDashboardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/employee/onboard": {
+            "post": {
+                "description": "Create a new employee account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Sign up a new employee",
+                "parameters": [
+                    {
+                        "description": "Employee onboard data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.OnboardEmployeeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.SignUpEmployeeResponse"
                         }
                     },
                     "400": {
@@ -1209,18 +1349,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Item category",
                         "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter items created after this date",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter items created before this date",
-                        "name": "endDate",
                         "in": "query"
                     },
                     {
@@ -2151,6 +2279,17 @@ const docTemplate = `{
                 }
             }
         },
+        "types.GetAllCustomersResponse": {
+            "type": "object",
+            "properties": {
+                "customers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.Customer"
+                    }
+                }
+            }
+        },
         "types.GetCustomerResponse": {
             "type": "object",
             "properties": {
@@ -2331,6 +2470,41 @@ const docTemplate = `{
                 },
                 "widthCm": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.OnboardEmployeeRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "firstName",
+                "hireDate",
+                "lastName",
+                "organizationId",
+                "position",
+                "role"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "hireDate": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "organizationId": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
                 }
             }
         },

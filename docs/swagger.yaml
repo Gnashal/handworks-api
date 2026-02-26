@@ -373,6 +373,13 @@ definitions:
       sqm:
         type: integer
     type: object
+  types.GetAllCustomersResponse:
+    properties:
+      customers:
+        items:
+          $ref: '#/definitions/types.Customer'
+        type: array
+    type: object
   types.GetCustomerResponse:
     properties:
       customer:
@@ -501,6 +508,31 @@ definitions:
         type: integer
       widthCm:
         type: integer
+    type: object
+  types.OnboardEmployeeRequest:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      hireDate:
+        type: string
+      lastName:
+        type: string
+      organizationId:
+        type: string
+      position:
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    - firstName
+    - hireDate
+    - lastName
+    - organizationId
+    - position
+    - role
     type: object
   types.PostConstructionDetails:
     properties:
@@ -845,6 +877,36 @@ paths:
       summary: Sign up a new admin
       tags:
       - Account
+  /account/customer:
+    get:
+      description: Retrieve all customer info
+      parameters:
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAllCustomersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
+      tags:
+      - Account
   /account/customer/{id}:
     get:
       description: Retrieve customer info
@@ -964,6 +1026,36 @@ paths:
           schema:
             $ref: '#/definitions/types.ErrorResponse'
       summary: Sign up a new customer
+      tags:
+      - Account
+  /account/employee:
+    get:
+      description: Retrieve all customer info
+      parameters:
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAllCustomersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
       tags:
       - Account
   /account/employee/{id}:
@@ -1192,6 +1284,36 @@ paths:
           schema:
             $ref: '#/definitions/types.ErrorResponse'
       summary: Fetch data for admin dashboard
+      tags:
+      - Admin
+  /admin/employee/onboard:
+    post:
+      consumes:
+      - application/json
+      description: Create a new employee account
+      parameters:
+      - description: Employee onboard data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.OnboardEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SignUpEmployeeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: Sign up a new employee
       tags:
       - Admin
   /booking:
@@ -1627,14 +1749,6 @@ paths:
       - description: Item category
         in: query
         name: category
-        type: string
-      - description: Filter items created after this date
-        in: query
-        name: startDate
-        type: string
-      - description: Filter items created before this date
-        in: query
-        name: endDate
         type: string
       - default: 0
         description: Page number (zero-based)
