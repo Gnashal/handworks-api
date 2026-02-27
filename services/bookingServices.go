@@ -46,13 +46,12 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			return err
 		}
 
-		// Updated MakeBaseBooking call with all required parameters
 		baseBook, err := s.Tasks.MakeBaseBooking(
 			ctx,
 			tx,
-			req.Base.CustID,            // Use CustID from request instead of AccountID
-			req.Base.CustomerFirstName, // Pass first name
-			req.Base.CustomerLastName,  // Pass last name
+			req.Base.CustID,            
+			req.Base.CustomerFirstName, 
+			req.Base.CustomerLastName,  
 			req.Base.CustomerPhoneNo,
 			req.Base.Address,
 			req.Base.StartSched,

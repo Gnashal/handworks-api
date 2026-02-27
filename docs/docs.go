@@ -711,7 +711,7 @@ const docTemplate = `{
                 "tags": [
                     "Admin"
                 ],
-                "summary": "Sign up a new employee",
+                "summary": "Onboard a new employee",
                 "parameters": [
                     {
                         "description": "Employee onboard data",
@@ -1639,7 +1639,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all quotations associated with a specific customer with optional date filtering and pagination.",
+                "description": "Retrieve all quotations with optional date filtering and pagination.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1649,15 +1649,8 @@ const docTemplate = `{
                 "tags": [
                     "Payment"
                 ],
-                "summary": "Get all quotations for a customer",
+                "summary": "Get all quotations",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Customer ID",
-                        "name": "customerId",
-                        "in": "query",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Start date (YYYY-MM-DD)",
@@ -1917,6 +1910,9 @@ const docTemplate = `{
                 "quoteId": {
                     "type": "string"
                 },
+                "serviceDurationHours": {
+                    "type": "number"
+                },
                 "startSched": {
                     "type": "string"
                 },
@@ -2097,9 +2093,6 @@ const docTemplate = `{
         "types.CreateBookingRequest": {
             "type": "object",
             "properties": {
-                "accountId": {
-                    "type": "string"
-                },
                 "addons": {
                     "type": "array",
                     "items": {
@@ -2111,6 +2104,9 @@ const docTemplate = `{
                 },
                 "mainService": {
                     "$ref": "#/definitions/types.ServicesRequest"
+                },
+                "quoteId": {
+                    "type": "string"
                 }
             }
         },

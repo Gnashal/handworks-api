@@ -466,7 +466,6 @@ func (t *BookingTasks) FetchBookingSlots(
 
 	var rawJSON []byte
 
-	// Call sproc with just the selected date
 	err := tx.QueryRow(ctx,
 		`SELECT booking.get_daily_booking_slots($1)`,
 		selectedDate,

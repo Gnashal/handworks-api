@@ -29,24 +29,22 @@ func ClerkAuthMiddleware(publicPaths []string, logger *utils.Logger) gin.Handler
 		path := c.Request.URL.Path
 		method := c.Request.Method
 
-		// 🔍 ADD DEBUG LOGGING
+		// ADD DEBUG LOGGING
 		logger.Info("=== AUTH MIDDLEWARE DEBUG ===")
 		logger.Info("Request: %s %s", method, path)
 		logger.Info("Full URL: %s", c.Request.URL.String())
-		logger.Info("Public paths: %v", publicPaths)
 
 		// Check each public path
 		for i, p := range publicPaths {
 			match := strings.HasPrefix(path, p)
 			logger.Info("Check %d: path='%s' starts with '%s' = %v", i, path, p, match)
 			if match {
-				logger.Info("✅ Path is public! Allowing access without auth")
+				logger.Info("Path is public. Allowing access without auth")
 				c.Next()
 				return
 			}
 		}
 
-		logger.Info("❌ Path is NOT in public paths. Requiring authentication...")
 
 		config := &clerk.ClientConfig{}
 		config.Key = clerk.String(os.Getenv("CLERK_SECRET_KEY"))
@@ -55,19 +53,16 @@ func ClerkAuthMiddleware(publicPaths []string, logger *utils.Logger) gin.Handler
 		// Get JWT from header
 		token := getSessionToken(c.Request)
 		if token == "" {
-			logger.Info("❌ No Authorization header found")
+			logger.Info("No Authorization header found")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
-
-		logger.Info("✅ Found token: %s...", token[:min(20, len(token))])
 
 		// Decode without verifying to get key ID
 		unsafeClaims, err := jwt.Decode(c.Request.Context(), &jwt.DecodeParams{
 			Token: token,
 		})
 		if err != nil {
-			logger.Info("❌ Token decode error: %s", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
@@ -78,7 +73,7 @@ func ClerkAuthMiddleware(publicPaths []string, logger *utils.Logger) gin.Handler
 			JWKSClient: jwksClient,
 		})
 		if err != nil {
-			logger.Info("❌ JWK fetch error: %s", err)
+			logger.Info("JWK fetch error: %s", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
@@ -89,14 +84,14 @@ func ClerkAuthMiddleware(publicPaths []string, logger *utils.Logger) gin.Handler
 			JWK:   jwk,
 		})
 		if err != nil {
-			logger.Info("❌ Token verification error: %s", err)
+			logger.Info("Token verification error: %s", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
 
 		// Save claims into Gin context
 		c.Set(string(ClerkClaimsKey), claims)
-		logger.Info("✅ Token verified successfully for user")
+		logger.Info("Token verified successfully for user")
 
 		c.Next()
 	}

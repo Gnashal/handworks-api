@@ -96,7 +96,7 @@ func (s *PaymentService) GetAllQuotesFromCustomer(
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		result, err = s.Tasks.FetchAllQuotes(
+		result, err = s.Tasks.FetchAllQuotesByCustomer(
 			ctx, tx, customerId, startDate, endDate, page, limit, s.Logger,
 		)
 		return err
@@ -108,14 +108,27 @@ func (s *PaymentService) GetAllQuotesFromCustomer(
 	return result, nil
 }
 
-func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, customerId string) (*types.QuoteResponse, error) {
-	if quoteId == "" {
-		return nil, fmt.Errorf("quoteId is required")
-	}
-	if customerId == "" {
-		return nil, fmt.Errorf("customerId is required")
-	}
+func (s *PaymentService) GetAllQuotes(
+    ctx context.Context,
+    startDate, endDate string,
+    page, limit int,
+) (*types.FetchAllQuotesResponse, error) {
 
+    var result *types.FetchAllQuotesResponse
+
+    if err := s.withTx(ctx, func(tx pgx.Tx) error {
+        var err error
+        result, err = s.Tasks.FetchAllQuotes(ctx, tx, startDate, endDate, page, limit, s.Logger)
+        return err
+    }); err != nil {
+        s.Logger.Error("Failed to fetch Quotes: %v", err)
+        return nil, err
+    }
+
+    return result, nil
+}
+
+func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, customerId string) (*types.QuoteResponse, error) {
 	var quote *types.QuoteResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {

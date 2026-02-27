@@ -2,12 +2,10 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"handworks-api/types"
 	"time"
 
-	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -46,26 +44,14 @@ func (s *AccountService) SignUpCustomer(ctx context.Context, req types.SignUpCus
 			return  err
 		}
 		customer.ID = id
+		err = s.Tasks.UpdateCustomerMetadata(ctx, tx, customer.ID, req.ClerkID)
+		if err != nil {
+			return err
+		}
 		return nil
 	}); err != nil {
 		return nil, err
 	}
-	// metadata to store in clerk
-	metadata := map[string]string{"custId": customer.ID}
-	jsonData, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-	raw := json.RawMessage(jsonData)
-
-	_, err = user.UpdateMetadata(ctx, req.ClerkID, &user.UpdateMetadataParams{
-		PublicMetadata: &raw,
-	})
-	if err != nil {
-		s.Logger.Error("Failed to update Clerk Metadata: %v", err)
-		return nil, fmt.Errorf("failed to update clerk metadata: %w", err)
-	}
-	s.Logger.Info("Updated Clerk Metadata")
 	resp := &types.SignUpCustomerResponse{
 		Customer: customer,
 	}
@@ -181,29 +167,17 @@ func (s *AccountService) SignUpEmployee(ctx context.Context, req types.SignUpEmp
 		if err != nil {
 			return err
 		}
-
 		employee = *emp
+		err = s.Tasks.UpdateEmployeeMetadata(ctx, tx, employee.ID, req.ClerkID)
+		if err != nil {
+			return err
+		}
 		employee.Account = *acc
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("failed to sign up employee: %w", err)
 	}
-	// metadata to store in clerk
-	metadata := map[string]string{"empId": employee.ID}
-	jsonData, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-	raw := json.RawMessage(jsonData)
-
-	_, err = user.UpdateMetadata(ctx, req.ClerkID, &user.UpdateMetadataParams{
-		PublicMetadata: &raw,
-	})
-	if err != nil {
-		s.Logger.Error("Failed to update Clerk Metadata: %v", err)
-		return nil, fmt.Errorf("failed to update clerk metadata: %w", err)
-	}
-	s.Logger.Info("Updated Clerk Metadata")
+	
 	resp := &types.SignUpEmployeeResponse{
 		Employee: employee,
 	}
@@ -312,26 +286,14 @@ func (s* AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminR
 			return  err
 		}
 		admin.ID = id
+		err = s.Tasks.UpdateAdminMetadata(ctx, tx, admin.ID, req.ClerkID)
+		if err != nil {
+			return err
+		}
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("could not create admin: %w", err)
 	}
-	// metadata to store in clerk
-	metadata := map[string]string{"adminId": admin.ID}
-	jsonData, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-	raw := json.RawMessage(jsonData)
-
-	_, err = user.UpdateMetadata(ctx, req.ClerkID, &user.UpdateMetadataParams{
-		PublicMetadata: &raw,
-	})
-	if err != nil {
-		s.Logger.Error("Failed to update Clerk Metadata: %v", err)
-		return nil, fmt.Errorf("failed to update clerk metadata: %w", err)
-	}
-	s.Logger.Info("Updated Clerk Metadata")
 	return &types.SignUpAdminResponse{
 		Admin: admin,
 	}, nil

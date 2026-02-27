@@ -228,11 +228,9 @@ func (h *BookingHandler) GetEmployeeAssignedBookings(c *gin.Context) {
 		return
 	}
 
-	// Get date parameters
 	startDate := c.Query("startDate")
 	endDate := c.Query("endDate")
 
-	// Pagination defaults
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
 
@@ -257,7 +255,6 @@ func (h *BookingHandler) GetEmployeeAssignedBookings(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	// Pass empty strings (not nil pointers)
 	result, err := h.Service.GetEmployeeAssignedBookings(ctx, employeeId, startDate, endDate, page, limit)
 	if err != nil {
 		h.Logger.Error("failed to get employee bookings: %v", err)
@@ -289,7 +286,6 @@ func (h *BookingHandler) GetEmployeeAssignedBookings(c *gin.Context) {
 // @Failure 500 {object} types.ErrorResponse "Internal server error"
 // @Router /booking/slots [get]
 func (h *BookingHandler) GetBookedSlots(c *gin.Context) {
-	// Get date from query parameter
 	date := c.Query("date")
 	if date == "" {
 		date = time.Now().Format("2006-01-02")
@@ -307,7 +303,6 @@ func (h *BookingHandler) GetBookedSlots(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	// Call service
 	result, err := h.Service.GetBookedSlots(ctx, date)
 	if err != nil {
 		h.Logger.Error("failed to get booked slots: %v", err)
