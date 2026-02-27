@@ -19,6 +19,7 @@ func NewRealtimeHubs(log *utils.Logger) *RealtimeHubs {
 		ChatHub:     NewChatHub(log),
 	}
 }
+
 type AdminHub struct {
 	log        *utils.Logger
 	clients    map[*websocket.Conn]bool
@@ -36,6 +37,7 @@ func NewAdminHub(log *utils.Logger) *AdminHub {
 		broadcast:  make(chan []byte),
 	}
 }
+
 type EmployeeHub struct {
 	log        *utils.Logger
 	clients    map[string]map[*websocket.Conn]bool

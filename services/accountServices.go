@@ -32,7 +32,7 @@ func (s *AccountService) withTx(
 // Customer methods
 func (s *AccountService) SignUpCustomer(ctx context.Context, req types.SignUpCustomerRequest) (*types.SignUpCustomerResponse, error) {
 	var customer types.Customer
-	
+
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		acc, err := s.Tasks.CreateAccount(ctx, tx, req.FirstName, req.LastName, req.Email, req.Provider, req.ClerkID, req.Role)
 		if err != nil {
@@ -41,7 +41,7 @@ func (s *AccountService) SignUpCustomer(ctx context.Context, req types.SignUpCus
 		customer.Account = *acc
 		id, err := s.Tasks.CreateCustomer(ctx, tx, acc.ID)
 		if err != nil {
-			return  err
+			return err
 		}
 		customer.ID = id
 		err = s.Tasks.UpdateCustomerMetadata(ctx, tx, customer.ID, req.ClerkID)
@@ -70,7 +70,7 @@ func (s *AccountService) GetCustomer(ctx context.Context, id string) (*types.Get
 			return err
 		}
 		customer = *cust
-		customer.Account = *acc	
+		customer.Account = *acc
 		return nil
 	}); err != nil {
 		return nil, err
@@ -128,8 +128,8 @@ func (s *AccountService) UpdateCustomer(ctx context.Context, req types.UpdateCus
 	}, nil
 }
 
-func (s *AccountService) DeleteCustomer(ctx context.Context, id, accId string) (*types.DeleteCustomerResponse,error) {
-		var customer types.Customer
+func (s *AccountService) DeleteCustomer(ctx context.Context, id, accId string) (*types.DeleteCustomerResponse, error) {
+	var customer types.Customer
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		cust, err := s.Tasks.DeleteCustomerData(ctx, tx, id, accId)
@@ -143,8 +143,8 @@ func (s *AccountService) DeleteCustomer(ctx context.Context, id, accId string) (
 		return nil, fmt.Errorf("could not update customer: %w", err)
 	}
 	return &types.DeleteCustomerResponse{
-		Ok: true,
-		Message: "Success",
+		Ok:       true,
+		Message:  "Success",
 		Customer: customer,
 	}, nil
 }
@@ -177,7 +177,7 @@ func (s *AccountService) SignUpEmployee(ctx context.Context, req types.SignUpEmp
 	}); err != nil {
 		return nil, fmt.Errorf("failed to sign up employee: %w", err)
 	}
-	
+
 	resp := &types.SignUpEmployeeResponse{
 		Employee: employee,
 	}
@@ -272,9 +272,9 @@ func (s *AccountService) DeleteEmployee(ctx context.Context, id, accId string) (
 		Employee: employee,
 	}, nil
 }
-func (s* AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminRequest) (*types.SignUpAdminResponse, error) {
+func (s *AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminRequest) (*types.SignUpAdminResponse, error) {
 	var admin types.Admin
-	
+
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		acc, err := s.Tasks.CreateAccount(ctx, tx, req.FirstName, req.LastName, req.Email, req.Provider, req.ClerkID, req.Role)
 		if err != nil {
@@ -283,7 +283,7 @@ func (s* AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminR
 		admin.Account = *acc
 		id, err := s.Tasks.CreateAdmin(ctx, tx, acc.ID)
 		if err != nil {
-			return  err
+			return err
 		}
 		admin.ID = id
 		err = s.Tasks.UpdateAdminMetadata(ctx, tx, admin.ID, req.ClerkID)

@@ -12,7 +12,6 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-
 func (h *AdminHub) Run() {
 	h.log.Info("AdminHub started")
 	for {
@@ -70,7 +69,3 @@ func (h *AdminHub) SendToAdmin(event string, payload any) {
 	}
 	h.broadcast <- msg
 }
-
-
-
-

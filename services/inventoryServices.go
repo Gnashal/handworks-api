@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 )
+
 func (s *InventoryService) withTx(
 	ctx context.Context,
 	fn func(pgx.Tx) error,
@@ -28,7 +29,7 @@ func (s *InventoryService) withTx(
 }
 func (s *InventoryService) CreateItem(ctx context.Context, req types.CreateItemRequest) (*types.InventoryItem, error) {
 	var item types.InventoryItem
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		inv, err := s.Tasks.CreateInventoryItem(ctx, tx, req.Name, req.Type, req.Unit, req.Category, req.ImageURL, req.Quantity, req.Quantity)
 		if err != nil {
 			return err
@@ -42,7 +43,7 @@ func (s *InventoryService) CreateItem(ctx context.Context, req types.CreateItemR
 }
 func (s *InventoryService) GetItem(ctx context.Context, id string) (*types.InventoryItem, error) {
 	var item types.InventoryItem
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		inv, err := s.Tasks.FetchInventoryItem(ctx, tx, id)
 		if err != nil {
 			return err
@@ -54,6 +55,7 @@ func (s *InventoryService) GetItem(ctx context.Context, id string) (*types.Inven
 	}
 	return &item, nil
 }
+
 // ListItems returns items using the provided filter (supports multiple filters, pagination, date range)
 func (s *InventoryService) ListItems(ctx context.Context, filter *types.InventoryFilter) (*types.InventoryListResponse, error) {
 	var items *types.InventoryListResponse
@@ -72,7 +74,7 @@ func (s *InventoryService) ListItems(ctx context.Context, filter *types.Inventor
 
 func (s *InventoryService) UpdateItem(ctx context.Context, req types.UpdateItemRequest) (*types.InventoryItem, error) {
 	var item types.InventoryItem
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		inv, err := s.Tasks.UpdateInventoryItem(ctx, tx, &req)
 		if err != nil {
 			return err
@@ -87,7 +89,7 @@ func (s *InventoryService) UpdateItem(ctx context.Context, req types.UpdateItemR
 
 func (s *InventoryService) DeleteItem(ctx context.Context, id string) (*types.InventoryItem, error) {
 	var item types.InventoryItem
-	if err := s.withTx(ctx, func (tx pgx.Tx) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		inv, err := s.Tasks.DeleteInventoryItem(ctx, tx, id)
 		if err != nil {
 			return err
@@ -99,8 +101,8 @@ func (s *InventoryService) DeleteItem(ctx context.Context, id string) (*types.In
 	}
 	return &item, nil
 }
-func (s *InventoryService) AssignEquipmentAndResources (ctx context.Context, req* types.CreateBookingRequest) (*types.CleaningAllocation, error) {
+func (s *InventoryService) AssignEquipmentAndResources(ctx context.Context, req *types.CreateBookingRequest) (*types.CleaningAllocation, error) {
 	// TODO: implement assignment logic
-	
+
 	return nil, nil
 }

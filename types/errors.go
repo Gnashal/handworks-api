@@ -1,9 +1,9 @@
 package types
 
 type ErrorResponse struct {
-    Error string `json:"error"`
+	Error string `json:"error"`
 }
 
 func NewErrorResponse(err error) ErrorResponse {
-    return ErrorResponse{Error: err.Error()}
+	return ErrorResponse{Error: err.Error()}
 }
