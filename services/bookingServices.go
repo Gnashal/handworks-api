@@ -27,6 +27,7 @@ func (s *BookingService) withTx(
 	}()
 	return fn(tx)
 }
+
 func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBookingRequest) (*types.Booking, error) {
 	s.Logger.Info("Creating booking for customer: %s...", req.Base.CustomerFirstName)
 
@@ -48,7 +49,10 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 		baseBook, err := s.Tasks.MakeBaseBooking(
 			ctx,
 			tx,
-			req.AccountID,
+			req.Base.CustID,            
+			req.Base.CustomerFirstName, 
+			req.Base.CustomerLastName,  
+			req.Base.CustomerPhoneNo,
 			req.Base.Address,
 			req.Base.StartSched,
 			req.Base.EndSched,
@@ -131,6 +135,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 
 	return createdBooking, nil
 }
+
 func (s *BookingService) GetBookings(
 	ctx context.Context,
 	startDate, endDate string,
@@ -194,9 +199,9 @@ func (s *BookingService) GetEmployeeAssignedBookings(
 
 	return result, nil
 }
-func (s *BookingService) GetBookingByID(ctx context.Context, bookingID string) (*types.Booking, error)  {
+func (s *BookingService) GetBookingByID(ctx context.Context, bookingID string) (*types.Booking, error) {
 	var booking *types.Booking
-	
+
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
 		booking, err = s.Tasks.FetchBookingByID(ctx, tx, bookingID, s.Logger)
@@ -205,9 +210,25 @@ func (s *BookingService) GetBookingByID(ctx context.Context, bookingID string) (
 		s.Logger.Error("failed to fetch booking by ID: %v", err)
 		return nil, err
 	}
-	
+
 	return booking, nil
 }
+
+func (s *BookingService) GetBookedSlots(ctx context.Context, date string) (*types.FetchSlotsResponse, error) {
+	var result *types.FetchSlotsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		result, err = s.Tasks.FetchBookingSlots(ctx, tx, date, s.Logger)
+		return err
+	}); err != nil {
+		s.Logger.Error("failed to fetch booked slots: %v", err)
+		return nil, fmt.Errorf("failed to get booked slots: %w", err)
+	}
+
+	return result, nil
+}
+
 func (s *BookingService) UpdateBooking(ctx context.Context) error {
 	return nil
 }

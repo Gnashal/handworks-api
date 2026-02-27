@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"handworks-api/types"
 	"net/http"
 	"time"
@@ -25,10 +26,10 @@ func (h *AdminHandler) GetAdminDashboard(c *gin.Context) {
 	adminId := c.Query("adminId")
 	dateFilter := c.Query("dateFilter")
 
-	// if (adminId == "") {
-	// 	c.JSON(http.StatusForbidden, types.NewErrorResponse(errors.New("You are not an admin")))
-	// 	return
-	// }
+	if (adminId == "") {
+		c.JSON(http.StatusForbidden, types.NewErrorResponse(errors.New("You are not an admin")))
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

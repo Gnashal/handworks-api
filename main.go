@@ -56,15 +56,14 @@ func main() {
 	logger.Info("Connected to Db")
 	defer conn.Close()
 
-	
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
-	"/api/account/employee/signup","/api/account/admin/signup",
-	"/api/payment/quote/preview", "/health", "/api/admin/dashboard","/api/admin/employee/onboard"}
-	
+		"/api/account/employee/signup", "/api/account/admin/signup",
+		"/api/payment/quote/preview", "/health", "/api/admin/dashboard", "/api/payment/quote", "/api/booking/slots", "/api/booking/customer", "/api/booking/bookings"}
+
 	// websocket
 	hubs := realtime.NewRealtimeHubs(logger)
-	
+
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
 	HealthCheck(router)
 	accountService := services.NewAccountService(conn, logger)
@@ -72,15 +71,13 @@ func main() {
 	paymentService := services.NewPaymentService(conn, logger)
 	bookingService := services.NewBookingService(conn, logger, paymentService)
 	adminServie := services.NewAdminService(conn, logger, accountService)
-	
+
 	accountHandler := handlers.NewAccountHandler(accountService, logger)
 	inventoryHandler := handlers.NewInventoryHandler(inventoryService, logger)
 	bookingHandler := handlers.NewBookingHandler(bookingService, logger)
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
 	adminHandler := handlers.NewAdminHandler(adminServie, logger)
-	
 
-	
 	api := router.Group("/api")
 	{
 		endpoints.AccountEndpoint(api.Group("/account"), accountHandler)
@@ -90,7 +87,7 @@ func main() {
 		endpoints.AdminEndpoint(api.Group("/admin"), adminHandler)
 		endpoints.RealtimeEndpoint(api, hubs)
 	}
-	
+
 	// running websocket hubs
 	go hubs.EmployeeHub.Run()
 	go hubs.AdminHub.Run()
@@ -111,7 +108,6 @@ func main() {
 			logger.Fatal("Listener failed: %v", err)
 		}
 	}()
-
 
 	port := "8080"
 	logger.Info("Starting server on port %s", port)

@@ -25,10 +25,14 @@ definitions:
     properties:
       addonId:
         type: string
-      addonName:
-        type: string
       price:
         type: number
+      serviceDetail:
+        type: object
+      serviceHours:
+        type: integer
+      serviceType:
+        type: string
     type: object
   types.AddOnRequest:
     properties:
@@ -85,6 +89,8 @@ definitions:
         type: string
       customerLastName:
         type: string
+      customerPhoneNo:
+        type: string
       dirtyScale:
         type: integer
       endSched:
@@ -118,6 +124,8 @@ definitions:
         type: string
       customerLastName:
         type: string
+      customerPhoneNo:
+        type: string
       dirtyScale:
         type: integer
       endSched:
@@ -128,9 +136,23 @@ definitions:
         type: array
       quoteId:
         type: string
+      serviceDurationHours:
+        type: number
       startSched:
         type: string
       updatedAt:
+        type: string
+    type: object
+  types.BookedSlot:
+    properties:
+      bookingID:
+        type: string
+      durationHours:
+        description: optional if frontend needs it
+        type: number
+      endSched:
+        type: string
+      startSched:
         type: string
     type: object
   types.Booking:
@@ -233,8 +255,6 @@ definitions:
     type: object
   types.CreateBookingRequest:
     properties:
-      accountId:
-        type: string
       addons:
         items:
           $ref: '#/definitions/types.AddOnRequest'
@@ -243,6 +263,8 @@ definitions:
         $ref: '#/definitions/types.BaseBookingDetailsRequest'
       mainService:
         $ref: '#/definitions/types.ServicesRequest'
+      quoteId:
+        type: string
     type: object
   types.CreateItemRequest:
     properties:
@@ -337,10 +359,19 @@ definitions:
       totalQuotes:
         type: integer
     type: object
+  types.FetchSlotsResponse:
+    properties:
+      occupiedSlots:
+        items:
+          $ref: '#/definitions/types.BookedSlot'
+        type: array
+    type: object
   types.GeneralCleaningDetails:
     properties:
       homeType:
         type: string
+      hours:
+        type: integer
       sqm:
         type: integer
     type: object
@@ -527,11 +558,21 @@ definitions:
       isValid:
         type: boolean
       mainService:
+        description: the main type of service
         type: string
+      mainServiceDetail:
+        description: added
+        type: object
+      mainServiceHours:
+        description: added
+        type: integer
       subtotal:
         type: number
       totalPrice:
         type: number
+      totalServiceHours:
+        description: added
+        type: integer
       updatedAt:
         type: string
     type: object
@@ -548,6 +589,8 @@ definitions:
       serviceDetail:
         description: serialized ServicesRequest
         type: object
+      serviceHours:
+        type: integer
       serviceType:
         type: string
     type: object
@@ -573,14 +616,20 @@ definitions:
         items:
           $ref: '#/definitions/types.AddOnBreakdown'
         type: array
+      mainServiceDetail:
+        type: object
+      mainServiceHours:
+        type: integer
       mainServiceName:
         type: string
       mainServiceTotal:
         type: number
-      quote_id:
+      quoteId:
         type: string
       totalPrice:
         type: number
+      totalServiceHours:
+        type: integer
     type: object
   types.ServiceDetail:
     properties:
@@ -1266,7 +1315,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
-      summary: Sign up a new employee
+      summary: Onboard a new employee
       tags:
       - Admin
   /booking:
@@ -1537,6 +1586,41 @@ paths:
       summary: Get Employee bookings
       tags:
       - Booking
+  /booking/slots:
+    get:
+      consumes:
+      - application/json
+      description: Returns all occupied booking slots for the specified date. If no
+        date is provided, defaults to today.
+      parameters:
+      - description: Date in YYYY-MM-DD format (defaults to today)
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.FetchSlotsResponse'
+        "400":
+          description: Invalid date format
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get booked slots by date
+      tags:
+      - Booking
   /inventory:
     post:
       consumes:
@@ -1703,6 +1787,45 @@ paths:
       tags:
       - Inventory
   /payment/quote:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a quote by ID that belongs to a specific customer
+      parameters:
+      - description: Quote ID
+        in: query
+        name: quoteId
+        required: true
+        type: string
+      - description: Customer ID
+        in: query
+        name: customerId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Quote'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get quote by ID for a specific customer
+      tags:
+      - Payment
     post:
       consumes:
       - application/json
@@ -1768,14 +1891,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve all quotations associated with a specific customer with
-        optional date filtering and pagination.
+      description: Retrieve all quotations with optional date filtering and pagination.
       parameters:
-      - description: Customer ID
-        in: query
-        name: customerId
-        required: true
-        type: string
       - description: Start date (YYYY-MM-DD)
         in: query
         name: startDate
@@ -1811,7 +1928,7 @@ paths:
             $ref: '#/definitions/types.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get all quotations for a customer
+      summary: Get all quotations
       tags:
       - Payment
 securityDefinitions:

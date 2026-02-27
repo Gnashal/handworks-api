@@ -15,6 +15,7 @@ import (
 type ContextString string
 
 const ClerkClaimsKey ContextString = "clerk-claims"
+
 func getSessionToken(r *http.Request) string {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -23,22 +24,36 @@ func getSessionToken(r *http.Request) string {
 	return strings.TrimPrefix(authHeader, "Bearer ")
 }
 
-func ClerkAuthMiddleware(publicPaths []string, logger * utils.Logger) gin.HandlerFunc {
+func ClerkAuthMiddleware(publicPaths []string, logger *utils.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		path := c.Request.URL.Path
-		for _, p := range publicPaths {
-			if strings.HasPrefix(path, p) {
+		method := c.Request.Method
+
+		// ADD DEBUG LOGGING
+		logger.Info("=== AUTH MIDDLEWARE DEBUG ===")
+		logger.Info("Request: %s %s", method, path)
+		logger.Info("Full URL: %s", c.Request.URL.String())
+
+		// Check each public path
+		for i, p := range publicPaths {
+			match := strings.HasPrefix(path, p)
+			logger.Info("Check %d: path='%s' starts with '%s' = %v", i, path, p, match)
+			if match {
+				logger.Info("Path is public. Allowing access without auth")
 				c.Next()
 				return
 			}
 		}
+
+
 		config := &clerk.ClientConfig{}
 		config.Key = clerk.String(os.Getenv("CLERK_SECRET_KEY"))
 		jwksClient := jwks.NewClient(config)
+
 		// Get JWT from header
 		token := getSessionToken(c.Request)
 		if token == "" {
-			logger.Debug("Token is empty")
+			logger.Info("No Authorization header found")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
@@ -49,7 +64,6 @@ func ClerkAuthMiddleware(publicPaths []string, logger * utils.Logger) gin.Handle
 		})
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			logger.Debug("Claims error: %s", err)
 			return
 		}
 
@@ -59,8 +73,8 @@ func ClerkAuthMiddleware(publicPaths []string, logger * utils.Logger) gin.Handle
 			JWKSClient: jwksClient,
 		})
 		if err != nil {
+			logger.Info("JWK fetch error: %s", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			logger.Debug("JWK error: %s", err)
 			return
 		}
 
@@ -70,16 +84,15 @@ func ClerkAuthMiddleware(publicPaths []string, logger * utils.Logger) gin.Handle
 			JWK:   jwk,
 		})
 		if err != nil {
+			logger.Info("Token verification error: %s", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			logger.Debug("Token verification error: %s", err)
 			return
 		}
 
 		// Save claims into Gin context
 		c.Set(string(ClerkClaimsKey), claims)
+		logger.Info("Token verified successfully for user")
 
 		c.Next()
 	}
 }
-
-

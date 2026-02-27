@@ -181,13 +181,13 @@ func (t *InventoryTasks) DeleteInventoryItem(
 	return &item, nil
 }
 // for the assignment logic
-func (s *InventoryTasks) resolveEquipmentTypes(serviceType string) []string {
-	switch serviceType {
-	case "general":
-		return []string{"Vacuum Cleaner", "Mop"}
-	case "car":
-		return []string{"Car wax", "Steam Cleaner"}
-	default:
-		return []string{}
-	}
-}
+// func (s *InventoryTasks) resolveEquipmentTypes(serviceType string) []string {
+// 	switch serviceType {
+// 	case "general":
+// 		return []string{"Vacuum Cleaner", "Mop"}
+// 	case "car":
+// 		return []string{"Car wax", "Steam Cleaner"}
+// 	default:
+// 		return []string{}
+// 	}
+// }

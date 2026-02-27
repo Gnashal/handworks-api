@@ -711,7 +711,7 @@ const docTemplate = `{
                 "tags": [
                     "Admin"
                 ],
-                "summary": "Sign up a new employee",
+                "summary": "Onboard a new employee",
                 "parameters": [
                     {
                         "description": "Employee onboard data",
@@ -1073,6 +1073,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/booking/slots": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all occupied booking slots for the specified date. If no date is provided, defaults to today.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get booked slots by date",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Date in YYYY-MM-DD format (defaults to today)",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FetchSlotsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid date format",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/{id}": {
             "put": {
                 "security": [
@@ -1422,6 +1476,66 @@ const docTemplate = `{
             }
         },
         "/payment/quote": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a quote by ID that belongs to a specific customer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get quote by ID for a specific customer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Quote ID",
+                        "name": "quoteId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "customerId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Quote"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -1525,7 +1639,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all quotations associated with a specific customer with optional date filtering and pagination.",
+                "description": "Retrieve all quotations with optional date filtering and pagination.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1535,15 +1649,8 @@ const docTemplate = `{
                 "tags": [
                     "Payment"
                 ],
-                "summary": "Get all quotations for a customer",
+                "summary": "Get all quotations",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Customer ID",
-                        "name": "customerId",
-                        "in": "query",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Start date (YYYY-MM-DD)",
@@ -1633,11 +1740,17 @@ const docTemplate = `{
                 "addonId": {
                     "type": "string"
                 },
-                "addonName": {
-                    "type": "string"
-                },
                 "price": {
                     "type": "number"
+                },
+                "serviceDetail": {
+                    "type": "object"
+                },
+                "serviceHours": {
+                    "type": "integer"
+                },
+                "serviceType": {
+                    "type": "string"
                 }
             }
         },
@@ -1726,6 +1839,9 @@ const docTemplate = `{
                 "customerLastName": {
                     "type": "string"
                 },
+                "customerPhoneNo": {
+                    "type": "string"
+                },
                 "dirtyScale": {
                     "type": "integer"
                 },
@@ -1776,6 +1892,9 @@ const docTemplate = `{
                 "customerLastName": {
                     "type": "string"
                 },
+                "customerPhoneNo": {
+                    "type": "string"
+                },
                 "dirtyScale": {
                     "type": "integer"
                 },
@@ -1791,10 +1910,31 @@ const docTemplate = `{
                 "quoteId": {
                     "type": "string"
                 },
+                "serviceDurationHours": {
+                    "type": "number"
+                },
                 "startSched": {
                     "type": "string"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.BookedSlot": {
+            "type": "object",
+            "properties": {
+                "bookingID": {
+                    "type": "string"
+                },
+                "durationHours": {
+                    "description": "optional if frontend needs it",
+                    "type": "number"
+                },
+                "endSched": {
+                    "type": "string"
+                },
+                "startSched": {
                     "type": "string"
                 }
             }
@@ -1953,9 +2093,6 @@ const docTemplate = `{
         "types.CreateBookingRequest": {
             "type": "object",
             "properties": {
-                "accountId": {
-                    "type": "string"
-                },
                 "addons": {
                     "type": "array",
                     "items": {
@@ -1967,6 +2104,9 @@ const docTemplate = `{
                 },
                 "mainService": {
                     "$ref": "#/definitions/types.ServicesRequest"
+                },
+                "quoteId": {
+                    "type": "string"
                 }
             }
         },
@@ -2110,11 +2250,25 @@ const docTemplate = `{
                 }
             }
         },
+        "types.FetchSlotsResponse": {
+            "type": "object",
+            "properties": {
+                "occupiedSlots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.BookedSlot"
+                    }
+                }
+            }
+        },
         "types.GeneralCleaningDetails": {
             "type": "object",
             "properties": {
                 "homeType": {
                     "type": "string"
+                },
+                "hours": {
+                    "type": "integer"
                 },
                 "sqm": {
                     "type": "integer"
@@ -2383,13 +2537,26 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "mainService": {
+                    "description": "the main type of service",
                     "type": "string"
+                },
+                "mainServiceDetail": {
+                    "description": "added",
+                    "type": "object"
+                },
+                "mainServiceHours": {
+                    "description": "added",
+                    "type": "integer"
                 },
                 "subtotal": {
                     "type": "number"
                 },
                 "totalPrice": {
                     "type": "number"
+                },
+                "totalServiceHours": {
+                    "description": "added",
+                    "type": "integer"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -2414,6 +2581,9 @@ const docTemplate = `{
                 "serviceDetail": {
                     "description": "serialized ServicesRequest",
                     "type": "object"
+                },
+                "serviceHours": {
+                    "type": "integer"
                 },
                 "serviceType": {
                     "type": "string"
@@ -2455,17 +2625,26 @@ const docTemplate = `{
                         "$ref": "#/definitions/types.AddOnBreakdown"
                     }
                 },
+                "mainServiceDetail": {
+                    "type": "object"
+                },
+                "mainServiceHours": {
+                    "type": "integer"
+                },
                 "mainServiceName": {
                     "type": "string"
                 },
                 "mainServiceTotal": {
                     "type": "number"
                 },
-                "quote_id": {
+                "quoteId": {
                     "type": "string"
                 },
                 "totalPrice": {
                     "type": "number"
+                },
+                "totalServiceHours": {
+                    "type": "integer"
                 }
             }
         },
