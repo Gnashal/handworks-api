@@ -93,7 +93,10 @@ func (t *BookingTasks) AllocateCleaners(ctx context.Context, req *types.CreateBo
 func (t *BookingTasks) MakeBaseBooking(
 	ctx context.Context,
 	tx pgx.Tx,
-	accountID string,
+	custID string, // Changed from accountID to custID
+	customerFirstName string, // Add this
+	customerLastName string, // Add this
+	customerPhoneNo string,
 	address types.Address,
 	startSched time.Time,
 	endSched time.Time,
@@ -106,43 +109,45 @@ func (t *BookingTasks) MakeBaseBooking(
 
 	err := tx.QueryRow(ctx,
 		`INSERT INTO booking.basebookings (
-            cust_id,
-            customer_first_name,
-            customer_last_name,
+            custid,
+            customerfirstname,
+            customerlastname,
+            customer_phone_no,
             address,
-            start_sched,
-            end_sched,
-            dirty_scale,
-            payment_status,
-            review_status,
+            startsched,
+            endsched,
+            dirtyscale,
+            paymentstatus,
+            reviewstatus,
             photos,
-            created_at,
-            updated_at,
-            quote_id
+            createdat,
+            updatedat,
+            quoteid
         )
-        SELECT 
-            c.id,                -- customer ID from account.customers
-            a.first_name,        -- first name from account.accounts
-            a.last_name,         -- last name from account.accounts
-            $2, $3, $4, $5, 'UNPAID', 'PENDING', $6, NOW(), NOW(), $7
-        FROM account.accounts a
-        JOIN account.customers c ON a.id = c.account_id
-        WHERE a.id = $1
-        RETURNING id, cust_id, customer_first_name, customer_last_name, address, 
-            start_sched, end_sched, dirty_scale, payment_status, review_status, 
-            photos, created_at, updated_at, quote_id`,
-		accountID,  // $1 - account.accounts.id
-		address,    // $2
-		startSched, // $3
-		endSched,   // $4
-		dirtyScale, // $5
-		photos,     // $6
-		quoteId,    // $7
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING id, custid, customerfirstname, customerlastname, customer_phone_no, address, 
+            startsched, endsched, dirtyscale, paymentstatus, reviewstatus, 
+            photos, createdat, updatedat, quoteid`,
+		custID,            // $1 - custid (from frontend)
+		customerFirstName, // $2 - customerfirstname (from frontend)
+		customerLastName,  // $3 - customerlastname (from frontend)
+		customerPhoneNo,   // $4 - customer_phone_no
+		address,           // $5 - address
+		startSched,        // $6 - startsched
+		endSched,          // $7 - endsched
+		dirtyScale,        // $8 - dirtyscale
+		"UNPAID",          // $9 - paymentstatus
+		"PENDING",         // $10 - reviewstatus
+		photos,            // $11 - photos
+		time.Now(),        // $12 - createdat
+		time.Now(),        // $13 - updatedat
+		quoteId,           // $14 - quoteid
 	).Scan(
 		&createdBaseBook.ID,
 		&createdBaseBook.CustID,
 		&createdBaseBook.CustomerFirstName,
 		&createdBaseBook.CustomerLastName,
+		&createdBaseBook.CustomerPhoneNo,
 		&createdBaseBook.Address,
 		&createdBaseBook.StartSched,
 		&createdBaseBook.EndSched,
@@ -365,15 +370,31 @@ func (t *BookingTasks) FetchBookingByID(ctx context.Context, tx pgx.Tx, bookingI
 func (t *BookingTasks) FetchAllBookings(
 	ctx context.Context,
 	tx pgx.Tx,
-	startDate, endDate string,
+	startDate, endDate string, // Keep as string but convert to nil if empty
 	page, limit int,
 	logger *utils.Logger,
 ) (*types.FetchAllBookingsResponse, error) {
 
 	var rawJSON []byte
+
+	// Convert empty strings to nil (NULL in database)
+	var startDateArg, endDateArg interface{}
+
+	if startDate == "" {
+		startDateArg = nil
+	} else {
+		startDateArg = startDate
+	}
+
+	if endDate == "" {
+		endDateArg = nil
+	} else {
+		endDateArg = endDate
+	}
+
 	err := tx.QueryRow(ctx,
-		`SELECT booking.fetch_all_bookings($1, $2, $3, $4)`,
-		startDate, endDate, page, limit).Scan(&rawJSON)
+		`SELECT booking.get_all_bookings($1, $2, $3, $4)`,
+		startDateArg, endDateArg, page, limit).Scan(&rawJSON)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed calling sproc fetch_all_bookings: %w", err)
@@ -381,8 +402,8 @@ func (t *BookingTasks) FetchAllBookings(
 
 	var response types.FetchAllBookingsResponse
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
-		logger.Error("failed to unmarshal quotes JSON: %v", err)
-		return nil, fmt.Errorf("unmarhsal quotes: %w", err)
+		logger.Error("failed to unmarshal bookings JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal bookings: %w", err)
 	}
 
 	return &response, nil
@@ -431,6 +452,34 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
+	}
+
+	return &response, nil
+}
+
+func (t *BookingTasks) FetchBookingSlots(
+	ctx context.Context,
+	tx pgx.Tx,
+	selectedDate string,
+	logger *utils.Logger,
+) (*types.FetchSlotsResponse, error) {
+
+	var rawJSON []byte
+
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_daily_booking_slots($1)`,
+		selectedDate,
+	).Scan(&rawJSON)
+
+	if err != nil {
+		logger.Error("failed to call get_daily_booking_slots sproc: %v", err)
+		return nil, fmt.Errorf("failed calling sproc get_daily_booking_slots: %w", err)
+	}
+
+	var response types.FetchSlotsResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal booking slots JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal booking slots: %w", err)
 	}
 
 	return &response, nil

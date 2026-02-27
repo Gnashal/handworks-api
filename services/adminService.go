@@ -66,7 +66,6 @@ func (s *AdminService) OnboardEmployee(ctx context.Context, req* types.OnboardEm
 		if err != nil {
 			return fmt.Errorf("failed to onboard employee: %w", err)
 		}
-		s.Logger.Info("Successfully onboarded employee with Clerk ID: %s and Organization ID: %s", clerkUser.ID, req.OrganizationID)
 		return err
 	}); err != nil {
 		s.Logger.Error("Failed to onboard employee: %v", err)

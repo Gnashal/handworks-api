@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bytedance/gopkg/util/logger"
+	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -319,6 +320,54 @@ func (a *AccountTasks) UpdateStatus(c context.Context, tx pgx.Tx, status, empId 
 	WHERE id = @id`, args)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+func (a *AccountTasks) UpdateCustomerMetadata (c context.Context, tx pgx.Tx, customerId, clerkId string) error {
+	metadata := map[string]string{"custId": customerId}
+	jsonData, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	raw := json.RawMessage(jsonData)
+
+	_, err = user.UpdateMetadata(c, clerkId, &user.UpdateMetadataParams{
+		PublicMetadata: &raw,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update clerk metadata: %w", err)
+	}
+	return nil
+}
+func (a *AccountTasks) UpdateEmployeeMetadata (c context.Context, tx pgx.Tx, employeeId, clerkId string) error {
+	metadata := map[string]string{"empId": employeeId}
+	jsonData, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	raw := json.RawMessage(jsonData)
+
+	_, err = user.UpdateMetadata(c, clerkId, &user.UpdateMetadataParams{
+		PublicMetadata: &raw,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update clerk metadata: %w", err)
+	}
+	return nil
+}
+func (a *AccountTasks) UpdateAdminMetadata (c context.Context, tx pgx.Tx, adminId, clerkId string) error {
+	metadata := map[string]string{"adminId": adminId}
+	jsonData, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	raw := json.RawMessage(jsonData)
+
+	_, err = user.UpdateMetadata(c, clerkId, &user.UpdateMetadataParams{
+		PublicMetadata: &raw,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update clerk metadata: %w", err)
 	}
 	return nil
 }

@@ -228,11 +228,9 @@ func (h *BookingHandler) GetEmployeeAssignedBookings(c *gin.Context) {
 		return
 	}
 
-	// Get date parameters
 	startDate := c.Query("startDate")
 	endDate := c.Query("endDate")
 
-	// Pagination defaults
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
 
@@ -257,13 +255,60 @@ func (h *BookingHandler) GetEmployeeAssignedBookings(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
-	// Pass empty strings (not nil pointers)
 	result, err := h.Service.GetEmployeeAssignedBookings(ctx, employeeId, startDate, endDate, page, limit)
 	if err != nil {
 		h.Logger.Error("failed to get employee bookings: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"message": "failed to fetch bookings",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   result,
+	})
+}
+
+// GetBookedSlots retrieves all booked (occupied) slots for a specific date
+// @Summary Get booked slots by date
+// @Description Returns all occupied booking slots for the specified date. If no date is provided, defaults to today.
+// @Tags Booking
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param date query string false "Date in YYYY-MM-DD format (defaults to today)"
+// @Success 200 {object} types.FetchSlotsResponse
+// @Failure 400 {object} types.ErrorResponse "Invalid date format"
+// @Failure 401 {object} types.ErrorResponse "Unauthorized"
+// @Failure 400 {object} types.ErrorResponse "Invalid date format"
+// @Failure 500 {object} types.ErrorResponse "Internal server error"
+// @Router /booking/slots [get]
+func (h *BookingHandler) GetBookedSlots(c *gin.Context) {
+	date := c.Query("date")
+	if date == "" {
+		date = time.Now().Format("2006-01-02")
+	}
+
+	// Validate date format (YYYY-MM-DD)
+	if _, err := time.Parse("2006-01-02", date); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "invalid date format. Use YYYY-MM-DD",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.Service.GetBookedSlots(ctx, date)
+	if err != nil {
+		h.Logger.Error("failed to get booked slots: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "failed to fetch booked slots",
 		})
 		return
 	}
