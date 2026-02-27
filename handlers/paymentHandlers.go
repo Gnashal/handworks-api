@@ -81,7 +81,7 @@ func (h *PaymentHandler) MakePublicQuotation(c *gin.Context) {
 // @Success 200 {object} types.FetchAllQuotesResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/quotes [get]
+// @Router /payment/customer/quotes [get]
 func (h *PaymentHandler) GetAllQuotesFromCustomer(c *gin.Context) {
 	customerId := c.Query("customerId")
 	if customerId == "" {
