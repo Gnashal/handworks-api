@@ -45,7 +45,6 @@ func ClerkAuthMiddleware(publicPaths []string, logger *utils.Logger) gin.Handler
 			}
 		}
 
-
 		config := &clerk.ClientConfig{}
 		config.Key = clerk.String(os.Getenv("CLERK_SECRET_KEY"))
 		jwksClient := jwks.NewClient(config)

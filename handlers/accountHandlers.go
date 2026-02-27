@@ -38,6 +38,7 @@ func (h *AccountHandler) SignUpCustomer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
 // SignUpAdmin godoc
 // @Summary Sign up a new admin
 // @Description Create a new admin account
@@ -62,7 +63,7 @@ func (h *AccountHandler) SignUpAdmin(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}
-	
+
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -79,7 +80,7 @@ func (h *AccountHandler) SignUpAdmin(c *gin.Context) {
 func (h *AccountHandler) GetCustomer(c *gin.Context) {
 	id := c.Param("id")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()	
+	defer cancel()
 	resp, err := h.Service.GetCustomer(ctx, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
@@ -88,8 +89,9 @@ func (h *AccountHandler) GetCustomer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
 // GetCustomers godoc
-// @Summary Get all customers 
+// @Summary Get all customers
 // @Description Retrieve all customer info
 // @Security BearerAuth
 // @Tags Account
@@ -103,18 +105,18 @@ func (h *AccountHandler) GetCustomers(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
 	page, err := strconv.Atoi(pageStr)
-    if err != nil || page < 0 {
-        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
-        return
-    }
+	if err != nil || page < 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+		return
+	}
 
-    limit, err := strconv.Atoi(limitStr)
-    if err != nil || limit <= 0 {
-        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
-        return
-    }
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+		return
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()	
+	defer cancel()
 	resp, err := h.Service.GetCustomers(ctx, page, limit)
 	if err != nil {
 		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
@@ -231,8 +233,9 @@ func (h *AccountHandler) GetEmployee(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
 // GetEmployees godoc
-// @Summary Get all customers 
+// @Summary Get all customers
 // @Description Retrieve all customer info
 // @Security BearerAuth
 // @Tags Account
@@ -246,19 +249,19 @@ func (h *AccountHandler) GetEmployees(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
 	page, err := strconv.Atoi(pageStr)
-    if err != nil || page < 0 {
-        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
-        return
-    }
+	if err != nil || page < 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+		return
+	}
 
-    limit, err := strconv.Atoi(limitStr)
-    if err != nil || limit <= 0 {
-        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
-        return
-    }
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()	
+	defer cancel()
 	resp, err := h.Service.GetEmployees(ctx, page, limit)
 	if err != nil {
 		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
