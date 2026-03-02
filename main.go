@@ -42,7 +42,7 @@ func main() {
 	// Keys
 	clerkSecretKey := os.Getenv("CLERK_SECRET_KEY")
 	paymongoSecretKey := os.Getenv("TEST_PAYMONGO_SECRET_KEY")
-	
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -45,9 +45,9 @@ func NewBookingService(db *pgxpool.Pool, logger *utils.Logger, paymentPort tasks
 
 // --- Payment Service ---
 type PaymentService struct {
-	DB     *pgxpool.Pool
-	Logger *utils.Logger
-	Tasks  *tasks.PaymentTasks
+	DB             *pgxpool.Pool
+	Logger         *utils.Logger
+	Tasks          *tasks.PaymentTasks
 	PaymongoClient *config.PaymongoClient
 }
 

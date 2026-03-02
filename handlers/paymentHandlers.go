@@ -372,4 +372,3 @@ func (h *PaymentHandler) GetOrderByCustomer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
-

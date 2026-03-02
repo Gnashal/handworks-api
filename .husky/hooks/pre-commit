@@ -1,5 +1,6 @@
 #!/bin/sh
 
   gofmt -w .
+  git add '*.go'
   go test ./...
   go build ./...

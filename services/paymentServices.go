@@ -194,9 +194,9 @@ func (s *PaymentService) GetOrders(ctx context.Context, page, limit int, startDa
 
 	return ordersResponse, nil
 }
-func (s *PaymentService) GetOrdersByCustomer(ctx context.Context,page, limit int, startDate, endDate, customerId string) (*types.GetOrdersResponse, error) {
+func (s *PaymentService) GetOrdersByCustomer(ctx context.Context, page, limit int, startDate, endDate, customerId string) (*types.GetOrdersResponse, error) {
 	var ordersResponse *types.GetOrdersResponse
-	
+
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
 		ordersResponse, err = s.Tasks.FetchOrdersByCustomer(ctx, tx, page, limit, startDate, endDate, customerId, s.Logger)

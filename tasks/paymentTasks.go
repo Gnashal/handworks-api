@@ -561,7 +561,7 @@ func (t *PaymentTasks) CreateOrder(
 		utils.GenerateOrderNumber(req.QuoteID, time.Now()),
 		req.CustomerID,
 		req.QuoteID,
-		"PHP", 	
+		"PHP",
 		req.Subtotal,
 		req.AddonTotal,
 		req.TotalAmount,
@@ -651,7 +651,7 @@ func (t *PaymentTasks) FetchOrdersByCustomer(ctx context.Context, tx pgx.Tx, pag
 	var orders []types.Order
 	rows, err := tx.Query(ctx,
 		`SELECT payment.get_orders_by_customer($1, $2, $3, $4, $5)`,
-		startDate, endDate, page, limit, customerId, 
+		startDate, endDate, page, limit, customerId,
 	)
 	if err != nil {
 		return nil, err
