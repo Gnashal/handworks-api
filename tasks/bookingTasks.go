@@ -428,31 +428,13 @@ func (t *BookingTasks) FetchAllCustomerBookings(
 	).Scan(&rawJSON)
 
 	if err != nil {
-		logger.Error("failed calling sproc get_bookings_by_customer",
-			"error", err,
-			"customerId", customerId,
-			"startDate", startDate,
-			"endDate", endDate,
-			"page", page,
-			"limit", limit,
-		)
 		return nil, fmt.Errorf("failed calling sproc get_bookings_by_customer: %w", err)
 	}
 
 	var response types.FetchAllBookingsResponse
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
-		logger.Error("failed to unmarshal bookings", "error", err)
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}
-
-	// Add logging for performance monitoring
-	logger.Info("fetch all customer bookings completed",
-		"customerId", customerId,
-		"totalBookings", response.TotalBookings,
-		"bookingsRequested", response.BookingsRequested,
-		"page", page,
-		"limit", limit,
-	)
 
 	return &response, nil
 }
