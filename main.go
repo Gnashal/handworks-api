@@ -65,7 +65,7 @@ func main() {
 	hubs := realtime.NewRealtimeHubs(logger)
 
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
-	HealthCheck(router)
+	// HealthCheck(router)
 	accountService := services.NewAccountService(conn, logger)
 	inventoryService := services.NewInventoryService(conn, logger)
 	paymentService := services.NewPaymentService(conn, logger)

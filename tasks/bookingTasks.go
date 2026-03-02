@@ -417,18 +417,42 @@ func (t *BookingTasks) FetchAllCustomerBookings(
 	logger *utils.Logger,
 ) (*types.FetchAllBookingsResponse, error) {
 	var rawJSON []byte
+
+	// Parse dates to ensure proper format
+	// The stored procedure expects dates, but we're passing as strings
+	// The database will cast them to timestamptz
+
 	err := tx.QueryRow(ctx,
-		`SELECT booking.get_bookings_by_customer($1, $2, $3, $4, $5)`,
+		`SELECT booking.get_bookings_by_customer($1, $2::date, $3::date, $4, $5)`,
 		customerId, startDate, endDate, page, limit,
 	).Scan(&rawJSON)
+
 	if err != nil {
+		logger.Error("failed calling sproc get_bookings_by_customer",
+			"error", err,
+			"customerId", customerId,
+			"startDate", startDate,
+			"endDate", endDate,
+			"page", page,
+			"limit", limit,
+		)
 		return nil, fmt.Errorf("failed calling sproc get_bookings_by_customer: %w", err)
 	}
 
 	var response types.FetchAllBookingsResponse
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal bookings", "error", err)
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}
+
+	// Add logging for performance monitoring
+	logger.Info("fetch all customer bookings completed",
+		"customerId", customerId,
+		"totalBookings", response.TotalBookings,
+		"bookingsRequested", response.BookingsRequested,
+		"page", page,
+		"limit", limit,
+	)
 
 	return &response, nil
 }
