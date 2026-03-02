@@ -1,6 +1,7 @@
 package services
 
 import (
+	"handworks-api/config"
 	"handworks-api/tasks"
 	"handworks-api/utils"
 
@@ -47,10 +48,11 @@ type PaymentService struct {
 	DB     *pgxpool.Pool
 	Logger *utils.Logger
 	Tasks  *tasks.PaymentTasks
+	PaymongoClient *config.PaymongoClient
 }
 
-func NewPaymentService(db *pgxpool.Pool, logger *utils.Logger) *PaymentService {
-	return &PaymentService{DB: db, Logger: logger, Tasks: &tasks.PaymentTasks{}}
+func NewPaymentService(db *pgxpool.Pool, logger *utils.Logger, paymongoClient *config.PaymongoClient) *PaymentService {
+	return &PaymentService{DB: db, Logger: logger, Tasks: &tasks.PaymentTasks{}, PaymongoClient: paymongoClient}
 }
 
 // Admin Service

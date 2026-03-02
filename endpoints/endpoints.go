@@ -57,14 +57,32 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	}
 }
 func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
-	r.POST("/quote", h.MakeQuotation)
-	r.POST("/quote/preview", h.MakePublicQuotation)
-	r.GET("/quotes", h.GetAllQuotes)
-	r.GET("/quote", h.GetQuoteByIDForCustomer)
+	quote := r.Group("/quote")
+	{
+		quote.GET("/", h.GetQuoteByIDForCustomer)
+		quote.GET("/quotes", h.GetAllQuotes)
+		quote.POST("/", h.MakeQuotation)
+		quote.POST("/preview", h.MakePublicQuotation)
+	}
 	customer := r.Group("/customer")
 	{
 		customer.GET("/quotes", h.GetAllQuotesFromCustomer)
 	}
+	order := r.Group("/order")
+	{
+		order.POST("/", h.CreateOrder)
+		order.GET("/:id", h.GetOrder)
+		order.GET("/orders", h.GetOrders)
+		order.GET("/customer/:id", h.GetOrderByCustomer)
+	}
+	// TODO: This
+	// payments := r.Group("/payments")
+	// {
+	// 	payments.GET("/order/:id", h.GetPaymentsByOrderID)
+	// 	payments.GET("/customer/:id", h.GetPaymentsByCustomerID)
+	// 	payments.POST("/downpayment", h.PayDownpayment)
+	// 	payments.POST("/fullpayment", h.PayFullPayment)
+	// }
 }
 
 func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {

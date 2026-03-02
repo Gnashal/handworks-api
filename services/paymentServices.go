@@ -146,3 +146,65 @@ func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, c
 
 	return quote, nil
 }
+
+func (s *PaymentService) CreateOrder(ctx context.Context, req types.CreateOrderRequest) (string, error) {
+	var orderId string
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		orderId, err = s.Tasks.CreateOrder(ctx, tx, req)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to create order for quote %s: %v", req.QuoteID, err)
+		return "", err
+	}
+
+	return orderId, nil
+}
+
+func (s *PaymentService) GetOrder(ctx context.Context, orderId string) (*types.Order, error) {
+	var order *types.Order
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		order, err = s.Tasks.FetchOrderByID(ctx, tx, orderId)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch order by ID %s: %v", orderId, err)
+		return nil, err
+	}
+
+	if order == nil {
+		return nil, fmt.Errorf("order not found")
+	}
+
+	return order, nil
+}
+func (s *PaymentService) GetOrders(ctx context.Context, page, limit int, startDate, endDate string) (*types.GetOrdersResponse, error) {
+	var ordersResponse *types.GetOrdersResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		ordersResponse, err = s.Tasks.FetchOrders(ctx, tx, page, limit, startDate, endDate, s.Logger)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch orders: %v", err)
+		return nil, err
+	}
+
+	return ordersResponse, nil
+}
+func (s *PaymentService) GetOrdersByCustomer(ctx context.Context,page, limit int, startDate, endDate, customerId string) (*types.GetOrdersResponse, error) {
+	var ordersResponse *types.GetOrdersResponse
+	
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		ordersResponse, err = s.Tasks.FetchOrdersByCustomer(ctx, tx, page, limit, startDate, endDate, customerId, s.Logger)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch orders for customer %s: %v", customerId, err)
+		return nil, err
+	}
+
+	return ordersResponse, nil
+}

@@ -112,3 +112,105 @@ var CouchPrices = map[string]float32{
 	"LAZBOY":               900.00,
 	"CHAIR":                250.00,
 }
+
+// --- Order Types ---
+type Order struct {
+	ID                string       `db:"id" json:"id"`
+	OrderNumber       string          `db:"order_number" json:"order_number"`
+	CustomerID        string       `db:"customer_id" json:"customer_id"`
+	QuoteID           string       `db:"quote_id" json:"quote_id"`
+
+	Currency          string          `db:"currency" json:"currency"`
+
+	Subtotal          float32 `db:"subtotal" json:"subtotal"`
+	AddonTotal        float32 `db:"addon_total" json:"addon_total"`
+	TotalAmount       float32 `db:"total_amount" json:"total_amount"`
+
+	DownpaymentRequired float32 `db:"downpayment_required" json:"downpayment_required"`
+	RemainingBalance    float32 `db:"remaining_balance" json:"remaining_balance"`
+
+	PaymentStatus     string          `db:"payment_status" json:"payment_status"`
+
+	CreatedAt         time.Time       `db:"created_at" json:"created_at"`
+	UpdatedAt         time.Time       `db:"updated_at" json:"updated_at"`
+}
+
+type CreateOrderRequest struct {
+	QuoteID    string `json:"quoteId" binding:"required"`
+	CustomerID string `json:"customerId" binding:"required"`
+	Subtotal   float32 `json:"subtotal" binding:"required"`
+	AddonTotal float32 `json:"addonTotal" binding:"required"`
+	TotalAmount float32 `json:"totalAmount" binding:"required"`
+}
+type CreateOrderResponse struct {
+	OrderID     string `json:"orderId"`
+	OrderNumber string `json:"orderNumber"`
+}
+type GetOrdersResponse struct {
+	OrdersRequested int     `json:"ordersRequested"`
+	TotalOrders int     `json:"totalOrders"`
+	Orders []Order `json:"orders"`
+}
+
+// --- Payment Types ---
+type Payment struct {
+	ID              string        `db:"id" json:"id"`
+	OrderID         string        `db:"order_id" json:"order_id"`
+
+	Type            string           `db:"type" json:"type"`       // DOWNPAYMENT | FULLPAYMENT |BALANCE | REFUND
+	Provider        string           `db:"provider" json:"provider"` // PAYMONGO | CASH | MANUAL
+
+	PaymentIntentID  *string         `db:"payment_intent_id" json:"payment_intent_id,omitempty"`
+	PaymentID        *string         `db:"payment_id" json:"payment_id,omitempty"`
+	PaymentMethodID  *string         `db:"payment_method_id" json:"payment_method_id,omitempty"`
+
+	Amount          float32  			`db:"amount" json:"amount"`
+	Currency        string           `db:"currency" json:"currency"`
+
+	Status          string           `db:"status" json:"status"`
+
+	PaidAt          *time.Time       `db:"paid_at" json:"paid_at,omitempty"`
+	FailedReason    *string          `db:"failed_reason" json:"failed_reason,omitempty"`
+
+	RawResponse     []byte           `db:"raw_response" json:"-"`
+
+	CreatedAt       time.Time        `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time        `db:"updated_at" json:"updated_at"`
+}
+
+// --- Paymongo Types ---
+type PaymentIntentResponse struct {
+	Data PaymentIntentData `json:"data"`
+}
+
+type PaymentIntentData struct {
+	ID         string                     `json:"id"`
+	Type       string                     `json:"type"`
+	Attributes PaymentIntentAttributes    `json:"attributes"`
+}
+
+type PaymentIntentAttributes struct {
+	Amount               int64                            `json:"amount"`
+	Currency             string                           `json:"currency"`
+	Description          string                           `json:"description"`
+	StatementDescriptor  string                           `json:"statement_descriptor"`
+	Status               string                           `json:"status"`
+	Livemode             bool                             `json:"livemode"`
+	ClientKey            string                           `json:"client_key"`
+	CreatedAt            int64                            `json:"created_at"`
+	UpdatedAt            int64                            `json:"updated_at"`
+	LastPaymentError     any                              `json:"last_payment_error"` // null or object
+	PaymentMethodAllowed []string                         `json:"payment_method_allowed"`
+	Payments             []any                            `json:"payments"`           // empty or payment objects
+	NextAction           any                              `json:"next_action"`        // null or next action object
+	PaymentMethodOptions PaymentIntentPaymentMethodOptions `json:"payment_method_options"`
+	Metadata             map[string]string                `json:"metadata"`
+}
+
+type PaymentIntentPaymentMethodOptions struct {
+	Card PaymentIntentCardOptions `json:"card"`
+}
+
+type PaymentIntentCardOptions struct {
+	RequestThreeDSecure string `json:"request_three_d_secure"`
+}
