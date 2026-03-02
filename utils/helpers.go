@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 )
+
 func DerefString(s *string) string {
 	if s == nil {
 		return ""

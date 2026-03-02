@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-
 type InventoryTasks struct{}
 
 func (t *InventoryTasks) CreateInventoryItem(
@@ -74,7 +73,7 @@ func (t *InventoryTasks) FetchInventoryItem(
 
 	return &item, nil
 }
-func (t *InventoryTasks) FetchItems(ctx context.Context,tx pgx.Tx,filter *types.InventoryFilter,) (*types.InventoryListResponse, error) {
+func (t *InventoryTasks) FetchItems(ctx context.Context, tx pgx.Tx, filter *types.InventoryFilter) (*types.InventoryListResponse, error) {
 	var raw json.RawMessage
 
 	err := tx.QueryRow(
@@ -180,6 +179,7 @@ func (t *InventoryTasks) DeleteInventoryItem(
 
 	return &item, nil
 }
+
 // for the assignment logic
 // func (s *InventoryTasks) resolveEquipmentTypes(serviceType string) []string {
 // 	switch serviceType {

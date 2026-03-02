@@ -70,4 +70,3 @@ func ChatWS(hub *ChatHub) gin.HandlerFunc {
 		}()
 	}
 }
-

@@ -26,15 +26,15 @@ func (h *AdminHandler) GetAdminDashboard(c *gin.Context) {
 	adminId := c.Query("adminId")
 	dateFilter := c.Query("dateFilter")
 
-	if (adminId == "") {
+	if adminId == "" {
 		c.JSON(http.StatusForbidden, types.NewErrorResponse(errors.New("You are not an admin")))
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	req := &types.AdminDashboardRequest {
-		AdminID: adminId,
+	req := &types.AdminDashboardRequest{
+		AdminID:    adminId,
 		DateFilter: dateFilter,
 	}
 	res, err := h.Service.GetAdminDashboard(ctx, req)

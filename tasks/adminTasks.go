@@ -14,7 +14,8 @@ import (
 	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jackc/pgx/v5"
 )
-type AdminTasks struct {}
+
+type AdminTasks struct{}
 type AccountPort interface {
 	SignUpCustomer(ctx context.Context, req types.SignUpCustomerRequest) (*types.SignUpCustomerResponse, error)
 	SignUpEmployee(ctx context.Context, req types.SignUpEmployeeRequest) (*types.SignUpEmployeeResponse, error)
@@ -56,7 +57,7 @@ func calcGrowth(current, previous int32) float64 {
 		}
 		return 100
 	}
-	return math.Round((float64(current-previous) / float64(previous)) * 100) / 100
+	return math.Round((float64(current-previous)/float64(previous))*100) / 100
 }
 
 func (t *AdminTasks) FetchAdminDashboardData(ctx context.Context, tx pgx.Tx, logger *utils.Logger, dateFilter string) (*types.AdminDashboardResponse, error) {
@@ -96,22 +97,21 @@ func (t *AdminTasks) FetchAdminDashboardData(ctx context.Context, tx pgx.Tx, log
 		BookingsGrowthIndex:       calcGrowth(cur.Bookings, prev.Bookings),
 		ActiveSessionsGrowthIndex: calcGrowth(cur.ActiveSessions, prev.ActiveSessions),
 	}
-	
+
 	return &types.AdminDashboardResponse{
-		Sales: cur.Sales,
-		Bookings: cur.Bookings,
+		Sales:          cur.Sales,
+		Bookings:       cur.Bookings,
 		ActiveSessions: cur.ActiveSessions,
-		Clients: cur.Clients,
-		GrowthIndex: *growthIndex,
+		Clients:        cur.Clients,
+		GrowthIndex:    *growthIndex,
 	}, nil
 }
-func (t *AdminTasks) CreateClerkUser(ctx context.Context, req* types.OnboardEmployeeRequest) (*clerk.User, error) {
+func (t *AdminTasks) CreateClerkUser(ctx context.Context, req *types.OnboardEmployeeRequest) (*clerk.User, error) {
 	params := &user.CreateParams{
-		EmailAddresses: &[]string{req.Email},
-		FirstName: &req.FirstName,
-		LastName: &req.LastName,
+		EmailAddresses:          &[]string{req.Email},
+		FirstName:               &req.FirstName,
+		LastName:                &req.LastName,
 		SkipPasswordRequirement: clerk.Bool(true),
-
 	}
 	newUser, err := user.Create(ctx, params)
 	if err != nil {
@@ -121,15 +121,14 @@ func (t *AdminTasks) CreateClerkUser(ctx context.Context, req* types.OnboardEmpl
 }
 func (t *AdminTasks) AddToClerkOrganization(ctx context.Context, clerkUserID, organizationID, role string) (*clerk.OrganizationMembership, error) {
 	params := &organizationmembership.CreateParams{
-        OrganizationID: *clerk.String(organizationID),
-        UserID:         clerk.String(clerkUserID),
-        Role:           clerk.String(role), 
-    }
+		OrganizationID: *clerk.String(organizationID),
+		UserID:         clerk.String(clerkUserID),
+		Role:           clerk.String(role),
+	}
 
-    membership, err := organizationmembership.Create(ctx, params)
-    if err != nil {
-        return nil, fmt.Errorf("failed to add user to organization: %w", err)
-    }
-    return membership, nil
+	membership, err := organizationmembership.Create(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add user to organization: %w", err)
+	}
+	return membership, nil
 }
-

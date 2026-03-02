@@ -29,7 +29,7 @@ func (s *AdminService) withTx(
 }
 
 func (s *AdminService) GetAdminDashboard(ctx context.Context, req *types.AdminDashboardRequest) (*types.AdminDashboardResponse, error) {
-		var res *types.AdminDashboardResponse
+	var res *types.AdminDashboardResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
@@ -43,7 +43,7 @@ func (s *AdminService) GetAdminDashboard(ctx context.Context, req *types.AdminDa
 	return res, nil
 }
 
-func (s *AdminService) OnboardEmployee(ctx context.Context, req* types.OnboardEmployeeRequest) (*types.SignUpEmployeeResponse, error) {
+func (s *AdminService) OnboardEmployee(ctx context.Context, req *types.OnboardEmployeeRequest) (*types.SignUpEmployeeResponse, error) {
 	var emp *types.SignUpEmployeeResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
@@ -53,14 +53,14 @@ func (s *AdminService) OnboardEmployee(ctx context.Context, req* types.OnboardEm
 			return fmt.Errorf("failed to create clerk user: %w", err)
 		}
 		newEmp := &types.SignUpEmployeeRequest{
-			FirstName:      req.FirstName,
-			LastName:       req.LastName,
-			Email:          req.Email,
-			Role:           req.Role,
-			Provider: "email/password",
-			ClerkID: clerkUser.ID,
-			Position: req.Position,
-			HireDate: req.HireDate,
+			FirstName: req.FirstName,
+			LastName:  req.LastName,
+			Email:     req.Email,
+			Role:      req.Role,
+			Provider:  "email/password",
+			ClerkID:   clerkUser.ID,
+			Position:  req.Position,
+			HireDate:  req.HireDate,
 		}
 		emp, err = s.AccountPort.SignUpEmployee(ctx, *newEmp)
 		if err != nil {

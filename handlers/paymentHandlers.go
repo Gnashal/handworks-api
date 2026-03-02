@@ -135,26 +135,26 @@ func (h *PaymentHandler) GetAllQuotesFromCustomer(c *gin.Context) {
 // @Failure 500 {object} types.ErrorResponse
 // @Router /payment/quotes [get]
 func (h *PaymentHandler) GetAllQuotes(c *gin.Context) {
-    startDate := c.Query("startDate")
-    endDate := c.Query("endDate")
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
 
-    pageStr := c.DefaultQuery("page", "0")
-    limitStr := c.DefaultQuery("limit", "10")
+	pageStr := c.DefaultQuery("page", "0")
+	limitStr := c.DefaultQuery("limit", "10")
 
-    page, err := strconv.Atoi(pageStr)
-    if err != nil || page < 0 {
-        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
-        return
-    }
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+		return
+	}
 
-    limit, err := strconv.Atoi(limitStr)
-    if err != nil || limit <= 0 {
-        c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
-        return
-    }
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+		return
+	}
 
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	res, err := h.Service.GetAllQuotes(ctx, startDate, endDate, page, limit)
 	if err != nil {
@@ -162,7 +162,7 @@ func (h *PaymentHandler) GetAllQuotes(c *gin.Context) {
 		return
 	}
 
-    c.JSON(http.StatusOK, res)
+	c.JSON(http.StatusOK, res)
 }
 
 // Keep Swagger annotation as-is

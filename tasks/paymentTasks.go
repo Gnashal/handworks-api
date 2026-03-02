@@ -459,30 +459,30 @@ func (t *PaymentTasks) FetchAllQuotesByCustomer(
 }
 
 func (t *PaymentTasks) FetchAllQuotes(
-    ctx context.Context,
-    tx pgx.Tx,
+	ctx context.Context,
+	tx pgx.Tx,
 	startDate, endDate string,
-    page, limit int,
-    logger *utils.Logger,
+	page, limit int,
+	logger *utils.Logger,
 ) (*types.FetchAllQuotesResponse, error) {
 
-    var rawJSON []byte
-    err := tx.QueryRow(ctx,
-        `SELECT payment.get_quotes($1, $2, $3, $4)`,
-        startDate, endDate, page, limit,
-    ).Scan(&rawJSON)
+	var rawJSON []byte
+	err := tx.QueryRow(ctx,
+		`SELECT payment.get_quotes($1, $2, $3, $4)`,
+		startDate, endDate, page, limit,
+	).Scan(&rawJSON)
 
-    if err != nil {
-        return nil, fmt.Errorf("failed calling sproc get_quotes: %w", err)
-    }
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_quotes: %w", err)
+	}
 
-    var response types.FetchAllQuotesResponse
-    if err := json.Unmarshal(rawJSON, &response); err != nil {
-        logger.Error("failed to unmarshal quotes JSON: %v", err)
-        return nil, fmt.Errorf("unmarshal quotes: %w", err)
-    }
+	var response types.FetchAllQuotesResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal quotes JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal quotes: %w", err)
+	}
 
-    return &response, nil
+	return &response, nil
 }
 
 func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, quoteId, customerId string) (*types.QuoteResponse, error) {
