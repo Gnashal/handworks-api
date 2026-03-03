@@ -74,14 +74,18 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 		order.GET("/:id", h.GetOrder)
 		order.GET("/orders", h.GetOrders)
 		order.GET("/customer/:id", h.GetOrderByCustomer)
+		// order.PATCH("/:id", h.UpdateOrderPaymentStatus)
 	}
-	// TODO: This
 	payments := r.Group("/payments")
 	{
 		payments.GET("/order/:id", h.GetPaymentsByOrderID)
 		payments.GET("/customer/:id", h.GetPaymentsByCustomerID)
-	// 	payments.POST("/downpayment", h.PayDownpayment)
-	// 	payments.POST("/fullpayment", h.PayFullPayment)
+		payments.POST("/downpayment/:id", h.PayDownpayment)
+		payments.POST("/fullpayment/:id	", h.PayFullPayment)
+	}
+	webhooks := r.Group("/webhooks")
+	{
+		webhooks.POST("/paymongo", h.HandlePaymongoWebhook)
 	}
 }
 

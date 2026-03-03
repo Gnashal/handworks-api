@@ -178,6 +178,21 @@ type Payment struct {
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
+type StorePayment struct {
+	OrderID         string  `json:"orderId" binding:"required"`
+	ClientKey       string  `json:"clientKey" binding:"required"`
+	Type            string  `json:"type" binding:"required"` // DOWNPAYMENT | FULLPAYMENT
+	Amount          float32 `json:"amount" binding:"required"`
+	Currency        string  `db:"currency" json:"currency"`
+	Provider        string  `db:"provider" json:"provider"`
+	PaymentIntentID *string `db:"payment_intent_id" json:"payment_intent_id,omitempty"`
+	PaymentID       *string `db:"payment_id" json:"payment_id,omitempty"`
+	PaymentMethodID *string `db:"payment_method_id" json:"payment_method_id,omitempty"`
+	Status          string  `db:"status" json:"status"`
+	FailedReason    *string `db:"failed_reason" json:"failed_reason,omitempty"`
+	RawResponse     []byte  `db:"raw_response" json:"-"`
+}
+
 type GetPaymentsResponse struct {
 	PaymentsRequested int       `json:"paymentsRequested"`
 	TotalPayments     int       `json:"totalPayments"`
@@ -185,6 +200,7 @@ type GetPaymentsResponse struct {
 }
 
 // --- Paymongo Types ---
+
 type PaymentIntentResponse struct {
 	Data PaymentIntentData `json:"data"`
 }
@@ -205,12 +221,18 @@ type PaymentIntentAttributes struct {
 	ClientKey            string                            `json:"client_key"`
 	CreatedAt            int64                             `json:"created_at"`
 	UpdatedAt            int64                             `json:"updated_at"`
-	LastPaymentError     any                               `json:"last_payment_error"` // null or object
+	LastPaymentError     *PaymentIntentError               `json:"last_payment_error"` // null or object
 	PaymentMethodAllowed []string                          `json:"payment_method_allowed"`
 	Payments             []any                             `json:"payments"`    // empty or payment objects
 	NextAction           any                               `json:"next_action"` // null or next action object
 	PaymentMethodOptions PaymentIntentPaymentMethodOptions `json:"payment_method_options"`
 	Metadata             map[string]string                 `json:"metadata"`
+}
+
+type PaymentIntentError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Type    string `json:"type"`
 }
 
 type PaymentIntentPaymentMethodOptions struct {
@@ -219,4 +241,93 @@ type PaymentIntentPaymentMethodOptions struct {
 
 type PaymentIntentCardOptions struct {
 	RequestThreeDSecure string `json:"request_three_d_secure"`
+}
+
+type WebhookEvent struct {
+	Data WebhookEventData `json:"data"`
+}
+
+type WebhookEventData struct {
+	ID         string                  `json:"id"`   // evt_...
+	Type       string                  `json:"type"` // always "event"
+	Attributes WebhookEventAttributes  `json:"attributes"`
+}
+
+type WebhookEventAttributes struct {
+	Type            string      `json:"type"` // "payment.paid" or "payment.failed"
+	Livemode        bool        `json:"livemode"`
+	CreatedAt       int64       `json:"created_at"`
+	UpdatedAt       int64       `json:"updated_at"`
+	PendingWebhooks int         `json:"pending_webhooks"`
+	Data            PaymentData `json:"data"` // resource data
+	PreviousData    any         `json:"previous_data"`
+}
+
+type PaymentData struct {
+	ID         string               `json:"id"`   // pay_...
+	Type       string               `json:"type"` // "payment"
+	Attributes PaymentAttributesPaid `json:"attributes"`
+}
+
+type PaymentAttributesPaid struct {
+	AccessURL             *string          `json:"access_url,omitempty"`
+	Amount                int64            `json:"amount"`
+	BalanceTransactionID  *string          `json:"balance_transaction_id,omitempty"`
+	Billing               BillingInfo      `json:"billing"`
+	Currency              string           `json:"currency"`
+	Description           string           `json:"description"`
+	Disputed              bool             `json:"disputed"`
+	ExternalReferenceNumber *string        `json:"external_reference_number,omitempty"`
+	Fee                   int64            `json:"fee"`
+	InstantSettlement     *string          `json:"instant_settlement,omitempty"`
+	Livemode              bool             `json:"livemode"`
+	NetAmount             int64            `json:"net_amount"`
+	Origin                string           `json:"origin"`
+	PaymentIntentID       *string          `json:"payment_intent_id,omitempty"`
+	Payout                *string          `json:"payout,omitempty"`
+	Source                PaymentSource    `json:"source"`
+	StatementDescriptor   string           `json:"statement_descriptor"`
+	Status                string           `json:"status"` // "paid" or "failed"
+	FailedCode            *string          `json:"failed_code,omitempty"`    // only for failed
+	FailedMessage         *string          `json:"failed_message,omitempty"` // only for failed
+	TaxAmount             int64            `json:"tax_amount"`
+	Metadata              map[string]string `json:"metadata,omitempty"`
+	Promotion             any              `json:"promotion,omitempty"`
+	Refunds               []any            `json:"refunds,omitempty"`
+	Taxes                 []any            `json:"taxes,omitempty"`
+	AvailableAt           *int64           `json:"available_at,omitempty"` // only for paid
+	CreatedAt             int64            `json:"created_at"`
+	CreditedAt            *int64           `json:"credited_at,omitempty"`
+	PaidAt                int64            `json:"paid_at"`
+	UpdatedAt             int64            `json:"updated_at"`
+}
+
+type BillingInfo struct {
+	Address BillingAddress `json:"address"`
+	Email   string         `json:"email"`
+	Name    string         `json:"name"`
+	Phone   string         `json:"phone"`
+}
+
+type BillingAddress struct {
+	City       string `json:"city"`
+	Country    string `json:"country"`
+	Line1      string `json:"line1"`
+	Line2      string `json:"line2"`
+	PostalCode string `json:"postal_code"`
+	State      string `json:"state"`
+}
+
+type PaymentSource struct {
+	ID         string          `json:"id"`
+	Type       string          `json:"type"` // "gcash", "card", etc.
+	Provider   *ProviderInfo   `json:"provider,omitempty"`
+	ProviderID *string         `json:"provider_id,omitempty"`
+	Brand      *string         `json:"brand,omitempty"`   // for cards
+	Country    *string         `json:"country,omitempty"` // for cards
+	Last4      *string         `json:"last4,omitempty"`   // for cards
+}
+
+type ProviderInfo struct {
+	ID *string `json:"id,omitempty"`
 }

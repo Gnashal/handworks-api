@@ -1,6 +1,11 @@
 package config
 
 import (
+	"bytes"
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"handworks-api/types"
 	"net/http"
 	"time"
 )
@@ -19,41 +24,36 @@ func NewPaymongoClient(secretKey string) *PaymongoClient {
 	}
 }
 
-// func (c *PaymongoClient) do(ctx context.Context, method, path string, body any, v any) error {
-// 	var buf *bytes.Buffer
-// 	if body != nil {
-// 		b, err := json.Marshal(body)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		buf = bytes.NewBuffer(b)
-// 	} else {
-// 		buf = &bytes.Buffer{}
-// 	}
+func (c *PaymongoClient) CreatePaymentIntent(
+	ctx context.Context,
+	payload any,
+) (*types.PaymentIntentResponse, error) {
 
-// 	req, err := http.NewRequestWithContext(ctx, method, c.BaseURL+path, buf)
-// 	if err != nil {
-// 		return err
-// 	}
+	url := c.BaseURL + "/payment_intents"
 
-// 	basic := base64.StdEncoding.EncodeToString([]byte(c.SecretKey + ":"))
-// 	req.Header.Set("Authorization", "Basic "+basic)
-// 	req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("Accept", "application/json")
+	jsonBody, _ := json.Marshal(payload)
 
-// 	res, err := c.HTTP.Do(req)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer res.Body.Close()
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, err
+	}
 
-// 	if res.StatusCode >= 400 {
-// 		// TODO: decode error body into a struct for better error messages.
-// 		return fmt.Errorf("paymongo error: status %d", res.StatusCode)
-// 	}
+	req.Header.Set("Content-Type", "application/json")
 
-// 	if v != nil {
-// 		return json.NewDecoder(res.Body).Decode(v)
-// 	}
-// 	return nil
-// }
+	// Basic auth
+	encoded := base64.StdEncoding.EncodeToString([]byte(c.SecretKey + ":"))
+	req.Header.Set("Authorization", "Basic "+encoded)
+
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result types.PaymentIntentResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}

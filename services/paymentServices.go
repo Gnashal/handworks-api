@@ -2,8 +2,11 @@ package services
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"handworks-api/types"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -235,4 +238,160 @@ func (s *PaymentService) GetPaymentsByCustomerID(ctx context.Context, page, limi
 	}
 
 	return paymentsResponse, nil
+}
+func (s *PaymentService) CreateDownpaymentIntent(ctx context.Context, orderID string) (*types.PaymentIntentResponse, error) {
+	var intent *types.PaymentIntentResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		order, err := s.Tasks.FetchOrderByID(ctx, tx, orderID)
+		if err != nil {
+			return err
+		}
+
+		if order.PaymentStatus != "pending_downpayment" {
+			return errors.New("order not eligible for downpayment")
+		}
+
+		// Convert PHP to centavos
+		amountInCents := int64(math.Round(float64(order.DownpaymentRequired) * 100))
+
+		body := map[string]any{
+			"data": map[string]any{
+				"attributes": map[string]any{
+					"amount":                 amountInCents,
+					"currency":               "PHP",
+					"capture_type":           "automatic",
+					"payment_method_allowed": []string{"card", "gcash", "qrph"},
+					"description":            "Handworks Cleaning Downpayment",
+				},
+			},
+		}
+
+		intent, err = s.PaymongoClient.CreatePaymentIntent(ctx, body)
+		if err != nil {
+			return err
+		}
+		raw, err := json.Marshal(intent)
+		if err != nil {
+			return fmt.Errorf("failed to marshal payment intent response: %v", err)
+		}
+
+		var failedReason *string
+		if intent.Data.Attributes.LastPaymentError != nil {
+			msg := intent.Data.Attributes.LastPaymentError.Message
+			failedReason = &msg
+		}
+
+		payment := &types.StorePayment{
+			OrderID:         orderID,
+			ClientKey:       intent.Data.Attributes.ClientKey,
+			Type:            "DOWNPAYMENT",
+			PaymentIntentID: &intent.Data.ID,
+			Currency:        intent.Data.Attributes.Currency,
+			Provider:        "paymongo",
+			FailedReason:    failedReason,
+			RawResponse:     raw,
+			Amount:          order.DownpaymentRequired,
+			Status:          intent.Data.Attributes.Status,
+		}
+		err = s.Tasks.StorePayment(ctx, tx, payment)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		s.Logger.Error("Failed to create downpayment intent for order %s: %v", orderID, err)
+		return nil, err
+	}
+
+	return intent, nil
+}
+func (s *PaymentService) CreateFullPaymentIntent(ctx context.Context, orderID string) (*types.PaymentIntentResponse, error) {
+	var intent *types.PaymentIntentResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		order, err := s.Tasks.FetchOrderByID(ctx, tx, orderID)
+		if err != nil {
+			return err
+		}
+
+		if order.PaymentStatus != "pending_fullpayment" {
+			return errors.New("order not eligible for full payment")
+		}
+
+		// Convert PHP to centavos
+		amountInCents := int64(math.Round(float64(order.RemainingBalance) * 100))
+
+		body := map[string]any{
+			"data": map[string]any{
+				"attributes": map[string]any{
+					"amount":                 amountInCents,
+					"currency":               "PHP",
+					"capture_type":           "automatic",
+					"payment_method_allowed": []string{"card", "gcash", "qrph"},
+					"description":            "Handworks Cleaning Full Payment",
+				},
+			},
+		}
+
+		intent, err = s.PaymongoClient.CreatePaymentIntent(ctx, body)
+		if err != nil {
+			return err
+		}
+		raw, err := json.Marshal(intent)
+		if err != nil {
+			return fmt.Errorf("failed to marshal payment intent response: %v", err)
+		}
+
+		var failedReason *string
+		if intent.Data.Attributes.LastPaymentError != nil {
+			msg := intent.Data.Attributes.LastPaymentError.Message
+			failedReason = &msg
+		}
+
+		payment := &types.StorePayment{
+			OrderID:         orderID,
+			ClientKey:       intent.Data.Attributes.ClientKey,
+			Type:            "FULLPAYMENT",
+			PaymentIntentID: &intent.Data.ID,
+			Currency:        intent.Data.Attributes.Currency,
+			Provider:        "paymongo",
+			FailedReason:    failedReason,
+			RawResponse:     raw,
+			Amount:          order.DownpaymentRequired,
+			Status:          intent.Data.Attributes.Status,
+		}
+		err = s.Tasks.StorePayment(ctx, tx, payment)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		s.Logger.Error("Failed to create full payment intent for order %s: %v", orderID, err)
+		return nil, err
+	}
+
+	return intent, nil
+}
+func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.WebhookEventData) error {
+	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, "pending_fullpayment")
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to update order payment status for payment intent %s: %v", paymentIntentId, err)
+		return err
+	}
+	return nil
+}
+func (s *PaymentService) HandlePaymentFailed(ctx context.Context, data types.WebhookEventData) error {
+	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, "failed")
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to update order payment status for payment intent %s: %v", paymentIntentId, err)
+		return err
+	}
+	return nil
 }

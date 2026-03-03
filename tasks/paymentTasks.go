@@ -215,8 +215,6 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal addon service: %v", err)
 		}
-
-		addonTotal += addonPrice
 		addonTotalHours += addonHours
 
 		dbAddon := &types.QuoteAddon{
@@ -692,7 +690,7 @@ func (t *PaymentTasks) FetchPaymentsByOrderID(ctx context.Context, tx pgx.Tx, pa
 	var payments []types.Payment
 	rows, err := tx.Query(ctx,
 		`SELECT payment.get_payments_by_order($1, $2, $3, $4, $5)`,
-		startDate, endDate, page, limit, orderId,
+		orderId, startDate, endDate, page, limit, 
 	)
 	if err != nil {
 		return nil, err
@@ -734,7 +732,7 @@ func (t *PaymentTasks) FetchPaymentsByCustomer(ctx context.Context, tx pgx.Tx, p
 	var payments []types.Payment
 	rows, err := tx.Query(ctx,
 		`SELECT payment.get_payments_by_customer($1, $2, $3, $4, $5)`,
-		startDate, endDate, page, limit, customerId,
+		customerId, startDate, endDate, page, limit,
 	)
 	if err != nil {
 		return nil, err
@@ -770,4 +768,48 @@ func (t *PaymentTasks) FetchPaymentsByCustomer(ctx context.Context, tx pgx.Tx, p
 	response.TotalPayments = len(payments)
 	response.PaymentsRequested = limit
 	return &response, nil
+}
+func (s *PaymentTasks) StorePayment(ctx context.Context, tx pgx.Tx, payment *types.StorePayment) error {
+	const query = `
+		INSERT INTO payment.payments (
+			order_id,
+			client_key,
+			amount,
+			currency,
+			failed_reason,
+			payment_id,
+			payment_intent_id,
+			status,
+			type,
+			provider,
+			raw_response,
+			created_at,
+			updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+	`
+	_, err := tx.Exec(ctx, query,
+		payment.OrderID,
+		payment.ClientKey,
+		payment.Amount,
+		payment.Currency,
+		payment.FailedReason,
+		payment.PaymentID,
+		payment.PaymentIntentID,
+		payment.Status,
+		payment.Type,
+		payment.Provider,
+		payment.RawResponse,
+	)
+	return err
+}
+func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, paymentIntentId, newStatus string) error {
+	const query = `
+		UPDATE payment.orders o
+		SET payment_status = $1, updated_at = NOW()
+		FROM payment.payments p
+		WHERE p.order_id = o.id
+		  AND p.payment_intent_id = $2
+	`
+	_, err := tx.Exec(ctx, query, newStatus, paymentIntentId)
+	return err
 }

@@ -472,3 +472,93 @@ func (h *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
+
+// PayDownpayment godoc
+// @Summary Create downpayment payment intent
+// @Security BearerAuth
+// @Description Create a PayMongo payment intent for the order's downpayment amount
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param id query string true "Order ID"
+// @Success 200 {object} types.PaymentIntentResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/downpayment/{id} [post]
+func (h *PaymentHandler) PayDownpayment(c *gin.Context) {
+	orderId := c.Param("id")
+	if orderId == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	res, err := h.Service.CreateDownpaymentIntent(ctx, orderId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+// PayFullPayment godoc
+// @Summary Create full payment payment intent
+// @Security BearerAuth
+// @Description Create a PayMongo payment intent for the order's full remaining balance
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param id query string true "Order ID"
+// @Success 200 {object} types.PaymentIntentResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/fullpayment/{id} [post]
+func (h *PaymentHandler) PayFullPayment(c *gin.Context) {
+	orderId := c.Param("id")
+	if orderId == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	res, err := h.Service.CreateFullPaymentIntent(ctx, orderId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
+	var webhook types.WebhookEvent
+	if err := c.ShouldBindJSON(&webhook); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload"})
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	switch webhook.Data.Type {
+	case "payment.paid":
+		if err := h.Service.HandlePaymentPaid(ctx, webhook.Data); err != nil {
+			h.Logger.Error("failed to handle payment.paid webhook: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process webhook"})
+			return
+		}
+	case "payment.failed":
+		if err := h.Service.HandlePaymentFailed(ctx, webhook.Data); err != nil {
+			h.Logger.Error("failed to handle payment.failed webhook: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process webhook"})
+			return
+		}
+	default:
+		h.Logger.Info("unhandled webhook event type: %s", webhook.Data.Type)
+	}
+	res := gin.H{"status": "success"}
+	c.JSON(http.StatusOK, res)
+}

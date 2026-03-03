@@ -136,7 +136,7 @@ func (t *BookingTasks) MakeBaseBooking(
 		startSched,        // $6 - startsched
 		endSched,          // $7 - endsched
 		dirtyScale,        // $8 - dirtyscale
-		"UNPAID",          // $9 - paymentstatus
+		"SCHEDULED",       // $9 - paymentstatus
 		"PENDING",         // $10 - reviewstatus
 		photos,            // $11 - photos
 		time.Now(),        // $12 - createdat
