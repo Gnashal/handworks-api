@@ -372,3 +372,103 @@ func (h *PaymentHandler) GetOrderByCustomer(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
+
+// GetPaymentsByOrderID godoc
+// @Summary Get payments by order ID
+// @Security BearerAuth
+// @Description Retrieve all payments for a specific order with pagination
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID"
+// @Param page query int false "Page number (starting at 0)" default(0)
+// @Param limit query int false "Number of payments per page" default(10)
+// @Success 200 {object} types.GetPaymentsResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/order/{id} [get]
+func (h *PaymentHandler) GetPaymentsByOrderID(c *gin.Context) {
+	orderID := c.Param("id")
+	if orderID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
+		return
+	}
+
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+	pageStr := c.DefaultQuery("page", "0")
+	limitStr := c.DefaultQuery("limit", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.Service.GetPaymentsByOrderID(ctx, page, limit, startDate, endDate, orderID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+// GetPaymentsByCustomerID godoc
+// @Summary Get payments by customer ID
+// @Security BearerAuth
+// @Description Retrieve all payments for a specific customer with pagination
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param id path string true "Customer ID"
+// @Param page query int false "Page number (starting at 0)" default(0)
+// @Param limit query int false "Number of payments per page" default(10)
+// @Success 200 {object} types.GetPaymentsResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/customer/{id} [get]
+func (h *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
+	customerID := c.Param("id")
+	if customerID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("customer id is required")))
+		return
+	}
+
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+	pageStr := c.DefaultQuery("page", "0")
+	limitStr := c.DefaultQuery("limit", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid page")))
+		return
+	}
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("invalid limit")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.Service.GetPaymentsByCustomerID(ctx, page, limit, startDate, endDate, customerID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}

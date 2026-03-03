@@ -76,13 +76,13 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 		order.GET("/customer/:id", h.GetOrderByCustomer)
 	}
 	// TODO: This
-	// payments := r.Group("/payments")
-	// {
-	// 	payments.GET("/order/:id", h.GetPaymentsByOrderID)
-	// 	payments.GET("/customer/:id", h.GetPaymentsByCustomerID)
+	payments := r.Group("/payments")
+	{
+		payments.GET("/order/:id", h.GetPaymentsByOrderID)
+		payments.GET("/customer/:id", h.GetPaymentsByCustomerID)
 	// 	payments.POST("/downpayment", h.PayDownpayment)
 	// 	payments.POST("/fullpayment", h.PayFullPayment)
-	// }
+	}
 }
 
 func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {

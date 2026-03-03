@@ -208,3 +208,31 @@ func (s *PaymentService) GetOrdersByCustomer(ctx context.Context, page, limit in
 
 	return ordersResponse, nil
 }
+func (s *PaymentService) GetPaymentsByOrderID(ctx context.Context, page, limit int, startDate, endDate, orderId string) (*types.GetPaymentsResponse, error) {
+	var paymentsResponse *types.GetPaymentsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		paymentsResponse, err = s.Tasks.FetchPaymentsByOrderID(ctx, tx, page, limit, startDate, endDate, orderId)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch payments for order %s: %v", orderId, err)
+		return nil, err
+	}
+
+	return paymentsResponse, nil
+}
+func (s *PaymentService) GetPaymentsByCustomerID(ctx context.Context, page, limit int, startDate, endDate, customerId string) (*types.GetPaymentsResponse, error) {
+	var paymentsResponse *types.GetPaymentsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		paymentsResponse, err = s.Tasks.FetchPaymentsByCustomer(ctx, tx, page, limit, startDate, endDate, customerId)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch payments for customer %s: %v", customerId, err)
+		return nil, err
+	}
+
+	return paymentsResponse, nil
+}

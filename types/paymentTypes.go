@@ -178,6 +178,12 @@ type Payment struct {
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
+type GetPaymentsResponse struct {
+	PaymentsRequested int       `json:"paymentsRequested"`
+	TotalPayments     int       `json:"totalPayments"`
+	Payments          []Payment `json:"payments"`
+}
+
 // --- Paymongo Types ---
 type PaymentIntentResponse struct {
 	Data PaymentIntentData `json:"data"`

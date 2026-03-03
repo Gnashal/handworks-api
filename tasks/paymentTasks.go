@@ -687,3 +687,87 @@ func (t *PaymentTasks) FetchOrdersByCustomer(ctx context.Context, tx pgx.Tx, pag
 	response.OrdersRequested = limit
 	return &response, nil
 }
+func (t *PaymentTasks) FetchPaymentsByOrderID(ctx context.Context, tx pgx.Tx, page, limit int, startDate, endDate, orderId string) (*types.GetPaymentsResponse, error) {
+	var response types.GetPaymentsResponse
+	var payments []types.Payment
+	rows, err := tx.Query(ctx,
+		`SELECT payment.get_payments_by_order($1, $2, $3, $4, $5)`,
+		startDate, endDate, page, limit, orderId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p types.Payment
+		if err := rows.Scan(
+			&p.ID,
+			&p.OrderID,
+			&p.Amount,
+			&p.Currency,
+			&p.FailedReason,
+			&p.PaidAt,
+			&p.PaymentID,
+			&p.PaymentIntentID,
+			&p.Status,
+			&p.Type,
+			&p.Provider,
+			&p.RawResponse,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		payments = append(payments, p)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	response.Payments = payments
+	response.TotalPayments = len(payments)
+	response.PaymentsRequested = limit
+	return &response, nil
+}
+func (t *PaymentTasks) FetchPaymentsByCustomer(ctx context.Context, tx pgx.Tx, page, limit int, startDate, endDate, customerId string) (*types.GetPaymentsResponse, error) {
+	var response types.GetPaymentsResponse
+	var payments []types.Payment
+	rows, err := tx.Query(ctx,
+		`SELECT payment.get_payments_by_customer($1, $2, $3, $4, $5)`,
+		startDate, endDate, page, limit, customerId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p types.Payment
+		if err := rows.Scan(
+			&p.ID,
+			&p.OrderID,
+			&p.Amount,
+			&p.Currency,
+			&p.FailedReason,
+			&p.PaidAt,
+			&p.PaymentID,
+			&p.PaymentIntentID,
+			&p.Status,
+			&p.Type,
+			&p.Provider,
+			&p.RawResponse,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		payments = append(payments, p)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	response.Payments = payments
+	response.TotalPayments = len(payments)
+	response.PaymentsRequested = limit
+	return &response, nil
+}
