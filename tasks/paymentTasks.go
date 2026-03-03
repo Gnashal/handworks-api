@@ -690,7 +690,7 @@ func (t *PaymentTasks) FetchPaymentsByOrderID(ctx context.Context, tx pgx.Tx, pa
 	var payments []types.Payment
 	rows, err := tx.Query(ctx,
 		`SELECT payment.get_payments_by_order($1, $2, $3, $4, $5)`,
-		orderId, startDate, endDate, page, limit, 
+		orderId, startDate, endDate, page, limit,
 	)
 	if err != nil {
 		return nil, err

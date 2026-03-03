@@ -248,9 +248,9 @@ type WebhookEvent struct {
 }
 
 type WebhookEventData struct {
-	ID         string                  `json:"id"`   // evt_...
-	Type       string                  `json:"type"` // always "event"
-	Attributes WebhookEventAttributes  `json:"attributes"`
+	ID         string                 `json:"id"`   // evt_...
+	Type       string                 `json:"type"` // always "event"
+	Attributes WebhookEventAttributes `json:"attributes"`
 }
 
 type WebhookEventAttributes struct {
@@ -264,42 +264,42 @@ type WebhookEventAttributes struct {
 }
 
 type PaymentData struct {
-	ID         string               `json:"id"`   // pay_...
-	Type       string               `json:"type"` // "payment"
+	ID         string                `json:"id"`   // pay_...
+	Type       string                `json:"type"` // "payment"
 	Attributes PaymentAttributesPaid `json:"attributes"`
 }
 
 type PaymentAttributesPaid struct {
-	AccessURL             *string          `json:"access_url,omitempty"`
-	Amount                int64            `json:"amount"`
-	BalanceTransactionID  *string          `json:"balance_transaction_id,omitempty"`
-	Billing               BillingInfo      `json:"billing"`
-	Currency              string           `json:"currency"`
-	Description           string           `json:"description"`
-	Disputed              bool             `json:"disputed"`
-	ExternalReferenceNumber *string        `json:"external_reference_number,omitempty"`
-	Fee                   int64            `json:"fee"`
-	InstantSettlement     *string          `json:"instant_settlement,omitempty"`
-	Livemode              bool             `json:"livemode"`
-	NetAmount             int64            `json:"net_amount"`
-	Origin                string           `json:"origin"`
-	PaymentIntentID       *string          `json:"payment_intent_id,omitempty"`
-	Payout                *string          `json:"payout,omitempty"`
-	Source                PaymentSource    `json:"source"`
-	StatementDescriptor   string           `json:"statement_descriptor"`
-	Status                string           `json:"status"` // "paid" or "failed"
-	FailedCode            *string          `json:"failed_code,omitempty"`    // only for failed
-	FailedMessage         *string          `json:"failed_message,omitempty"` // only for failed
-	TaxAmount             int64            `json:"tax_amount"`
-	Metadata              map[string]string `json:"metadata,omitempty"`
-	Promotion             any              `json:"promotion,omitempty"`
-	Refunds               []any            `json:"refunds,omitempty"`
-	Taxes                 []any            `json:"taxes,omitempty"`
-	AvailableAt           *int64           `json:"available_at,omitempty"` // only for paid
-	CreatedAt             int64            `json:"created_at"`
-	CreditedAt            *int64           `json:"credited_at,omitempty"`
-	PaidAt                int64            `json:"paid_at"`
-	UpdatedAt             int64            `json:"updated_at"`
+	AccessURL               *string           `json:"access_url,omitempty"`
+	Amount                  int64             `json:"amount"`
+	BalanceTransactionID    *string           `json:"balance_transaction_id,omitempty"`
+	Billing                 BillingInfo       `json:"billing"`
+	Currency                string            `json:"currency"`
+	Description             string            `json:"description"`
+	Disputed                bool              `json:"disputed"`
+	ExternalReferenceNumber *string           `json:"external_reference_number,omitempty"`
+	Fee                     int64             `json:"fee"`
+	InstantSettlement       *string           `json:"instant_settlement,omitempty"`
+	Livemode                bool              `json:"livemode"`
+	NetAmount               int64             `json:"net_amount"`
+	Origin                  string            `json:"origin"`
+	PaymentIntentID         *string           `json:"payment_intent_id,omitempty"`
+	Payout                  *string           `json:"payout,omitempty"`
+	Source                  PaymentSource     `json:"source"`
+	StatementDescriptor     string            `json:"statement_descriptor"`
+	Status                  string            `json:"status"`                   // "paid" or "failed"
+	FailedCode              *string           `json:"failed_code,omitempty"`    // only for failed
+	FailedMessage           *string           `json:"failed_message,omitempty"` // only for failed
+	TaxAmount               int64             `json:"tax_amount"`
+	Metadata                map[string]string `json:"metadata,omitempty"`
+	Promotion               any               `json:"promotion,omitempty"`
+	Refunds                 []any             `json:"refunds,omitempty"`
+	Taxes                   []any             `json:"taxes,omitempty"`
+	AvailableAt             *int64            `json:"available_at,omitempty"` // only for paid
+	CreatedAt               int64             `json:"created_at"`
+	CreditedAt              *int64            `json:"credited_at,omitempty"`
+	PaidAt                  int64             `json:"paid_at"`
+	UpdatedAt               int64             `json:"updated_at"`
 }
 
 type BillingInfo struct {
@@ -319,13 +319,13 @@ type BillingAddress struct {
 }
 
 type PaymentSource struct {
-	ID         string          `json:"id"`
-	Type       string          `json:"type"` // "gcash", "card", etc.
-	Provider   *ProviderInfo   `json:"provider,omitempty"`
-	ProviderID *string         `json:"provider_id,omitempty"`
-	Brand      *string         `json:"brand,omitempty"`   // for cards
-	Country    *string         `json:"country,omitempty"` // for cards
-	Last4      *string         `json:"last4,omitempty"`   // for cards
+	ID         string        `json:"id"`
+	Type       string        `json:"type"` // "gcash", "card", etc.
+	Provider   *ProviderInfo `json:"provider,omitempty"`
+	ProviderID *string       `json:"provider_id,omitempty"`
+	Brand      *string       `json:"brand,omitempty"`   // for cards
+	Country    *string       `json:"country,omitempty"` // for cards
+	Last4      *string       `json:"last4,omitempty"`   // for cards
 }
 
 type ProviderInfo struct {
