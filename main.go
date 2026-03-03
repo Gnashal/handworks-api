@@ -39,14 +39,21 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	// Keys
+	clerkSecretKey := os.Getenv("CLERK_SECRET_KEY")
+	paymongoSecretKey := os.Getenv("TEST_PAYMONGO_SECRET_KEY")
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	if err := router.SetTrustedProxies(nil); err != nil {
 		logger.Fatal("Failed to set trusted proxies: %v", err)
 	}
+
 	// this sets the clerk server sdk
-	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
+	clerk.SetKey(clerkSecretKey)
+
+	paymongoClient := config.NewPaymongoClient(paymongoSecretKey)
 
 	router.Use(cors.New(config.NewCors()))
 	conn, err := config.InitDB(logger, c)
@@ -68,7 +75,7 @@ func main() {
 	// HealthCheck(router)
 	accountService := services.NewAccountService(conn, logger)
 	inventoryService := services.NewInventoryService(conn, logger)
-	paymentService := services.NewPaymentService(conn, logger)
+	paymentService := services.NewPaymentService(conn, logger, paymongoClient)
 	bookingService := services.NewBookingService(conn, logger, paymentService)
 	adminServie := services.NewAdminService(conn, logger, accountService)
 

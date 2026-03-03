@@ -136,7 +136,7 @@ func (t *BookingTasks) MakeBaseBooking(
 		startSched,        // $6 - startsched
 		endSched,          // $7 - endsched
 		dirtyScale,        // $8 - dirtyscale
-		"UNPAID",          // $9 - paymentstatus
+		"SCHEDULED",       // $9 - paymentstatus
 		"PENDING",         // $10 - reviewstatus
 		photos,            // $11 - photos
 		time.Now(),        // $12 - createdat
@@ -393,7 +393,7 @@ func (t *BookingTasks) FetchAllBookings(
 	}
 
 	err := tx.QueryRow(ctx,
-		`SELECT booking.get_all_bookings($1, $2, $3, $4)`,
+		`SELECT booking.fetch_all_bookings($1, $2, $3, $4)`,
 		startDateArg, endDateArg, page, limit).Scan(&rawJSON)
 
 	if err != nil {

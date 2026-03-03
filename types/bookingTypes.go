@@ -136,6 +136,7 @@ type BaseBookingDetails struct {
 	CreatedAt         time.Time  `json:"createdAt" db:"createdat"`
 	UpdatedAt         *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
 	QuoteId           string     `json:"quoteId" db:"quoteid"`
+	OrderId           string     `json:"orderId" db:"orderid"`
 }
 
 type BaseBookingDetailsRequest struct {
@@ -152,6 +153,7 @@ type BaseBookingDetailsRequest struct {
 	CreatedAt            time.Time  `json:"createdAt" db:"createdat"`
 	UpdatedAt            *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
 	QuoteId              string     `json:"quoteId" db:"quoteid"`
+	OrderId              string     `json:"orderId" db:"orderid"`
 }
 
 type Address struct {
