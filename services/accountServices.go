@@ -2,12 +2,10 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"handworks-api/types"
 	"time"
 
-	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -34,7 +32,7 @@ func (s *AccountService) withTx(
 // Customer methods
 func (s *AccountService) SignUpCustomer(ctx context.Context, req types.SignUpCustomerRequest) (*types.SignUpCustomerResponse, error) {
 	var customer types.Customer
-	
+
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		acc, err := s.Tasks.CreateAccount(ctx, tx, req.FirstName, req.LastName, req.Email, req.Provider, req.ClerkID, req.Role)
 		if err != nil {
@@ -43,29 +41,17 @@ func (s *AccountService) SignUpCustomer(ctx context.Context, req types.SignUpCus
 		customer.Account = *acc
 		id, err := s.Tasks.CreateCustomer(ctx, tx, acc.ID)
 		if err != nil {
-			return  err
+			return err
 		}
 		customer.ID = id
+		err = s.Tasks.UpdateCustomerMetadata(ctx, tx, customer.ID, req.ClerkID)
+		if err != nil {
+			return err
+		}
 		return nil
 	}); err != nil {
 		return nil, err
 	}
-	// metadata to store in clerk
-	metadata := map[string]string{"custId": customer.ID}
-	jsonData, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-	raw := json.RawMessage(jsonData)
-
-	_, err = user.UpdateMetadata(ctx, req.ClerkID, &user.UpdateMetadataParams{
-		PublicMetadata: &raw,
-	})
-	if err != nil {
-		s.Logger.Error("Failed to update Clerk Metadata: %v", err)
-		return nil, fmt.Errorf("failed to update clerk metadata: %w", err)
-	}
-	s.Logger.Info("Updated Clerk Metadata")
 	resp := &types.SignUpCustomerResponse{
 		Customer: customer,
 	}
@@ -84,7 +70,7 @@ func (s *AccountService) GetCustomer(ctx context.Context, id string) (*types.Get
 			return err
 		}
 		customer = *cust
-		customer.Account = *acc	
+		customer.Account = *acc
 		return nil
 	}); err != nil {
 		return nil, err
@@ -95,6 +81,34 @@ func (s *AccountService) GetCustomer(ctx context.Context, id string) (*types.Get
 	return resp, nil
 }
 
+func (s *AccountService) GetCustomers(ctx context.Context, page, limit int) (*types.GetAllCustomersResponse, error) {
+	var res *types.GetAllCustomersResponse
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		customers, err := s.Tasks.FetchAllCustomers(ctx, tx, page, limit)
+		if err != nil {
+			return err
+		}
+		res = customers
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+func (s *AccountService) GetEmployees(ctx context.Context, page, limit int) (*types.GetAllEmployeesResponse, error) {
+	var res *types.GetAllEmployeesResponse
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		employees, err := s.Tasks.FetchAllEmployees(ctx, tx, page, limit)
+		if err != nil {
+			return err
+		}
+		res = employees
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
 func (s *AccountService) UpdateCustomer(ctx context.Context, req types.UpdateCustomerRequest) (*types.UpdateCustomerResponse, error) {
 	var customer types.Customer
 
@@ -114,8 +128,8 @@ func (s *AccountService) UpdateCustomer(ctx context.Context, req types.UpdateCus
 	}, nil
 }
 
-func (s *AccountService) DeleteCustomer(ctx context.Context, id, accId string) (*types.DeleteCustomerResponse,error) {
-		var customer types.Customer
+func (s *AccountService) DeleteCustomer(ctx context.Context, id, accId string) (*types.DeleteCustomerResponse, error) {
+	var customer types.Customer
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		cust, err := s.Tasks.DeleteCustomerData(ctx, tx, id, accId)
@@ -129,8 +143,8 @@ func (s *AccountService) DeleteCustomer(ctx context.Context, id, accId string) (
 		return nil, fmt.Errorf("could not update customer: %w", err)
 	}
 	return &types.DeleteCustomerResponse{
-		Ok: true,
-		Message: "Success",
+		Ok:       true,
+		Message:  "Success",
 		Customer: customer,
 	}, nil
 }
@@ -144,7 +158,7 @@ func (s *AccountService) SignUpEmployee(ctx context.Context, req types.SignUpEmp
 		if err != nil {
 			return err
 		}
-		parsedDate, err := time.Parse("2006-01-02", req.HireDate)
+		parsedDate, err := time.Parse(time.RFC3339, req.HireDate)
 		if err != nil {
 			return fmt.Errorf("invalid hire date format: %w", err)
 		}
@@ -153,29 +167,17 @@ func (s *AccountService) SignUpEmployee(ctx context.Context, req types.SignUpEmp
 		if err != nil {
 			return err
 		}
-
 		employee = *emp
+		err = s.Tasks.UpdateEmployeeMetadata(ctx, tx, employee.ID, req.ClerkID)
+		if err != nil {
+			return err
+		}
 		employee.Account = *acc
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("failed to sign up employee: %w", err)
 	}
-	// metadata to store in clerk
-	metadata := map[string]string{"empId": employee.ID}
-	jsonData, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-	raw := json.RawMessage(jsonData)
 
-	_, err = user.UpdateMetadata(ctx, req.ClerkID, &user.UpdateMetadataParams{
-		PublicMetadata: &raw,
-	})
-	if err != nil {
-		s.Logger.Error("Failed to update Clerk Metadata: %v", err)
-		return nil, fmt.Errorf("failed to update clerk metadata: %w", err)
-	}
-	s.Logger.Info("Updated Clerk Metadata")
 	resp := &types.SignUpEmployeeResponse{
 		Employee: employee,
 	}
@@ -270,9 +272,9 @@ func (s *AccountService) DeleteEmployee(ctx context.Context, id, accId string) (
 		Employee: employee,
 	}, nil
 }
-func (s* AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminRequest) (*types.SignUpAdminResponse, error) {
+func (s *AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminRequest) (*types.SignUpAdminResponse, error) {
 	var admin types.Admin
-	
+
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		acc, err := s.Tasks.CreateAccount(ctx, tx, req.FirstName, req.LastName, req.Email, req.Provider, req.ClerkID, req.Role)
 		if err != nil {
@@ -281,29 +283,17 @@ func (s* AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminR
 		admin.Account = *acc
 		id, err := s.Tasks.CreateAdmin(ctx, tx, acc.ID)
 		if err != nil {
-			return  err
+			return err
 		}
 		admin.ID = id
+		err = s.Tasks.UpdateAdminMetadata(ctx, tx, admin.ID, req.ClerkID)
+		if err != nil {
+			return err
+		}
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("could not create admin: %w", err)
 	}
-	// metadata to store in clerk
-	metadata := map[string]string{"adminId": admin.ID}
-	jsonData, err := json.Marshal(metadata)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-	raw := json.RawMessage(jsonData)
-
-	_, err = user.UpdateMetadata(ctx, req.ClerkID, &user.UpdateMetadataParams{
-		PublicMetadata: &raw,
-	})
-	if err != nil {
-		s.Logger.Error("Failed to update Clerk Metadata: %v", err)
-		return nil, fmt.Errorf("failed to update clerk metadata: %w", err)
-	}
-	s.Logger.Info("Updated Clerk Metadata")
 	return &types.SignUpAdminResponse{
 		Admin: admin,
 	}, nil

@@ -62,6 +62,7 @@ func (h *InventoryHandler) GetItem(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
 // GetItems godoc
 // @Summary Get inventory items
 // @Description Retrieve inventory items with optional filters and pagination
@@ -72,8 +73,6 @@ func (h *InventoryHandler) GetItem(c *gin.Context) {
 // @Param type query string false "Item type"
 // @Param status query string false "Item status"
 // @Param category query string false "Item category"
-// @Param startDate query string false "Filter items created after this date"
-// @Param endDate query string false "Filter items created before this date"
 // @Param page query int false "Page number (zero-based)" default(0)
 // @Param limit query int false "Number of items per page" default(10)
 //
@@ -113,7 +112,7 @@ func (h *InventoryHandler) GetItems(c *gin.Context) {
 	if category != "" {
 		f.Category = &category
 	}
-	
+
 	f.Page = &page
 	f.Limit = &limit
 
@@ -146,7 +145,7 @@ func (h *InventoryHandler) UpdateItem(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
 		return
 	}
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	resp, err := h.Service.UpdateItem(ctx, req)

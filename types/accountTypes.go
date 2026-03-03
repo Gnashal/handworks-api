@@ -29,7 +29,7 @@ type Employee struct {
 	NumRatings       int32     `json:"num_ratings"`
 }
 type Admin struct {
-	ID string `json:"id"`
+	ID      string  `json:"id"`
 	Account Account `json:"account"`
 }
 type SignUpAdminRequest struct {
@@ -115,6 +115,13 @@ type GetCustomerResponse struct {
 
 type GetEmployeeResponse struct {
 	Employee Employee `json:"employee"`
+}
+
+type GetAllCustomersResponse struct {
+	Customers []Customer `json:"customers"`
+}
+type GetAllEmployeesResponse struct {
+	Employees []Employee `json:"employees"`
 }
 
 // UPDATE

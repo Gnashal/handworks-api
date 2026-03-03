@@ -13,20 +13,20 @@ import (
 )
 
 type Listener struct {
-	ctx context.Context;
-	log *utils.Logger;
-	hub *realtime.RealtimeHubs;
-	listener *pq.Listener;
-	bookingService *services.BookingService;
+	ctx              context.Context
+	log              *utils.Logger
+	hub              *realtime.RealtimeHubs
+	listener         *pq.Listener
+	bookingService   *services.BookingService
 	inventoryService *services.InventoryService
 }
 
 func NewListener(
-	ctx context.Context, 
-	log *utils.Logger, 
-	hub *realtime.RealtimeHubs, 
-	connString string, 
-	bookingService *services.BookingService, 
+	ctx context.Context,
+	log *utils.Logger,
+	hub *realtime.RealtimeHubs,
+	connString string,
+	bookingService *services.BookingService,
 	inventoryService *services.InventoryService) *Listener {
 	return &Listener{
 		ctx: ctx,
@@ -42,7 +42,7 @@ func NewListener(
 				}
 			},
 		),
-		bookingService:	bookingService,
+		bookingService:   bookingService,
 		inventoryService: inventoryService,
 	}
 }
@@ -102,7 +102,7 @@ func (l *Listener) handleBookingAccepted(payload string) {
 
 	var evt = struct {
 		Event      string   `json:"event"`
-		BookingID string   `json:"bookingId"`
+		BookingID  string   `json:"bookingId"`
 		CleanerIDs []string `json:"cleanerIds"`
 	}{}
 
@@ -124,17 +124,17 @@ func (l *Listener) handleBookingAccepted(payload string) {
 func (l *Listener) handleBookingCreated(payload string) {
 	l.log.Debug("booking_created payload: %s", payload)
 	var evt = struct {
-		Event      string `json:"event"`
+		Event     string `json:"event"`
 		BookingID string `json:"bookingId"`
 	}{}
 	if err := json.Unmarshal([]byte(payload), &evt); err != nil {
 		l.log.Error("Failed to unmarshal booking event: %v", err)
-			return	
+		return
 	}
 	booking, err := l.bookingService.GetBookingByID(l.ctx, evt.BookingID)
-		if err != nil {
-			l.log.Error("Failed to get booking by ID: %v", err)
-			return
+	if err != nil {
+		l.log.Error("Failed to get booking by ID: %v", err)
+		return
 	}
 
 	l.hub.AdminHub.SendToAdmin("booking.created", booking)
@@ -143,7 +143,7 @@ func (l *Listener) handleBookingCreated(payload string) {
 func (l *Listener) handleInventoryLow(payload string) {
 	l.log.Debug("inventory_low payload: %s", payload)
 	var evt = struct {
-		Event     string `json:"event"`
+		Event  string `json:"event"`
 		ItemID string `json:"itemId"`
 	}{}
 	if err := json.Unmarshal([]byte(payload), &evt); err != nil {

@@ -12,6 +12,7 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	{
 		customer.POST("/signup", h.SignUpCustomer)
 		customer.GET("/:id", h.GetCustomer)
+		customer.GET("/", h.GetCustomers)
 		customer.PUT("/:id", h.UpdateCustomer)
 		customer.DELETE("/:id/:accId", h.DeleteCustomer)
 
@@ -21,6 +22,7 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	{
 		employee.POST("/signup", h.SignUpEmployee)
 		employee.GET("/:id", h.GetEmployee)
+		employee.GET("/", h.GetEmployees)
 		employee.PUT("/:id", h.UpdateEmployee)
 		employee.PUT("/:id/performance", h.UpdateEmployeePerformanceScore)
 		employee.PUT("/:id/status", h.UpdateEmployeeStatus)
@@ -44,6 +46,7 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.GET("/bookings", h.GetBookings)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)
+	r.GET("/slots", h.GetBookedSlots)
 	customers := r.Group("/customer")
 	{
 		customers.GET("/", h.GetCustomerBookings)
@@ -54,17 +57,47 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	}
 }
 func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
-	r.POST("/quote", h.MakeQuotation)
-	r.POST("/quote/preview", h.MakePublicQuotation)
-	r.GET("/quotes", h.GetAllQuotesFromCustomer)
-
+	quote := r.Group("/quote")
+	{
+		quote.GET("/", h.GetQuoteByIDForCustomer)
+		quote.GET("/quotes", h.GetAllQuotes)
+		quote.POST("/", h.MakeQuotation)
+		quote.POST("/preview", h.MakePublicQuotation)
+	}
+	customer := r.Group("/customer")
+	{
+		customer.GET("/quotes", h.GetAllQuotesFromCustomer)
+	}
+	order := r.Group("/order")
+	{
+		order.POST("/", h.CreateOrder)
+		order.GET("/:id", h.GetOrder)
+		order.GET("/orders", h.GetOrders)
+		order.GET("/customer/:id", h.GetOrderByCustomer)
+		// order.PATCH("/:id", h.UpdateOrderPaymentStatus)
+	}
+	payments := r.Group("/payments")
+	{
+		payments.GET("/order/:id", h.GetPaymentsByOrderID)
+		payments.GET("/customer/:id", h.GetPaymentsByCustomerID)
+		payments.POST("/downpayment/:id", h.PayDownpayment)
+		payments.POST("/fullpayment/:id	", h.PayFullPayment)
+	}
+	webhooks := r.Group("/webhooks")
+	{
+		webhooks.POST("/paymongo", h.HandlePaymongoWebhook)
+	}
 }
 
 func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	r.GET("/dashboard", h.GetAdminDashboard)
+	employees := r.Group("/employee")
+	{
+		employees.POST("/onboard", h.OnboardEmployee)
+	}
 }
 
-func RealtimeEndpoint(r *gin.RouterGroup,hubs * realtime.RealtimeHubs) {
+func RealtimeEndpoint(r *gin.RouterGroup, hubs *realtime.RealtimeHubs) {
 	r.GET("/ws/admin", realtime.AdminWS(hubs.AdminHub))
 	r.GET("/ws/employee", realtime.EmployeeWS(hubs.EmployeeHub))
 	r.GET("/ws/chat", realtime.ChatWS(hubs.ChatHub))

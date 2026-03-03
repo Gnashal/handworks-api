@@ -1,6 +1,11 @@
 *.env
-tmp/
+/tmp/
 bin/
 *.exe
 *.out
 *.log
+
+*node_modules/
+dist/
+.gitignore
+.DS_Store

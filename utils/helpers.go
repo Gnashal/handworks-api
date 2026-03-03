@@ -1,9 +1,13 @@
 package utils
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"time"
 )
+
 func DerefString(s *string) string {
 	if s == nil {
 		return ""
@@ -30,4 +34,17 @@ func DerefRaw(r *json.RawMessage) json.RawMessage {
 		return json.RawMessage("{}")
 	}
 	return *r
+}
+
+func GenerateOrderNumber(quoteID string, createdAt time.Time) string {
+	// Combine salts
+	input := fmt.Sprintf("%s-%d", quoteID, createdAt.UnixNano())
+
+	hash := sha256.Sum256([]byte(input))
+
+	num := binary.BigEndian.Uint64(hash[:8])
+
+	orderNumber := num % 100000000000
+
+	return fmt.Sprintf("%011d", orderNumber)
 }

@@ -2,16 +2,19 @@ package tasks
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"handworks-api/types"
 	"time"
 
+	"github.com/bytedance/gopkg/util/logger"
+	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/jackc/pgx/v5"
 )
 
-type AccountTasks struct {}
+type AccountTasks struct{}
 
-func (t* AccountTasks)CreateAccount(c context.Context, tx pgx.Tx, FirstName, LastName, Email, Provider, ClerkId, Role string) (*types.Account, error) {
+func (t *AccountTasks) CreateAccount(c context.Context, tx pgx.Tx, FirstName, LastName, Email, Provider, ClerkId, Role string) (*types.Account, error) {
 	var acc types.Account
 	err := tx.QueryRow(c,
 		`INSERT INTO account.accounts (first_name, last_name, email, provider, clerk_id, role)
@@ -69,7 +72,7 @@ func (t *AccountTasks) CreateAdmin(c context.Context, tx pgx.Tx, id string) (str
 	return adminId, nil
 }
 
-func (t* AccountTasks) FetchAccountData(c context.Context, tx pgx.Tx, ID string) (*types.Account, error) {
+func (t *AccountTasks) FetchAccountData(c context.Context, tx pgx.Tx, ID string) (*types.Account, error) {
 	var acc types.Account
 	if err := tx.QueryRow(c,
 		`SELECT first_name, last_name, email, provider, clerk_id, role, id, created_at, updated_at
@@ -90,7 +93,7 @@ func (t* AccountTasks) FetchAccountData(c context.Context, tx pgx.Tx, ID string)
 	}
 	return &acc, nil
 }
-func (t *AccountTasks) FetchCustomerData(c context.Context, tx pgx.Tx, ID string) (*types.Customer,  error) {
+func (t *AccountTasks) FetchCustomerData(c context.Context, tx pgx.Tx, ID string) (*types.Customer, error) {
 	var customer types.Customer
 
 	if err := tx.QueryRow(c,
@@ -100,6 +103,44 @@ func (t *AccountTasks) FetchCustomerData(c context.Context, tx pgx.Tx, ID string
 		return nil, fmt.Errorf("could not query customer table: %w", err)
 	}
 	return &customer, nil
+}
+func (t *AccountTasks) FetchAllCustomers(c context.Context, tx pgx.Tx, page, limit int) (*types.GetAllCustomersResponse, error) {
+	var rawJSON []byte
+	err := tx.QueryRow(c,
+		`SELECT account.get_all_customers($1, $2)`,
+		page, limit,
+	).Scan(&rawJSON)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_all_customers: %w", err)
+	}
+
+	var response types.GetAllCustomersResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal quotes JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal quotes: %w", err)
+	}
+
+	return &response, nil
+}
+func (t *AccountTasks) FetchAllEmployees(c context.Context, tx pgx.Tx, page, limit int) (*types.GetAllEmployeesResponse, error) {
+	var rawJSON []byte
+	err := tx.QueryRow(c,
+		`SELECT account.get_all_employees($1, $2)`,
+		page, limit,
+	).Scan(&rawJSON)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_all_employees: %w", err)
+	}
+
+	var response types.GetAllEmployeesResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal quotes JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal quotes: %w", err)
+	}
+
+	return &response, nil
 }
 func (t *AccountTasks) FetchEmployeeData(c context.Context, tx pgx.Tx, ID string) (*types.Employee, error) {
 	var emp types.Employee
@@ -121,7 +162,7 @@ func (t *AccountTasks) FetchEmployeeData(c context.Context, tx pgx.Tx, ID string
 	}
 	return &emp, nil
 }
-func (t* AccountTasks) UpdateCustomer(c context.Context, tx pgx.Tx, id, firstName, lastName, email string) (*types.Customer, error) {
+func (t *AccountTasks) UpdateCustomer(c context.Context, tx pgx.Tx, id, firstName, lastName, email string) (*types.Customer, error) {
 	acc, err := t.UpdateAccount(c, tx, id, firstName, lastName, email)
 	if err != nil {
 		return nil, fmt.Errorf("could not update account: %w", err)
@@ -134,7 +175,7 @@ func (t* AccountTasks) UpdateCustomer(c context.Context, tx pgx.Tx, id, firstNam
 	customer.Account = *acc
 	return customer, nil
 }
-func (t* AccountTasks) UpdateEmployee(c context.Context, tx pgx.Tx, id, firstName, lastName, email string) (*types.Employee, error) {
+func (t *AccountTasks) UpdateEmployee(c context.Context, tx pgx.Tx, id, firstName, lastName, email string) (*types.Employee, error) {
 	acc, err := t.UpdateAccount(c, tx, id, firstName, lastName, email)
 	if err != nil {
 		return nil, fmt.Errorf("could not update account: %w", err)
@@ -279,6 +320,54 @@ func (a *AccountTasks) UpdateStatus(c context.Context, tx pgx.Tx, status, empId 
 	WHERE id = @id`, args)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+func (a *AccountTasks) UpdateCustomerMetadata(c context.Context, tx pgx.Tx, customerId, clerkId string) error {
+	metadata := map[string]string{"custId": customerId}
+	jsonData, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	raw := json.RawMessage(jsonData)
+
+	_, err = user.UpdateMetadata(c, clerkId, &user.UpdateMetadataParams{
+		PublicMetadata: &raw,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update clerk metadata: %w", err)
+	}
+	return nil
+}
+func (a *AccountTasks) UpdateEmployeeMetadata(c context.Context, tx pgx.Tx, employeeId, clerkId string) error {
+	metadata := map[string]string{"empId": employeeId}
+	jsonData, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	raw := json.RawMessage(jsonData)
+
+	_, err = user.UpdateMetadata(c, clerkId, &user.UpdateMetadataParams{
+		PublicMetadata: &raw,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update clerk metadata: %w", err)
+	}
+	return nil
+}
+func (a *AccountTasks) UpdateAdminMetadata(c context.Context, tx pgx.Tx, adminId, clerkId string) error {
+	metadata := map[string]string{"adminId": adminId}
+	jsonData, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+	raw := json.RawMessage(jsonData)
+
+	_, err = user.UpdateMetadata(c, clerkId, &user.UpdateMetadataParams{
+		PublicMetadata: &raw,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update clerk metadata: %w", err)
 	}
 	return nil
 }

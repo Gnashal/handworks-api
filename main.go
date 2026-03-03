@@ -39,13 +39,22 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	// Keys
+	clerkSecretKey := os.Getenv("CLERK_SECRET_KEY")
+	paymongoSecretKey := os.Getenv("TEST_PAYMONGO_SECRET_KEY")
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	if err := router.SetTrustedProxies(nil); err != nil {
 		logger.Fatal("Failed to set trusted proxies: %v", err)
 	}
-	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
+
+	// this sets the clerk server sdk
+	clerk.SetKey(clerkSecretKey)
+
+	paymongoClient := config.NewPaymongoClient(paymongoSecretKey)
+
 	router.Use(cors.New(config.NewCors()))
 	conn, err := config.InitDB(logger, c)
 	if err != nil {
@@ -54,31 +63,28 @@ func main() {
 	logger.Info("Connected to Db")
 	defer conn.Close()
 
-	
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
-	"/api/account/employee/signup","/api/account/admin/signup",
-	"/api/payment/quote/preview", "/health", "/api/admin/dashboard" }
-	
+		"/api/account/employee/signup", "/api/account/admin/signup",
+		"/api/payment/quote/preview", "/health", "/api/admin/dashboard", "/api/payment/quote", "/api/booking/slots", "/api/booking/customer", "/api/booking/bookings"}
+
 	// websocket
 	hubs := realtime.NewRealtimeHubs(logger)
-	
+
 	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
-	HealthCheck(router)
+	// HealthCheck(router)
 	accountService := services.NewAccountService(conn, logger)
 	inventoryService := services.NewInventoryService(conn, logger)
-	paymentService := services.NewPaymentService(conn, logger)
+	paymentService := services.NewPaymentService(conn, logger, paymongoClient)
 	bookingService := services.NewBookingService(conn, logger, paymentService)
-	adminServie := services.NewAdminService(conn, logger)
-	
+	adminServie := services.NewAdminService(conn, logger, accountService)
+
 	accountHandler := handlers.NewAccountHandler(accountService, logger)
 	inventoryHandler := handlers.NewInventoryHandler(inventoryService, logger)
 	bookingHandler := handlers.NewBookingHandler(bookingService, logger)
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
 	adminHandler := handlers.NewAdminHandler(adminServie, logger)
-	
 
-	
 	api := router.Group("/api")
 	{
 		endpoints.AccountEndpoint(api.Group("/account"), accountHandler)
@@ -88,7 +94,7 @@ func main() {
 		endpoints.AdminEndpoint(api.Group("/admin"), adminHandler)
 		endpoints.RealtimeEndpoint(api, hubs)
 	}
-	
+
 	// running websocket hubs
 	go hubs.EmployeeHub.Run()
 	go hubs.AdminHub.Run()
@@ -109,7 +115,6 @@ func main() {
 			logger.Fatal("Listener failed: %v", err)
 		}
 	}()
-
 
 	port := "8080"
 	logger.Info("Starting server on port %s", port)

@@ -61,6 +61,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/account/customer": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all customer info",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Get all customers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetAllCustomersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/account/customer/signup": {
             "post": {
                 "description": "Create a new customer account",
@@ -243,6 +290,53 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/account/employee": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all customer info",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Account"
+                ],
+                "summary": "Get all customers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetAllCustomersResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/types.ErrorResponse"
                         }
@@ -605,6 +699,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/employee/onboard": {
+            "post": {
+                "description": "Create a new employee account",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Onboard a new employee",
+                "parameters": [
+                    {
+                        "description": "Employee onboard data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.OnboardEmployeeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.SignUpEmployeeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking": {
             "get": {
                 "security": [
@@ -933,6 +1073,60 @@ const docTemplate = `{
                 }
             }
         },
+        "/booking/slots": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all occupied booking slots for the specified date. If no date is provided, defaults to today.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get booked slots by date",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Date in YYYY-MM-DD format (defaults to today)",
+                        "name": "date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FetchSlotsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid date format",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/{id}": {
             "put": {
                 "security": [
@@ -1158,18 +1352,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Filter items created after this date",
-                        "name": "startDate",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter items created before this date",
-                        "name": "endDate",
-                        "in": "query"
-                    },
-                    {
                         "type": "integer",
                         "default": 0,
                         "description": "Page number (zero-based)",
@@ -1293,7 +1475,536 @@ const docTemplate = `{
                 }
             }
         },
+        "/payment/customer/quotes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all quotations associated with a specific customer with optional date filtering and pagination.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get all quotations for a customer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "customerId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "startDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "endDate",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number (starting at 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of quotes per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FetchAllQuotesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/customer/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all payments for a specific customer with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get payments by customer ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number (starting at 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of payments per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetPaymentsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/downpayment/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a PayMongo payment intent for the order's downpayment amount",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Create downpayment payment intent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.PaymentIntentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/fullpayment/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a PayMongo payment intent for the order's full remaining balance",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Create full payment payment intent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.PaymentIntentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/order": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new order from an accepted quotation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Create an order",
+                "parameters": [
+                    {
+                        "description": "Order details",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateOrderResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/order/customer/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all orders for a specific customer with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get orders by customer ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number (starting at 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of orders per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetOrdersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/order/orders": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all orders with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get all orders",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number (starting at 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of orders per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetOrdersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/order/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all payments for a specific order with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get payments by order ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Page number (starting at 0)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of payments per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.GetPaymentsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/payment/quote": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a quote by ID that belongs to a specific customer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Get quote by ID for a specific customer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Quote ID",
+                        "name": "quoteId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "customerId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Quote"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -1390,14 +2101,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/payment/quotes": {
+        "/payment/quote/quotes": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all quotations associated with a specific customer with optional date filtering and pagination.",
+                "description": "Retrieve all quotations with optional date filtering and pagination.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1407,15 +2118,8 @@ const docTemplate = `{
                 "tags": [
                     "Payment"
                 ],
-                "summary": "Get all quotations for a customer",
+                "summary": "Get all quotations",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Customer ID",
-                        "name": "customerId",
-                        "in": "query",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Start date (YYYY-MM-DD)",
@@ -1505,11 +2209,17 @@ const docTemplate = `{
                 "addonId": {
                     "type": "string"
                 },
-                "addonName": {
-                    "type": "string"
-                },
                 "price": {
                     "type": "number"
+                },
+                "serviceDetail": {
+                    "type": "object"
+                },
+                "serviceHours": {
+                    "type": "integer"
+                },
+                "serviceType": {
+                    "type": "string"
                 }
             }
         },
@@ -1598,6 +2308,9 @@ const docTemplate = `{
                 "customerLastName": {
                     "type": "string"
                 },
+                "customerPhoneNo": {
+                    "type": "string"
+                },
                 "dirtyScale": {
                     "type": "integer"
                 },
@@ -1605,6 +2318,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "orderId": {
                     "type": "string"
                 },
                 "paymentStatus": {
@@ -1648,10 +2364,16 @@ const docTemplate = `{
                 "customerLastName": {
                     "type": "string"
                 },
+                "customerPhoneNo": {
+                    "type": "string"
+                },
                 "dirtyScale": {
                     "type": "integer"
                 },
                 "endSched": {
+                    "type": "string"
+                },
+                "orderId": {
                     "type": "string"
                 },
                 "photos": {
@@ -1663,10 +2385,31 @@ const docTemplate = `{
                 "quoteId": {
                     "type": "string"
                 },
+                "serviceDurationHours": {
+                    "type": "number"
+                },
                 "startSched": {
                     "type": "string"
                 },
                 "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.BookedSlot": {
+            "type": "object",
+            "properties": {
+                "bookingID": {
+                    "type": "string"
+                },
+                "durationHours": {
+                    "description": "optional if frontend needs it",
+                    "type": "number"
+                },
+                "endSched": {
+                    "type": "string"
+                },
+                "startSched": {
                     "type": "string"
                 }
             }
@@ -1825,9 +2568,6 @@ const docTemplate = `{
         "types.CreateBookingRequest": {
             "type": "object",
             "properties": {
-                "accountId": {
-                    "type": "string"
-                },
                 "addons": {
                     "type": "array",
                     "items": {
@@ -1839,6 +2579,9 @@ const docTemplate = `{
                 },
                 "mainService": {
                     "$ref": "#/definitions/types.ServicesRequest"
+                },
+                "quoteId": {
+                    "type": "string"
                 }
             }
         },
@@ -1870,6 +2613,44 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "unit": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateOrderRequest": {
+            "type": "object",
+            "required": [
+                "addonTotal",
+                "customerId",
+                "quoteId",
+                "subtotal",
+                "totalAmount"
+            ],
+            "properties": {
+                "addonTotal": {
+                    "type": "number"
+                },
+                "customerId": {
+                    "type": "string"
+                },
+                "quoteId": {
+                    "type": "string"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "totalAmount": {
+                    "type": "number"
+                }
+            }
+        },
+        "types.CreateOrderResponse": {
+            "type": "object",
+            "properties": {
+                "orderId": {
+                    "type": "string"
+                },
+                "orderNumber": {
                     "type": "string"
                 }
             }
@@ -1982,14 +2763,39 @@ const docTemplate = `{
                 }
             }
         },
+        "types.FetchSlotsResponse": {
+            "type": "object",
+            "properties": {
+                "occupiedSlots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.BookedSlot"
+                    }
+                }
+            }
+        },
         "types.GeneralCleaningDetails": {
             "type": "object",
             "properties": {
                 "homeType": {
                     "type": "string"
                 },
+                "hours": {
+                    "type": "integer"
+                },
                 "sqm": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.GetAllCustomersResponse": {
+            "type": "object",
+            "properties": {
+                "customers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.Customer"
+                    }
                 }
             }
         },
@@ -2006,6 +2812,40 @@ const docTemplate = `{
             "properties": {
                 "employee": {
                     "$ref": "#/definitions/types.Employee"
+                }
+            }
+        },
+        "types.GetOrdersResponse": {
+            "type": "object",
+            "properties": {
+                "orders": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.Order"
+                    }
+                },
+                "ordersRequested": {
+                    "type": "integer"
+                },
+                "totalOrders": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.GetPaymentsResponse": {
+            "type": "object",
+            "properties": {
+                "payments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.Payment"
+                    }
+                },
+                "paymentsRequested": {
+                    "type": "integer"
+                },
+                "totalPayments": {
+                    "type": "integer"
                 }
             }
         },
@@ -2176,6 +3016,249 @@ const docTemplate = `{
                 }
             }
         },
+        "types.OnboardEmployeeRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "firstName",
+                "hireDate",
+                "lastName",
+                "organizationId",
+                "position",
+                "role"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "hireDate": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "organizationId": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.Order": {
+            "type": "object",
+            "properties": {
+                "addon_total": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "downpayment_required": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "order_number": {
+                    "type": "string"
+                },
+                "payment_status": {
+                    "type": "string"
+                },
+                "quote_id": {
+                    "type": "string"
+                },
+                "remaining_balance": {
+                    "type": "number"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "total_amount": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "failed_reason": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "paid_at": {
+                    "type": "string"
+                },
+                "payment_id": {
+                    "type": "string"
+                },
+                "payment_intent_id": {
+                    "type": "string"
+                },
+                "payment_method_id": {
+                    "type": "string"
+                },
+                "provider": {
+                    "description": "PAYMONGO | CASH | MANUAL",
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "type": {
+                    "description": "DOWNPAYMENT | FULLPAYMENT |BALANCE | REFUND",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.PaymentIntentAttributes": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "client_key": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "last_payment_error": {
+                    "description": "null or object",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.PaymentIntentError"
+                        }
+                    ]
+                },
+                "livemode": {
+                    "type": "boolean"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "next_action": {
+                    "description": "null or next action object"
+                },
+                "payment_method_allowed": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "payment_method_options": {
+                    "$ref": "#/definitions/types.PaymentIntentPaymentMethodOptions"
+                },
+                "payments": {
+                    "description": "empty or payment objects",
+                    "type": "array",
+                    "items": {}
+                },
+                "statement_descriptor": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.PaymentIntentCardOptions": {
+            "type": "object",
+            "properties": {
+                "request_three_d_secure": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.PaymentIntentData": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "$ref": "#/definitions/types.PaymentIntentAttributes"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.PaymentIntentError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.PaymentIntentPaymentMethodOptions": {
+            "type": "object",
+            "properties": {
+                "card": {
+                    "$ref": "#/definitions/types.PaymentIntentCardOptions"
+                }
+            }
+        },
+        "types.PaymentIntentResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/types.PaymentIntentData"
+                }
+            }
+        },
         "types.PostConstructionDetails": {
             "type": "object",
             "properties": {
@@ -2209,13 +3292,26 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "mainService": {
+                    "description": "the main type of service",
                     "type": "string"
+                },
+                "mainServiceDetail": {
+                    "description": "added",
+                    "type": "object"
+                },
+                "mainServiceHours": {
+                    "description": "added",
+                    "type": "integer"
                 },
                 "subtotal": {
                     "type": "number"
                 },
                 "totalPrice": {
                     "type": "number"
+                },
+                "totalServiceHours": {
+                    "description": "added",
+                    "type": "integer"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -2240,6 +3336,9 @@ const docTemplate = `{
                 "serviceDetail": {
                     "description": "serialized ServicesRequest",
                     "type": "object"
+                },
+                "serviceHours": {
+                    "type": "integer"
                 },
                 "serviceType": {
                     "type": "string"
@@ -2281,17 +3380,26 @@ const docTemplate = `{
                         "$ref": "#/definitions/types.AddOnBreakdown"
                     }
                 },
+                "mainServiceDetail": {
+                    "type": "object"
+                },
+                "mainServiceHours": {
+                    "type": "integer"
+                },
                 "mainServiceName": {
                     "type": "string"
                 },
                 "mainServiceTotal": {
                     "type": "number"
                 },
-                "quote_id": {
+                "quoteId": {
                     "type": "string"
                 },
                 "totalPrice": {
                     "type": "number"
+                },
+                "totalServiceHours": {
+                    "type": "integer"
                 }
             }
         },

@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-
 type InventoryTasks struct{}
 
 func (t *InventoryTasks) CreateInventoryItem(
@@ -74,13 +73,13 @@ func (t *InventoryTasks) FetchInventoryItem(
 
 	return &item, nil
 }
-func (t *InventoryTasks) FetchItems(ctx context.Context,tx pgx.Tx,filter *types.InventoryFilter,) (*types.InventoryListResponse, error) {
+func (t *InventoryTasks) FetchItems(ctx context.Context, tx pgx.Tx, filter *types.InventoryFilter) (*types.InventoryListResponse, error) {
 	var raw json.RawMessage
 
 	err := tx.QueryRow(
 		ctx,
 		`SELECT inventory.get_items(
-			$1, $2, $3, $4, $5, $6, $7
+			$1, $2, $3, $4, $5
 		)`,
 		filter.Type,
 		filter.Status,
@@ -180,14 +179,15 @@ func (t *InventoryTasks) DeleteInventoryItem(
 
 	return &item, nil
 }
+
 // for the assignment logic
-func (s *InventoryTasks) resolveEquipmentTypes(serviceType string) []string {
-	switch serviceType {
-	case "general":
-		return []string{"Vacuum Cleaner", "Mop"}
-	case "car":
-		return []string{"Car wax", "Steam Cleaner"}
-	default:
-		return []string{}
-	}
-}
+// func (s *InventoryTasks) resolveEquipmentTypes(serviceType string) []string {
+// 	switch serviceType {
+// 	case "general":
+// 		return []string{"Vacuum Cleaner", "Mop"}
+// 	case "car":
+// 		return []string{"Car wax", "Steam Cleaner"}
+// 	default:
+// 		return []string{}
+// 	}
+// }

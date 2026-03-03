@@ -71,4 +71,3 @@ func EmployeeWS(hub *EmployeeHub) gin.HandlerFunc {
 		}()
 	}
 }
-
