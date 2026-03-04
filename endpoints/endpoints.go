@@ -80,8 +80,16 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	{
 		payments.GET("/order/:id", h.GetPaymentsByOrderID)
 		payments.GET("/customer/:id", h.GetPaymentsByCustomerID)
-		payments.POST("/downpayment/:id", h.PayDownpayment)
-		payments.POST("/fullpayment/:id	", h.PayFullPayment)
+		intents := payments.Group("/intent")
+		{
+			intents.POST("/downpayment/:id", h.CreateDownpaymentIntent)
+			intents.POST("/fullpayment/:id	", h.CreateFullPaymentIntent)
+		}
+		// execution := payments.Group("/execute")
+		// {
+		// 	execution.POST("/downpayment/:id", h.ExecuteDownpayment)
+		// 	execution.POST("/fullpayment/:id", h.ExecuteFullPayment)
+		// }
 	}
 	webhooks := r.Group("/webhooks")
 	{
@@ -94,6 +102,7 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	employees := r.Group("/employee")
 	{
 		employees.POST("/onboard", h.OnboardEmployee)
+
 	}
 }
 

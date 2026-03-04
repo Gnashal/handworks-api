@@ -484,8 +484,8 @@ func (h *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
 // @Success 200 {object} types.PaymentIntentResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/downpayment/{id} [post]
-func (h *PaymentHandler) PayDownpayment(c *gin.Context) {
+// @Router /payment/intent/downpayment/{id} [post]
+func (h *PaymentHandler) CreateDownpaymentIntent(c *gin.Context) {
 	orderId := c.Param("id")
 	if orderId == "" {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
@@ -515,8 +515,8 @@ func (h *PaymentHandler) PayDownpayment(c *gin.Context) {
 // @Success 200 {object} types.PaymentIntentResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/fullpayment/{id} [post]
-func (h *PaymentHandler) PayFullPayment(c *gin.Context) {
+// @Router /payment/intent/fullpayment/{id} [post]
+func (h *PaymentHandler) CreateFullPaymentIntent(c *gin.Context) {
 	orderId := c.Param("id")
 	if orderId == "" {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
