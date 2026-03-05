@@ -6,11 +6,16 @@ type BookingAllocation struct {
 	CleaningAllocation *CleaningAllocation
 	CleanerAssigned    []CleanerAssigned
 	CleaningPrices     *CleaningPrices
+	ExtraHours         float32   `json:"extraHours"`       // Added
+	ExtraHourCost      float32   `json:"extraHourCost"`    // Added
+	OriginalEndSched   time.Time `json:"originalEndSched"` // Added - original end time before extension
 }
+
 type CleaningAllocation struct {
 	CleaningEquipment []CleaningEquipment
 	CleaningResources []CleaningResources
 }
+
 type CleaningEquipment struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
@@ -31,13 +36,16 @@ type CleanerAssigned struct {
 	CleanerLastName  string `json:"cleanerLastName"`
 	PFPUrl           string `json:"pfpUrl"`
 }
+
 type AddonCleaningPrice struct {
 	AddonName  string  `json:"addonName"`
 	AddonPrice float32 `json:"addonPrice"`
 }
+
 type CleaningPrices struct {
 	MainServicePrice float32              `json:"mainServicePrice"`
 	AddonPrices      []AddonCleaningPrice `json:"addonPrices"`
+	ExtraHourCost    float32              `json:"extraHourCost,omitempty"` // Added optional field
 }
 
 type ServiceDetail struct {
@@ -75,9 +83,9 @@ var DetailFactories = map[DetailType]func() any{
 }
 
 type GeneralCleaningDetails struct {
-	HomeType string `json:"homeType"`
-	SQM      int32  `json:"sqm"`
-	Hours    int32  `json:"hours"`
+	HomeType string  `json:"homeType"`
+	SQM      int32   `json:"sqm"`
+	Hours    float32 `json:"hours"`
 }
 
 // Couch cleaning
@@ -117,9 +125,11 @@ type CarCleaningDetails struct {
 	CleaningSpecs []CarCleaningSpecifications `json:"cleaningSpecs"`
 	ChildSeats    int32                       `json:"childSeats"`
 }
+
 type PostConstructionDetails struct {
 	SQM int32 `json:"sqm"`
 }
+
 type BaseBookingDetails struct {
 	ID                string     `json:"id" db:"id"`
 	CustID            string     `json:"custId" db:"custid"`
@@ -136,6 +146,9 @@ type BaseBookingDetails struct {
 	CreatedAt         time.Time  `json:"createdAt" db:"createdat"`
 	UpdatedAt         *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
 	QuoteId           string     `json:"quoteId" db:"quoteid"`
+	ExtraHours        float32    `json:"extraHours" db:"extra_hours"`                        // Added
+	ExtraHourCost     float32    `json:"extraHourCost" db:"extra_hour_cost"`                 // Added
+	OriginalEndSched  *time.Time `json:"originalEndSched,omitempty" db:"original_end_sched"` // Added - original end time
 }
 
 type BaseBookingDetailsRequest struct {
@@ -152,6 +165,7 @@ type BaseBookingDetailsRequest struct {
 	CreatedAt            time.Time  `json:"createdAt" db:"createdat"`
 	UpdatedAt            *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
 	QuoteId              string     `json:"quoteId" db:"quoteid"`
+	ExtraHours           float32    `json:"extraHours"`
 }
 
 type Address struct {
@@ -159,6 +173,7 @@ type Address struct {
 	AddressLat   float64 `json:"addressLat"`
 	AddressLng   float64 `json:"addressLng"`
 }
+
 type BookingReply struct {
 	Source     string              `json:"source"`
 	Equipments []CleaningEquipment `json:"equipments,omitempty"`
@@ -183,6 +198,7 @@ type ServicesRequest struct {
 	ServiceType MainServiceType `json:"serviceType"`
 	Details     ServiceDetail   `json:"details"`
 }
+
 type AddOnRequest struct {
 	ServiceDetail ServicesRequest `json:"serviceDetail"`
 }
@@ -192,6 +208,7 @@ type CreateBookingRequest struct {
 	MainService ServicesRequest           `json:"mainService"`
 	Addons      []AddOnRequest            `json:"addons"`
 	QuoteId     string                    `json:"quoteId"`
+	ExtraHours  float32                   `json:"extraHours"`
 }
 
 type AddOns struct {
@@ -199,15 +216,17 @@ type AddOns struct {
 	ServiceDetail ServiceDetails `json:"serviceDetail"`
 	Price         float32        `json:"price"`
 }
+
 type Booking struct {
-	ID          string              `json:"id"`
-	Base        BaseBookingDetails  `json:"base"`
-	MainService ServiceDetails      `json:"mainService"`
-	Addons      []AddOns            `json:"addons,omitempty"`
-	Equipments  []CleaningEquipment `json:"equipments,omitempty"`
-	Resources   []CleaningResources `json:"resources,omitempty"`
-	Cleaners    []CleanerAssigned   `json:"cleaners,omitempty"`
-	TotalPrice  float32             `json:"totalPrice"`
+	ID            string              `json:"id"`
+	Base          BaseBookingDetails  `json:"base"`
+	MainService   ServiceDetails      `json:"mainService"`
+	Addons        []AddOns            `json:"addons,omitempty"`
+	Equipments    []CleaningEquipment `json:"equipments,omitempty"`
+	Resources     []CleaningResources `json:"resources,omitempty"`
+	Cleaners      []CleanerAssigned   `json:"cleaners,omitempty"`
+	ExtraHourCost float32             `json:"extraHourCost,omitempty"`
+	TotalPrice    float32             `json:"totalPrice"`
 }
 
 type FetchAllBookingsResponse struct {
@@ -220,7 +239,7 @@ type BookedSlot struct {
 	StartSched    time.Time `json:"startSched"`
 	EndSched      time.Time `json:"endSched"`
 	BookingID     string    `json:"bookingID"`
-	DurationHours float64   `json:"durationHours,omitempty"` // optional if frontend needs it
+	DurationHours float64   `json:"durationHours,omitempty"`
 }
 
 type FetchSlotsResponse struct {

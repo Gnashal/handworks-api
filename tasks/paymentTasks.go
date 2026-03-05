@@ -18,29 +18,23 @@ func CalculateGeneralCleaning(details *types.GeneralCleaningDetails) (float32, i
 		return 0.0, 0
 	}
 	sqm := details.SQM
-	homeType := details.HomeType
 
 	var price float32
 	var hours int32
 
 	switch {
-	case homeType == "CONDO_ROOM" || (sqm > 0 && sqm <= 30):
+	case sqm > 0 && sqm <= 30:
 		price = 2000.00
 		hours = 2
-	case homeType == "HOUSE" || (sqm > 30 && sqm <= 50):
+	case sqm > 30 && sqm <= 50:
 		price = 2500.00
 		hours = 4
 	case sqm > 50 && sqm <= 100:
 		price = 5000.00
 		hours = 8
 	default:
-		price = float32(sqm * 50)
-		calculatedHours := int32(sqm * 1)
-		if calculatedHours < 8 {
-			hours = 8
-		} else {
-			hours = calculatedHours
-		}
+		price = 0
+		hours = 0
 	}
 
 	return price, hours
@@ -58,11 +52,21 @@ func CalculateCarCleaning(details *types.CarCleaningDetails) (float32, int32) {
 		price := types.CarPrices[spec.CarType]
 		total += price * float32(spec.Quantity)
 
-		// Add hours based on car type
+		// Add hours based on car type from price list
 		var carHours int32
 		switch spec.CarType {
-		case "VAN":
+		case "SEDAN_5_SEATER":
 			carHours = 2
+		case "MPV_7_SEATER":
+			carHours = 2 // 2 hours 30 min = 2.5 hours, but we'll use 2 and add minutes separately
+		case "SUV_7_8_SEATER":
+			carHours = 2 // 2 hours 30 min
+		case "PICKUP_5_SEATER":
+			carHours = 2
+		case "FAMILY_VAN_10_SEATER":
+			carHours = 4
+		case "SPORTS_CAR_1_2_SEATER":
+			carHours = 1 // 1 hour 30 min
 		default:
 			carHours = 1
 		}
@@ -71,7 +75,9 @@ func CalculateCarCleaning(details *types.CarCleaningDetails) (float32, int32) {
 
 	if details.ChildSeats > 0 {
 		total += float32(details.ChildSeats) * 250.00
-		totalHours += int32(details.ChildSeats)
+		// Child car seat takes 30 minutes = 0.5 hours
+		childSeatHours := float32(details.ChildSeats) * 0.5
+		totalHours += int32(childSeatHours)
 	}
 
 	return total, totalHours
@@ -89,23 +95,36 @@ func CalculateCouchCleaning(details *types.CouchCleaningDetails) (float32, int32
 		price := types.CouchPrices[spec.CouchType]
 		total += price * float32(spec.Quantity)
 
-		var couchHours int32
+		// Update couch hours based on price list
+		var couchHours float32
 		switch spec.CouchType {
-		case "SEATER_4_LTYPE_LARGE", "SEATER_5_LTYPE", "SEATER_6_LTYPE":
+		case "SEATER_3_LTYPE_LARGE":
+			couchHours = 3 // 2-4 hours, using average 3
+		case "SEATER_4_LTYPE_SMALL":
 			couchHours = 2
+		case "SEATER_4_LTYPE_LARGE":
+			couchHours = 3 // 2-4 hours
+		case "SEATER_5_LTYPE":
+			couchHours = 2
+		case "SEATER_6_LTYPE":
+			couchHours = 4
+		case "OTTOMAN":
+			couchHours = 0.5
+		case "LAZY_BOY":
+			couchHours = 1
+		case "CHAIR":
+			couchHours = 0.5
 		default:
 			couchHours = 1
 		}
-		totalHours += couchHours * int32(spec.Quantity)
+		totalHours += int32(couchHours * float32(spec.Quantity))
 	}
 
 	if details.BedPillows > 0 {
 		total += float32(details.BedPillows) * 100.00
-		pillowHours := float64(details.BedPillows) * 0.25
+		// Bed pillow takes 30 minutes = 0.5 hours
+		pillowHours := float32(details.BedPillows) * 0.5
 		totalHours += int32(pillowHours)
-		if totalHours == 0 && details.BedPillows > 0 {
-			totalHours = 1
-		}
 	}
 
 	return total, totalHours
@@ -123,13 +142,23 @@ func CalculateMattressCleaning(details *types.MattressCleaningDetails) (float32,
 		price := types.MattressPrices[spec.BedType]
 		total += price * float32(spec.Quantity)
 
-		var bedHours int32
-		if spec.BedType == "KING_HEADBAND" || spec.BedType == "QUEEN_HEADBAND" {
+		// Update mattress hours based on price list
+		var bedHours float32
+		switch spec.BedType {
+		case "KING":
+			bedHours = 2.5 // 2 hours 30 min
+		case "KING_HEADBAND":
+			bedHours = 2.5
+		case "QUEEN":
 			bedHours = 2
-		} else {
+		case "QUEEN_HEADBAND":
+			bedHours = 2
+		case "SINGLE":
+			bedHours = 1.5 // 1 hour 30 min
+		default:
 			bedHours = 1
 		}
-		totalHours += bedHours * int32(spec.Quantity)
+		totalHours += int32(bedHours * float32(spec.Quantity))
 	}
 
 	return total, totalHours
@@ -140,16 +169,22 @@ func CalculatePostConstructionCleaning(details *types.PostConstructionDetails) (
 		return 0.0, 0
 	}
 
-	price := float32(details.SQM * 50.00)
+	price := float32(details.SQM) * 50.00
 
 	var hours int32
+	sqm := details.SQM
 
-	if details.SQM <= 50 && details.SQM > 0 {
+	if sqm <= 30 {
 		hours = 2
-	} else if details.SQM > 50 && details.SQM <= 100 {
+	} else if sqm <= 50 {
 		hours = 4
-	} else if details.SQM > 100 && details.SQM <= 200 {
+	} else if sqm <= 100 {
 		hours = 8
+	} else if sqm <= 200 {
+		hours = 12
+	} else {
+		// For very large areas, approximately 8 hours per 100 SQM
+		hours = int32(sqm / 13)
 	}
 
 	return price, hours
@@ -230,6 +265,11 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 	}
 
 	totalServiceHours := mainHours + addonTotalHours
+
+	// Check if total service hours exceed the limit (11 hours)
+	if totalServiceHours > 11 {
+		return nil, fmt.Errorf("total service hours (%d) exceed maximum allowed limit of 11 hours. Please reduce the scope of work", totalServiceHours)
+	}
 
 	dbQuote = types.Quote{
 		ID:                "",
@@ -313,6 +353,11 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 
 	totalPrice := subtotal + addonTotal
 	totalServiceHours := mainHours + addonTotalHours
+
+	// Check if total service hours exceed the limit (11 hours)
+	if totalServiceHours > 11 {
+		return nil, fmt.Errorf("total service hours (%d) exceed maximum allowed limit of 11 hours. Please reduce the scope of work", totalServiceHours)
+	}
 
 	err := tx.QueryRow(c, `
 		INSERT INTO payment.quotes (
