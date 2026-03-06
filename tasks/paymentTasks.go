@@ -531,6 +531,7 @@ func (t *PaymentTasks) CreateOrder(
 	const query = `
 		INSERT INTO payment.orders (
 			order_number,
+			full_payment_method,
 			customer_id,
 			quote_id,
 			currency,
@@ -557,6 +558,7 @@ func (t *PaymentTasks) CreateOrder(
 
 	err := tx.QueryRow(ctx, query,
 		utils.GenerateOrderNumber(req.QuoteID, time.Now()),
+		req.PaymentMethod,
 		req.CustomerID,
 		req.QuoteID,
 		"PHP",
@@ -592,6 +594,7 @@ func (t *PaymentTasks) FetchOrderByID(ctx context.Context, tx pgx.Tx, orderId st
 		&order.PaymentStatus,
 		&order.CreatedAt,
 		&order.UpdatedAt,
+		&order.PaymentMethod,
 	)
 
 	if err != nil {
@@ -630,6 +633,7 @@ func (t *PaymentTasks) FetchOrders(ctx context.Context, tx pgx.Tx, page, limit i
 			&o.PaymentStatus,
 			&o.CreatedAt,
 			&o.UpdatedAt,
+			&o.PaymentMethod,
 		); err != nil {
 			return nil, err
 		}
@@ -671,6 +675,7 @@ func (t *PaymentTasks) FetchOrdersByCustomer(ctx context.Context, tx pgx.Tx, pag
 			&o.PaymentStatus,
 			&o.CreatedAt,
 			&o.UpdatedAt,
+			&o.PaymentMethod,
 		); err != nil {
 			return nil, err
 		}

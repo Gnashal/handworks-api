@@ -129,18 +129,19 @@ type Order struct {
 	DownpaymentRequired float32 `db:"downpayment_required" json:"downpayment_required"`
 	RemainingBalance    float32 `db:"remaining_balance" json:"remaining_balance"`
 
-	PaymentStatus string `db:"payment_status" json:"payment_status"`
-
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	PaymentStatus string    `db:"payment_status" json:"payment_status"`
+	PaymentMethod string    `db:"payment_method" json:"payment_method"`
+	CreatedAt     time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type CreateOrderRequest struct {
-	QuoteID     string  `json:"quoteId" binding:"required"`
-	CustomerID  string  `json:"customerId" binding:"required"`
-	Subtotal    float32 `json:"subtotal" binding:"required"`
-	AddonTotal  float32 `json:"addonTotal" binding:"required"`
-	TotalAmount float32 `json:"totalAmount" binding:"required"`
+	QuoteID       string  `json:"quoteId" binding:"required"`
+	CustomerID    string  `json:"customerId" binding:"required"`
+	PaymentMethod string  `json:"paymentMethod" binding:"required"` // e.g. "paymongo", "cash"
+	Subtotal      float32 `json:"subtotal" binding:"required"`
+	AddonTotal    float32 `json:"addonTotal" binding:"required"`
+	TotalAmount   float32 `json:"totalAmount" binding:"required"`
 }
 type CreateOrderResponse struct {
 	OrderID     string `json:"orderId"`
@@ -330,4 +331,18 @@ type PaymentSource struct {
 
 type ProviderInfo struct {
 	ID *string `json:"id,omitempty"`
+}
+
+type AttachPaymentIntentRequest struct {
+	Data AttachPaymentIntentData `json:"data"`
+}
+
+type AttachPaymentIntentData struct {
+	Attributes AttachPaymentIntentAttributes `json:"attributes"`
+}
+
+type AttachPaymentIntentAttributes struct {
+	PaymentMethod string  `json:"payment_method"`       // required
+	ClientKey     string  `json:"client_key,omitempty"` // required if using public key
+	ReturnURL     *string `json:"return_url,omitempty"` // required for redirect-based methods
 }
