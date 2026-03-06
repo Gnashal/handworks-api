@@ -21,9 +21,16 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	employee := r.Group("/employee")
 	{
 		employee.POST("/signup", h.SignUpEmployee)
-		employee.GET("/:id", h.GetEmployee)
+		timesheet := r.Group("/timesheet")
+		{
+			timesheet.POST("/timein", h.EmployeeTimeIn)
+			timesheet.POST("timeout", h.EmployeeTimeOut)
+			timesheet.GET("/today", h.TimesheetToday)
+			timesheet.GET("/timesheets")
+		}
+		employee.GET("/", h.GetEmployee)
 		employee.GET("/", h.GetEmployees)
-		employee.PUT("/:id", h.UpdateEmployee)
+		employee.PUT("/", h.UpdateEmployee)
 		employee.PUT("/:id/performance", h.UpdateEmployeePerformanceScore)
 		employee.PUT("/:id/status", h.UpdateEmployeeStatus)
 		employee.DELETE("/:id/:empId", h.DeleteEmployee)
@@ -44,9 +51,9 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.POST("/", h.CreateBooking)
 	r.GET("/", h.GetBookingById)
 	r.GET("/bookings", h.GetBookings)
+	r.GET("/slots", h.GetBookedSlots)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)
-	r.GET("/slots", h.GetBookedSlots)
 	customers := r.Group("/customer")
 	{
 		customers.GET("/", h.GetCustomerBookings)
@@ -54,6 +61,11 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	employees := r.Group("/employee")
 	{
 		employees.GET("/", h.GetEmployeeAssignedBookings)
+	}
+	session := r.Group("/session")
+	{
+		session.POST("/start")
+		session.POST("/end")
 	}
 }
 func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
@@ -71,15 +83,15 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	order := r.Group("/order")
 	{
 		order.POST("/", h.CreateOrder)
-		order.GET("/:id", h.GetOrder)
+		order.GET("/", h.GetOrder)
 		order.GET("/orders", h.GetOrders)
 		order.GET("/customer/:id", h.GetOrderByCustomer)
 		// order.PATCH("/:id", h.UpdateOrderPaymentStatus)
 	}
 	payments := r.Group("/payments")
 	{
-		payments.GET("/order/:id", h.GetPaymentsByOrderID)
-		payments.GET("/customer/:id", h.GetPaymentsByCustomerID)
+		payments.GET("/order", h.GetPaymentsByOrderID)
+		payments.GET("/customer", h.GetPaymentsByCustomerID)
 		intents := payments.Group("/intent")
 		{
 			intents.POST("/downpayment/:id", h.CreateDownpaymentIntent)

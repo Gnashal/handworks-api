@@ -371,3 +371,14 @@ func (a *AccountTasks) UpdateAdminMetadata(c context.Context, tx pgx.Tx, adminId
 	}
 	return nil
 }
+
+func (a *AccountTasks) EmployeeTimeIn(c context.Context, tx pgx.Tx, status string, req types.TimeInRequest) (*types.EmployeeTimesheet, error) {
+	var timesheet *types.EmployeeTimesheet
+	query := `INSERT INTO account.employee_timesheet (employee_id, work_date, time_in, status, created_at, updated_at)
+		VALUES ($1, NOW(), $2, $3, NOW(), NOW())
+		RETURNING id,employee_id, work_date, time_in, time_out, status, created_at, updated_at`
+	if err := tx.QueryRow(c, query, req.EmployeeId, req.TimeIn, status).Scan(timesheet); err != nil {
+		return nil, fmt.Errorf("could not insert into employee_timesheet table: %w", err)
+	}
+	return timesheet, nil
+}

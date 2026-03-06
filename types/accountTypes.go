@@ -153,3 +153,23 @@ type DeleteCustomerResponse struct {
 	Message  string   `json:"message"`
 	Customer Customer `json:"customer"`
 }
+
+type EmployeeTimesheet struct {
+	TimesheetId string     `json:"id" db:"id"`
+	EmployeeId  string     `json:"employee_id" db:"employee_id"`
+	WorkDate    time.Time  `json:"work_date" db:"work_date"`
+	TimeIn      *time.Time `json:"time_in" db:"time_in"`
+	TimeOut     *time.Time `json:"time_out" db:"time_out"`
+	Status      string     `json:"status" db:"status"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+type TimeInRequest struct {
+	EmployeeId string    `json:"employee_id"`
+	TimeIn     time.Time `json:"time_in"`
+}
+
+type TimeOutRequest struct {
+	EmployeeId string    `json:"employee_id"`
+	TimeOut    time.Time `json:"time_out"`
+}

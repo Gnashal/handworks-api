@@ -298,3 +298,15 @@ func (s *AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminR
 		Admin: admin,
 	}, nil
 }
+
+func (s *AccountService) EmployeeTimeIn(ctx context.Context, req types.TimeInRequest) (*types.EmployeeTimesheet, error) {
+	return nil, nil
+}
+
+func (s *AccountService) EmployeeTimeOut(ctx context.Context, req types.TimeOutRequest) (*types.EmployeeTimesheet, error) {
+	return nil, nil
+}
+
+func (s *AccountService) TimesheetToday(ctx context.Context, empId string) (*types.EmployeeTimesheet, error) {
+	return nil, nil
+}
