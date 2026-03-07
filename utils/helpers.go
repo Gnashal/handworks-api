@@ -48,3 +48,19 @@ func GenerateOrderNumber(quoteID string, createdAt time.Time) string {
 
 	return fmt.Sprintf("%011d", orderNumber)
 }
+
+func DetermineAttendanceStatus(timeIn time.Time) string {
+	startOfShift := time.Date(
+		timeIn.Year(),
+		timeIn.Month(),
+		timeIn.Day(),
+		9, 0, 0, 0,
+		timeIn.Location(),
+	)
+
+	if timeIn.After(startOfShift) {
+		return "LATE"
+	}
+
+	return "ON_TIME"
+}
