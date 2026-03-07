@@ -1,4 +1,3 @@
-basePath: /api/
 definitions:
   types.Account:
     properties:
@@ -1069,7 +1068,6 @@ definitions:
       ok:
         type: boolean
     type: object
-host: localhost:8080
 info:
   contact: {}
   description: This is the official API documentation for the Handworks Api.
@@ -1108,36 +1106,6 @@ paths:
       - Account
   /account/customer:
     get:
-      description: Retrieve all customer info
-      parameters:
-      - default: 0
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.GetAllCustomersResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get all customers
-      tags:
-      - Account
-  /account/customer/{id}:
-    get:
       description: Retrieve customer info
       parameters:
       - description: Customer ID
@@ -1161,6 +1129,7 @@ paths:
       summary: Get a customer by ID
       tags:
       - Account
+  /account/customer/{id}:
     put:
       consumes:
       - application/json
@@ -1227,6 +1196,36 @@ paths:
       summary: Delete a customer
       tags:
       - Account
+  /account/customer/customers:
+    get:
+      description: Retrieve all customer info
+      parameters:
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAllCustomersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
+      tags:
+      - Account
   /account/customer/signup:
     post:
       consumes:
@@ -1255,36 +1254,6 @@ paths:
           schema:
             $ref: '#/definitions/types.ErrorResponse'
       summary: Sign up a new customer
-      tags:
-      - Account
-  /account/employee:
-    get:
-      description: Retrieve all customer info
-      parameters:
-      - default: 0
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.GetAllCustomersResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get all customers
       tags:
       - Account
   /account/employee/:
@@ -1450,6 +1419,36 @@ paths:
       security:
       - BearerAuth: []
       summary: Update employee status
+      tags:
+      - Account
+  /account/employee/employees:
+    get:
+      description: Retrieve all customer info
+      parameters:
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAllCustomersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
       tags:
       - Account
   /account/employee/signup:
@@ -1974,6 +1973,30 @@ paths:
       tags:
       - Inventory
   /inventory/:
+    get:
+      description: Retrieve a single inventory item
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.InventoryItem'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an item by ID
+      tags:
+      - Inventory
     put:
       consumes:
       - application/json
@@ -2030,30 +2053,6 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete an item
-      tags:
-      - Inventory
-    get:
-      description: Retrieve a single inventory item
-      parameters:
-      - description: Item ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.InventoryItem'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get an item by ID
       tags:
       - Inventory
   /inventory/items:
@@ -2326,7 +2325,7 @@ paths:
       summary: Create an order
       tags:
       - Payment
-  /payment/order/customer/{id}:
+  /payment/order/customer:
     get:
       consumes:
       - application/json

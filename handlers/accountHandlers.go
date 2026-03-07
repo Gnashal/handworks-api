@@ -76,9 +76,9 @@ func (h *AccountHandler) SignUpAdmin(c *gin.Context) {
 // @Param id path string true "Customer ID"
 // @Success 200 {object} types.GetCustomerResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /account/customer/{id} [get]
+// @Router /account/customer [get]
 func (h *AccountHandler) GetCustomer(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	resp, err := h.Service.GetCustomer(ctx, id)
@@ -100,7 +100,7 @@ func (h *AccountHandler) GetCustomer(c *gin.Context) {
 // @Param limit query int false "Items per page" default(10)
 // @Success 200 {object} types.GetAllCustomersResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /account/customer [get]
+// @Router /account/customer/customers [get]
 func (h *AccountHandler) GetCustomers(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
@@ -244,7 +244,7 @@ func (h *AccountHandler) GetEmployee(c *gin.Context) {
 // @Param limit query int false "Items per page" default(10)
 // @Success 200 {object} types.GetAllCustomersResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /account/employee [get]
+// @Router /account/employee/employees [get]
 func (h *AccountHandler) GetEmployees(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")

@@ -337,9 +337,9 @@ func (h *PaymentHandler) GetOrders(c *gin.Context) {
 // @Success 200 {object} types.GetOrdersResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/order/customer/{id} [get]
+// @Router /payment/order/customer [get]
 func (h *PaymentHandler) GetOrderByCustomer(c *gin.Context) {
-	customerID := c.Param("id")
+	customerID := c.Query("id")
 	if customerID == "" {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("customer id is required")))
 		return

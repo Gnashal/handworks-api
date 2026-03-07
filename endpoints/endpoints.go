@@ -10,9 +10,9 @@ import (
 func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	customer := r.Group("/customer")
 	{
+		customer.GET("/", h.GetCustomer)
+		customer.GET("/customers", h.GetCustomers)
 		customer.POST("/signup", h.SignUpCustomer)
-		customer.GET("/:id", h.GetCustomer)
-		customer.GET("/", h.GetCustomers)
 		customer.PUT("/:id", h.UpdateCustomer)
 		customer.DELETE("/:id/:accId", h.DeleteCustomer)
 
@@ -24,12 +24,12 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 		timesheet := r.Group("/timesheet")
 		{
 			timesheet.POST("/timein", h.EmployeeTimeIn)
-			timesheet.POST("timeout", h.EmployeeTimeOut)
+			timesheet.POST("/timeout", h.EmployeeTimeOut)
 			timesheet.GET("/today", h.TimesheetToday)
-			timesheet.GET("/timesheets")
+			// timesheet.GET("/timesheets")
 		}
 		employee.GET("/", h.GetEmployee)
-		employee.GET("/", h.GetEmployees)
+		employee.GET("/employees", h.GetEmployees)
 		employee.PUT("/", h.UpdateEmployee)
 		employee.PUT("/:id/performance", h.UpdateEmployeePerformanceScore)
 		employee.PUT("/:id/status", h.UpdateEmployeeStatus)
@@ -42,16 +42,16 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 }
 func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
 	r.POST("/create", h.CreateItem)
-	r.GET("/:id", h.GetItem)
+	r.GET("/", h.GetItem)
 	r.GET("/items", h.GetItems)
 	r.PUT("/", h.UpdateItem)
 	r.DELETE("/:id", h.DeleteItem)
 }
 func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
-	r.POST("/", h.CreateBooking)
 	r.GET("/", h.GetBookingById)
 	r.GET("/bookings", h.GetBookings)
 	r.GET("/slots", h.GetBookedSlots)
+	r.POST("/", h.CreateBooking)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)
 	customers := r.Group("/customer")
@@ -85,7 +85,7 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 		order.POST("/", h.CreateOrder)
 		order.GET("/", h.GetOrder)
 		order.GET("/orders", h.GetOrders)
-		order.GET("/customer/:id", h.GetOrderByCustomer)
+		order.GET("/customer", h.GetOrderByCustomer)
 		// order.PATCH("/:id", h.UpdateOrderPaymentStatus)
 	}
 	payments := r.Group("/payments")
@@ -114,7 +114,6 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	employees := r.Group("/employee")
 	{
 		employees.POST("/onboard", h.OnboardEmployee)
-
 	}
 }
 

@@ -25,8 +25,6 @@ import (
 // @title Handworks API
 // @version 1.0
 // @description This is the official API documentation for the Handworks Api.
-// @host localhost:8080
-// @BasePath /api/
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -45,7 +43,17 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET(
+		"/swagger/*any",
+		ginSwagger.WrapHandler(
+			swaggerFiles.Handler,
+			ginSwagger.DocExpansion("list"),
+			ginSwagger.DefaultModelsExpandDepth(-1),
+			ginSwagger.PersistAuthorization(true),
+			ginSwagger.DeepLinking(true),
+			ginSwagger.URL("/swagger/doc.json"),
+		),
+	)
 	if err := router.SetTrustedProxies(nil); err != nil {
 		logger.Fatal("Failed to set trusted proxies: %v", err)
 	}
