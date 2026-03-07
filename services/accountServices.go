@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"handworks-api/types"
+	"handworks-api/utils"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -300,11 +301,42 @@ func (s *AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminR
 }
 
 func (s *AccountService) EmployeeTimeIn(ctx context.Context, req types.TimeInRequest) (*types.EmployeeTimesheet, error) {
-	return nil, nil
+	var timesheet *types.EmployeeTimesheet
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+
+		status := utils.DetermineAttendanceStatus(req.TimeIn)
+
+		ts, err := s.Tasks.EmployeeTimeIn(ctx, tx, status, req)
+		if err != nil {
+			return err
+		}
+
+		timesheet = ts
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not time in employee: %w", err)
+	}
+
+	return timesheet, nil
 }
 
 func (s *AccountService) EmployeeTimeOut(ctx context.Context, req types.TimeOutRequest) (*types.EmployeeTimesheet, error) {
-	return nil, nil
+	var timesheet *types.EmployeeTimesheet
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		ts, err := s.Tasks.EmployeeTimeOut(ctx, tx, req)
+		if err != nil {
+			return err
+		}
+
+		timesheet = ts
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not time out employee: %w", err)
+	}
+
+	return timesheet, nil
 }
 
 func (s *AccountService) TimesheetToday(ctx context.Context, empId string) (*types.EmployeeTimesheet, error) {

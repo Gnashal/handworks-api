@@ -373,12 +373,65 @@ func (a *AccountTasks) UpdateAdminMetadata(c context.Context, tx pgx.Tx, adminId
 }
 
 func (a *AccountTasks) EmployeeTimeIn(c context.Context, tx pgx.Tx, status string, req types.TimeInRequest) (*types.EmployeeTimesheet, error) {
-	var timesheet *types.EmployeeTimesheet
-	query := `INSERT INTO account.employee_timesheet (employee_id, work_date, time_in, status, created_at, updated_at)
-		VALUES ($1, NOW(), $2, $3, NOW(), NOW())
-		RETURNING id,employee_id, work_date, time_in, time_out, status, created_at, updated_at`
-	if err := tx.QueryRow(c, query, req.EmployeeId, req.TimeIn, status).Scan(timesheet); err != nil {
-		return nil, fmt.Errorf("could not insert into employee_timesheet table: %w", err)
+	timesheet := &types.EmployeeTimesheet{}
+
+	query := `
+	INSERT INTO account.employee_timesheet 
+	(employee_id, work_date, time_in, status, created_at, updated_at)
+	VALUES ($1, CURRENT_DATE, $2, $3, NOW(), NOW())
+	RETURNING id, employee_id, work_date, time_in, time_out, status, created_at, updated_at
+	`
+
+	err := tx.QueryRow(c, query, req.EmployeeId, req.TimeIn, status).Scan(
+		&timesheet.TimesheetId,
+		&timesheet.EmployeeId,
+		&timesheet.WorkDate,
+		&timesheet.TimeIn,
+		&timesheet.TimeOut,
+		&timesheet.Status,
+		&timesheet.CreatedAt,
+		&timesheet.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not insert employee_timesheet: %w", err)
 	}
+
+	return timesheet, nil
+}
+
+func (a *AccountTasks) EmployeeTimeOut(c context.Context, tx pgx.Tx, req types.TimeOutRequest) (*types.EmployeeTimesheet, error) {
+
+	timesheet := &types.EmployeeTimesheet{}
+
+	args := pgx.NamedArgs{
+		"employee_id": req.EmployeeId,
+		"time_out":    req.TimeOut,
+	}
+
+	query := `
+	UPDATE account.employee_timesheet
+	SET time_out = @time_out,
+	    updated_at = NOW()
+	WHERE employee_id = @employee_id
+	AND work_date = CURRENT_DATE
+	RETURNING id, employee_id, work_date, time_in, time_out, status, created_at, updated_at
+	`
+
+	err := tx.QueryRow(c, query, args).Scan(
+		&timesheet.TimesheetId,
+		&timesheet.EmployeeId,
+		&timesheet.WorkDate,
+		&timesheet.TimeIn,
+		&timesheet.TimeOut,
+		&timesheet.Status,
+		&timesheet.CreatedAt,
+		&timesheet.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("could not update employee_timesheet: %w", err)
+	}
+
 	return timesheet, nil
 }
