@@ -59,7 +59,7 @@ func main() {
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
 		"/api/account/employee/signup", "/api/account/admin/signup",
-		"/api/payment/quote/preview", "/health", "/api/admin/dashboard", "/api/payment/quote", "/api/booking/slots", "/api/booking/customer", "/api/booking/bookings"}
+		"/api/payment/quote/preview", "/health", "/api/admin/dashboard", "/api/payment/quote", "/api/booking/slots", "/api/booking/customer", "/api/booking/bookings", "/api/payment/customer"}
 
 	// websocket
 	hubs := realtime.NewRealtimeHubs(logger)
