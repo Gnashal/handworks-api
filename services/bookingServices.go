@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"handworks-api/types"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -31,6 +32,16 @@ func (s *BookingService) withTx(
 func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBookingRequest) (*types.Booking, error) {
 	s.Logger.Info("Creating booking for customer: %s...", req.Base.CustomerFirstName)
 
+	// Validate extra hours if provided
+	if req.ExtraHours > 0 {
+		if req.MainService.ServiceType != types.GeneralCleaning {
+			return nil, fmt.Errorf("extra hours can only be added for General Cleaning services")
+		}
+		if req.ExtraHours > 4 {
+			return nil, fmt.Errorf("extra hours cannot exceed 4 hours")
+		}
+	}
+
 	alloc, err := s.Tasks.AllocateAll(ctx, s.PaymentPort, &req)
 	if err != nil {
 		s.Logger.Error("Allocation failed: %v", err)
@@ -46,6 +57,20 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			return err
 		}
 
+		// Store original end schedule before any modifications
+		originalEndSched := req.Base.EndSched
+		var extraHourCost float32
+
+		// Calculate extra hour cost and adjust end time if needed
+		if req.ExtraHours > 0 && len(alloc.CleanerAssigned) > 0 {
+			extraHourCost = req.ExtraHours * 250.00 * float32(len(alloc.CleanerAssigned))
+
+			// Update end schedule with extra hours
+			duration := time.Duration(req.ExtraHours * float32(time.Hour))
+			newEndSched := req.Base.EndSched.Add(duration)
+			req.Base.EndSched = newEndSched
+		}
+
 		baseBook, err := s.Tasks.MakeBaseBooking(
 			ctx,
 			tx,
@@ -59,6 +84,9 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			req.Base.DirtyScale,
 			req.Base.Photos,
 			req.Base.QuoteId,
+			req.ExtraHours,
+			extraHourCost,
+			&originalEndSched,
 		)
 		if err != nil {
 			return err
@@ -98,7 +126,10 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			cleanerIDs = append(cleanerIDs, c.ID)
 		}
 
-		totalPrice := alloc.CleaningPrices.MainServicePrice
+		// FIX: Get the original quote price (without extra hours)
+		// Since alloc.CleaningPrices.MainServicePrice already includes extraHourCost,
+		// we need to subtract it to get the original quote price
+		originalQuotePrice := alloc.CleaningPrices.MainServicePrice - extraHourCost
 
 		bookingID, err := s.Tasks.SaveBooking(
 			ctx,
@@ -109,11 +140,15 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			equipmentIDs,
 			resourceIDs,
 			cleanerIDs,
-			totalPrice,
+			originalQuotePrice, // Pass the original quote price
+			extraHourCost,      // Pass the extra hour cost separately
 		)
 		if err != nil {
 			return err
 		}
+
+		// Calculate final total for the response
+		finalTotalPrice := originalQuotePrice + extraHourCost
 
 		createdBooking = &types.Booking{
 			ID:          bookingID,
@@ -123,7 +158,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			Equipments:  alloc.CleaningAllocation.CleaningEquipment,
 			Resources:   alloc.CleaningAllocation.CleaningResources,
 			Cleaners:    alloc.CleanerAssigned,
-			TotalPrice:  totalPrice,
+			TotalPrice:  finalTotalPrice, // Set to the correct total
 		}
 
 		return nil
@@ -178,6 +213,7 @@ func (s *BookingService) GetCustomerBookings(
 
 	return result, nil
 }
+
 func (s *BookingService) GetEmployeeAssignedBookings(
 	ctx context.Context,
 	employeeId, startDate, endDate string,
@@ -199,6 +235,7 @@ func (s *BookingService) GetEmployeeAssignedBookings(
 
 	return result, nil
 }
+
 func (s *BookingService) GetBookingByID(ctx context.Context, bookingID string) (*types.Booking, error) {
 	var booking *types.Booking
 

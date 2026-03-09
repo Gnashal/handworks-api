@@ -1,4 +1,3 @@
-basePath: /api/
 definitions:
   types.Account:
     properties:
@@ -97,6 +96,8 @@ definitions:
         type: string
       id:
         type: string
+      orderId:
+        type: string
       paymentStatus:
         type: string
       photos:
@@ -129,6 +130,8 @@ definitions:
       dirtyScale:
         type: integer
       endSched:
+        type: string
+      orderId:
         type: string
       photos:
         items:
@@ -289,6 +292,36 @@ definitions:
     - type
     - unit
     type: object
+  types.CreateOrderRequest:
+    properties:
+      addonTotal:
+        type: number
+      customerId:
+        type: string
+      paymentMethod:
+        description: e.g. "paymongo", "cash"
+        type: string
+      quoteId:
+        type: string
+      subtotal:
+        type: number
+      totalAmount:
+        type: number
+    required:
+    - addonTotal
+    - customerId
+    - paymentMethod
+    - quoteId
+    - subtotal
+    - totalAmount
+    type: object
+  types.CreateOrderResponse:
+    properties:
+      orderId:
+        type: string
+      orderNumber:
+        type: string
+    type: object
   types.Customer:
     properties:
       account:
@@ -330,6 +363,25 @@ definitions:
         type: string
       status:
         description: ACTIVE / ONDUTY / INACTIVE
+        type: string
+    type: object
+  types.EmployeeTimesheet:
+    properties:
+      created_at:
+        type: string
+      employee_id:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+      time_in:
+        type: string
+      time_out:
+        type: string
+      updated_at:
+        type: string
+      work_date:
         type: string
     type: object
   types.ErrorResponse:
@@ -391,6 +443,28 @@ definitions:
     properties:
       employee:
         $ref: '#/definitions/types.Employee'
+    type: object
+  types.GetOrdersResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/types.Order'
+        type: array
+      ordersRequested:
+        type: integer
+      totalOrders:
+        type: integer
+    type: object
+  types.GetPaymentsResponse:
+    properties:
+      payments:
+        items:
+          $ref: '#/definitions/types.Payment'
+        type: array
+      paymentsRequested:
+        type: integer
+      totalPayments:
+        type: integer
     type: object
   types.GrowthIndex:
     properties:
@@ -535,6 +609,144 @@ definitions:
     - organizationId
     - position
     - role
+    type: object
+  types.Order:
+    properties:
+      addon_total:
+        type: number
+      created_at:
+        type: string
+      currency:
+        type: string
+      customer_id:
+        type: string
+      downpayment_required:
+        type: number
+      id:
+        type: string
+      order_number:
+        type: string
+      payment_method:
+        type: string
+      payment_status:
+        type: string
+      quote_id:
+        type: string
+      remaining_balance:
+        type: number
+      subtotal:
+        type: number
+      total_amount:
+        type: number
+      updated_at:
+        type: string
+    type: object
+  types.Payment:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      currency:
+        type: string
+      failed_reason:
+        type: string
+      id:
+        type: string
+      order_id:
+        type: string
+      paid_at:
+        type: string
+      payment_id:
+        type: string
+      payment_intent_id:
+        type: string
+      payment_method_id:
+        type: string
+      provider:
+        description: PAYMONGO | CASH | MANUAL
+        type: string
+      status:
+        type: string
+      type:
+        description: DOWNPAYMENT | FULLPAYMENT |BALANCE | REFUND
+        type: string
+      updated_at:
+        type: string
+    type: object
+  types.PaymentIntentAttributes:
+    properties:
+      amount:
+        type: integer
+      client_key:
+        type: string
+      created_at:
+        type: integer
+      currency:
+        type: string
+      description:
+        type: string
+      last_payment_error:
+        allOf:
+        - $ref: '#/definitions/types.PaymentIntentError'
+        description: null or object
+      livemode:
+        type: boolean
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      next_action:
+        description: null or next action object
+      payment_method_allowed:
+        items:
+          type: string
+        type: array
+      payment_method_options:
+        $ref: '#/definitions/types.PaymentIntentPaymentMethodOptions'
+      payments:
+        description: empty or payment objects
+        items: {}
+        type: array
+      statement_descriptor:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: integer
+    type: object
+  types.PaymentIntentCardOptions:
+    properties:
+      request_three_d_secure:
+        type: string
+    type: object
+  types.PaymentIntentData:
+    properties:
+      attributes:
+        $ref: '#/definitions/types.PaymentIntentAttributes'
+      id:
+        type: string
+      type:
+        type: string
+    type: object
+  types.PaymentIntentError:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+      type:
+        type: string
+    type: object
+  types.PaymentIntentPaymentMethodOptions:
+    properties:
+      card:
+        $ref: '#/definitions/types.PaymentIntentCardOptions'
+    type: object
+  types.PaymentIntentResponse:
+    properties:
+      data:
+        $ref: '#/definitions/types.PaymentIntentData'
     type: object
   types.PostConstructionDetails:
     properties:
@@ -746,6 +958,20 @@ definitions:
       employee:
         $ref: '#/definitions/types.Employee'
     type: object
+  types.TimeInRequest:
+    properties:
+      employee_id:
+        type: string
+      time_in:
+        type: string
+    type: object
+  types.TimeOutRequest:
+    properties:
+      employee_id:
+        type: string
+      time_out:
+        type: string
+    type: object
   types.UpdateCustomerRequest:
     properties:
       customer_id:
@@ -842,7 +1068,6 @@ definitions:
       ok:
         type: boolean
     type: object
-host: localhost:8080
 info:
   contact: {}
   description: This is the official API documentation for the Handworks Api.
@@ -881,36 +1106,6 @@ paths:
       - Account
   /account/customer:
     get:
-      description: Retrieve all customer info
-      parameters:
-      - default: 0
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.GetAllCustomersResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get all customers
-      tags:
-      - Account
-  /account/customer/{id}:
-    get:
       description: Retrieve customer info
       parameters:
       - description: Customer ID
@@ -934,6 +1129,7 @@ paths:
       summary: Get a customer by ID
       tags:
       - Account
+  /account/customer/{id}:
     put:
       consumes:
       - application/json
@@ -1000,6 +1196,36 @@ paths:
       summary: Delete a customer
       tags:
       - Account
+  /account/customer/customers:
+    get:
+      description: Retrieve all customer info
+      parameters:
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAllCustomersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
+      tags:
+      - Account
   /account/customer/signup:
     post:
       consumes:
@@ -1030,37 +1256,7 @@ paths:
       summary: Sign up a new customer
       tags:
       - Account
-  /account/employee:
-    get:
-      description: Retrieve all customer info
-      parameters:
-      - default: 0
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: Items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.GetAllCustomersResponse'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get all customers
-      tags:
-      - Account
-  /account/employee/{id}:
+  /account/employee/:
     get:
       description: Retrieve employee info
       parameters:
@@ -1225,6 +1421,36 @@ paths:
       summary: Update employee status
       tags:
       - Account
+  /account/employee/employees:
+    get:
+      description: Retrieve all customer info
+      parameters:
+      - default: 0
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAllCustomersResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
+      tags:
+      - Account
   /account/employee/signup:
     post:
       consumes:
@@ -1253,6 +1479,99 @@ paths:
           schema:
             $ref: '#/definitions/types.ErrorResponse'
       summary: Sign up a new employee
+      tags:
+      - Account
+  /account/employee/timesheet/timein:
+    post:
+      consumes:
+      - application/json
+      description: Record employee time-in for the current day
+      parameters:
+      - description: Time In Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.TimeInRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.EmployeeTimesheet'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Employee time in
+      tags:
+      - Account
+  /account/employee/timesheet/timeout:
+    post:
+      consumes:
+      - application/json
+      description: Record employee time-out for the current day
+      parameters:
+      - description: Time Out Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.TimeOutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.EmployeeTimesheet'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Employee time out
+      tags:
+      - Account
+  /account/employee/timesheet/today:
+    get:
+      description: Retrieve the employee timesheet record for the current day
+      parameters:
+      - description: Employee ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.EmployeeTimesheet'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get today's timesheet
       tags:
       - Account
   /admin/dashboard:
@@ -1654,6 +1973,30 @@ paths:
       tags:
       - Inventory
   /inventory/:
+    get:
+      description: Retrieve a single inventory item
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.InventoryItem'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an item by ID
+      tags:
+      - Inventory
     put:
       consumes:
       - application/json
@@ -1712,30 +2055,6 @@ paths:
       summary: Delete an item
       tags:
       - Inventory
-    get:
-      description: Retrieve a single inventory item
-      parameters:
-      - description: Item ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.InventoryItem'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Get an item by ID
-      tags:
-      - Inventory
   /inventory/items:
     get:
       description: Retrieve inventory items with optional filters and pagination
@@ -1786,6 +2105,344 @@ paths:
       summary: Get inventory items
       tags:
       - Inventory
+  /payment/customer:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all payments for a specific customer with pagination
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 0
+        description: Page number (starting at 0)
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of payments per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetPaymentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get payments by customer ID
+      tags:
+      - Payment
+  /payment/customer/quotes:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all quotations associated with a specific customer with
+        optional date filtering and pagination.
+      parameters:
+      - description: Customer ID
+        in: query
+        name: customerId
+        required: true
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: startDate
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: endDate
+        type: string
+      - default: 0
+        description: Page number (starting at 0)
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of quotes per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.FetchAllQuotesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all quotations for a customer
+      tags:
+      - Payment
+  /payment/intent/downpayment/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create a PayMongo payment intent for the order's downpayment amount
+      parameters:
+      - description: Order ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create downpayment payment intent
+      tags:
+      - Payment
+  /payment/intent/fullpayment/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create a PayMongo payment intent for the order's full remaining
+        balance
+      parameters:
+      - description: Order ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create full payment payment intent
+      tags:
+      - Payment
+  /payment/order:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single order by its ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Order'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get order by ID
+      tags:
+      - Payment
+    post:
+      consumes:
+      - application/json
+      description: Create a new order from an accepted quotation
+      parameters:
+      - description: Order details
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CreateOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an order
+      tags:
+      - Payment
+  /payment/order/customer:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all orders for a specific customer with pagination
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 0
+        description: Page number (starting at 0)
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of orders per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetOrdersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get orders by customer ID
+      tags:
+      - Payment
+  /payment/order/orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all orders with pagination
+      parameters:
+      - default: 0
+        description: Page number (starting at 0)
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of orders per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetOrdersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all orders
+      tags:
+      - Payment
+  /payment/payments/order:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all payments for a specific order with pagination
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 0
+        description: Page number (starting at 0)
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of payments per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetPaymentsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get payments by order ID
+      tags:
+      - Payment
   /payment/quote:
     get:
       consumes:
@@ -1887,7 +2544,7 @@ paths:
       summary: Create a quotation
       tags:
       - Payment
-  /payment/quotes:
+  /payment/quote/quotes:
     get:
       consumes:
       - application/json

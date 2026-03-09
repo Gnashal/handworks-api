@@ -25,8 +25,6 @@ import (
 // @title Handworks API
 // @version 1.0
 // @description This is the official API documentation for the Handworks Api.
-// @host localhost:8080
-// @BasePath /api/
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -39,14 +37,31 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	// Keys
+	clerkSecretKey := os.Getenv("CLERK_SECRET_KEY")
+	paymongoSecretKey := os.Getenv("TEST_PAYMONGO_SECRET_KEY")
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET(
+		"/swagger/*any",
+		ginSwagger.WrapHandler(
+			swaggerFiles.Handler,
+			ginSwagger.DocExpansion("list"),
+			ginSwagger.DefaultModelsExpandDepth(-1),
+			ginSwagger.PersistAuthorization(true),
+			ginSwagger.DeepLinking(true),
+			ginSwagger.URL("/swagger/doc.json"),
+		),
+	)
 	if err := router.SetTrustedProxies(nil); err != nil {
 		logger.Fatal("Failed to set trusted proxies: %v", err)
 	}
+
 	// this sets the clerk server sdk
-	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
+	clerk.SetKey(clerkSecretKey)
+
+	paymongoClient := config.NewPaymongoClient(paymongoSecretKey)
 
 	router.Use(cors.New(config.NewCors()))
 	conn, err := config.InitDB(logger, c)
@@ -59,7 +74,7 @@ func main() {
 	// public paths for Clerk middleware
 	publicPaths := []string{"/api/account/customer/signup",
 		"/api/account/employee/signup", "/api/account/admin/signup",
-		"/api/payment/quote/preview", "/health", "/api/admin/dashboard", "/api/payment/quote", "/api/booking/slots", "/api/booking/customer", "/api/booking/bookings"}
+		"/api/payment/quote/preview", "/health", "/api/admin/dashboard", "/api/payment/quote", "/api/booking/slots", "/api/booking/customer", "/api/booking/bookings", "/api/payment/customer"}
 
 	// websocket
 	hubs := realtime.NewRealtimeHubs(logger)
@@ -68,7 +83,7 @@ func main() {
 	// HealthCheck(router)
 	accountService := services.NewAccountService(conn, logger)
 	inventoryService := services.NewInventoryService(conn, logger)
-	paymentService := services.NewPaymentService(conn, logger)
+	paymentService := services.NewPaymentService(conn, logger, paymongoClient)
 	bookingService := services.NewBookingService(conn, logger, paymentService)
 	adminServie := services.NewAdminService(conn, logger, accountService)
 
