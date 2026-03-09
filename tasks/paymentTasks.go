@@ -289,7 +289,6 @@ func CalculatePostConstructionCleaning(details *types.PostConstructionDetails) (
 		}
 	}
 
-	// Post-construction can exceed daily limit with multi-day guidance
 	if hours > MaxDailyHours {
 		daysNeeded := (hours + int32(MaxDailyHours) - 1) / int32(MaxDailyHours)
 		return price, hours, fmt.Errorf("this post-construction cleaning requires %d hours, which exceeds our daily limit of %d hours. Please divide into %d separate day bookings (e.g., book %d hours on day 1 and %d hours on day 2)",
@@ -355,7 +354,6 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 	var addonTotal float32 = 0
 	var addonTotalHours int32 = 0
 	var validationErrors []string
-	var addonHoursBreakdown []string
 
 	for i, addon := range in.Addons {
 		addonService := &types.ServicesRequest{
@@ -381,9 +379,7 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 			return nil, fmt.Errorf("failed to marshal addon service: %v", err)
 		}
 		addonTotalHours += addonHours
-
-		addonHoursBreakdown = append(addonHoursBreakdown,
-			fmt.Sprintf("%s: %d hours", addon.ServiceDetail.ServiceType, addonHours))
+		addonTotal += addonPrice
 
 		dbAddon := &types.QuoteAddon{
 			ServiceType:   string(addon.ServiceDetail.ServiceType),
