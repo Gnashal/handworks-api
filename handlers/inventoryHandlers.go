@@ -49,9 +49,9 @@ func (h *InventoryHandler) CreateItem(c *gin.Context) {
 // @Param id path string true "Item ID"
 // @Success 200 {object} types.InventoryItem
 // @Failure 404 {object} types.ErrorResponse
-// @Router /inventory/{id} [get]
+// @Router /inventory/ [get]
 func (h *InventoryHandler) GetItem(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	resp, err := h.Service.GetItem(ctx, id)

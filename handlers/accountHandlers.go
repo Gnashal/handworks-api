@@ -76,9 +76,9 @@ func (h *AccountHandler) SignUpAdmin(c *gin.Context) {
 // @Param id path string true "Customer ID"
 // @Success 200 {object} types.GetCustomerResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /account/customer/{id} [get]
+// @Router /account/customer [get]
 func (h *AccountHandler) GetCustomer(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	resp, err := h.Service.GetCustomer(ctx, id)
@@ -100,7 +100,7 @@ func (h *AccountHandler) GetCustomer(c *gin.Context) {
 // @Param limit query int false "Items per page" default(10)
 // @Success 200 {object} types.GetAllCustomersResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /account/customer [get]
+// @Router /account/customer/customers [get]
 func (h *AccountHandler) GetCustomers(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
@@ -220,9 +220,9 @@ func (h *AccountHandler) SignUpEmployee(c *gin.Context) {
 // @Param id path string true "Employee ID"
 // @Success 200 {object} types.GetEmployeeResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /account/employee/{id} [get]
+// @Router /account/employee/ [get]
 func (h *AccountHandler) GetEmployee(c *gin.Context) {
-	id := c.Param("id")
+	id := c.Query("id")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	resp, err := h.Service.GetEmployee(ctx, id)
@@ -244,7 +244,7 @@ func (h *AccountHandler) GetEmployee(c *gin.Context) {
 // @Param limit query int false "Items per page" default(10)
 // @Success 200 {object} types.GetAllCustomersResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /account/employee [get]
+// @Router /account/employee/employees [get]
 func (h *AccountHandler) GetEmployees(c *gin.Context) {
 	pageStr := c.DefaultQuery("page", "0")
 	limitStr := c.DefaultQuery("limit", "10")
@@ -283,10 +283,10 @@ func (h *AccountHandler) GetEmployees(c *gin.Context) {
 // @Success 200 {object} types.UpdateEmployeeResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /account/employee/{id} [put]
+// @Router /account/employee/ [put]
 func (h *AccountHandler) UpdateEmployee(c *gin.Context) {
 	var req types.UpdateEmployeeRequest
-	req.ID = c.Param("id")
+	req.ID = c.Query("id")
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
@@ -390,4 +390,90 @@ func (h *AccountHandler) DeleteEmployee(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+
+// EmployeeTimeIn godoc
+// @Summary Employee time in
+// @Description Record employee time-in for the current day
+// @Security BearerAuth
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param request body types.TimeInRequest true "Time In Request"
+// @Success 200 {object} types.EmployeeTimesheet
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/employee/timesheet/timein [post]
+func (h *AccountHandler) EmployeeTimeIn(c *gin.Context) {
+	var req types.TimeInRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.Service.EmployeeTimeIn(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// EmployeeTimeOut godoc
+// @Summary Employee time out
+// @Description Record employee time-out for the current day
+// @Security BearerAuth
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param request body types.TimeOutRequest true "Time Out Request"
+// @Success 200 {object} types.EmployeeTimesheet
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/employee/timesheet/timeout [post]
+func (h *AccountHandler) EmployeeTimeOut(c *gin.Context) {
+	var req types.TimeOutRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.Service.EmployeeTimeOut(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// TimesheetToday godoc
+// @Summary Get today's timesheet
+// @Description Retrieve the employee timesheet record for the current day
+// @Security BearerAuth
+// @Tags Account
+// @Produce json
+// @Param id query string true "Employee ID"
+// @Success 200 {object} types.EmployeeTimesheet
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/employee/timesheet/today [get]
+func (h *AccountHandler) TimesheetToday(c *gin.Context) {
+	empId := c.Query("id")
+	if empId == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("employee id is required")))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.Service.TimesheetToday(ctx, empId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
 }

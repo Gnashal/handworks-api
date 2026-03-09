@@ -284,9 +284,9 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 404 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/order/{id} [get]
+// @Router /payment/order [get]
 func (h *PaymentHandler) GetOrder(c *gin.Context) {
-	orderID := c.Param("id")
+	orderID := c.Query("id")
 	if orderID == "" {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
 		return
@@ -364,9 +364,9 @@ func (h *PaymentHandler) GetOrders(c *gin.Context) {
 // @Success 200 {object} types.GetOrdersResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/order/customer/{id} [get]
+// @Router /payment/order/customer [get]
 func (h *PaymentHandler) GetOrderByCustomer(c *gin.Context) {
-	customerID := c.Param("id")
+	customerID := c.Query("id")
 	if customerID == "" {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("customer id is required")))
 		return
@@ -413,9 +413,9 @@ func (h *PaymentHandler) GetOrderByCustomer(c *gin.Context) {
 // @Success 200 {object} types.GetPaymentsResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/order/{id} [get]
+// @Router /payment/payments/order [get]
 func (h *PaymentHandler) GetPaymentsByOrderID(c *gin.Context) {
-	orderID := c.Param("id")
+	orderID := c.Query("id")
 	if orderID == "" {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
 		return
@@ -463,9 +463,9 @@ func (h *PaymentHandler) GetPaymentsByOrderID(c *gin.Context) {
 // @Success 200 {object} types.GetPaymentsResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/customer/{id} [get]
+// @Router /payment/customer [get]
 func (h *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
-	customerID := c.Param("id")
+	customerID := c.Query("id")
 	if customerID == "" {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("customer id is required")))
 		return
