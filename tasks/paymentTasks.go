@@ -3,10 +3,12 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"handworks-api/types"
 	"handworks-api/utils"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -398,12 +400,15 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 	log.Printf("DEBUG CalculateQuotePreview - totalServiceHours: %d", totalServiceHours)
 
 	if len(validationErrors) > 0 {
-		errorMsg := "The following issues were found:\n"
+		var sb strings.Builder
+		sb.WriteString("The following issues were found:\n")
 		for _, ve := range validationErrors {
-			errorMsg += fmt.Sprintf("• %s\n", ve)
+			sb.WriteString("• ")
+			sb.WriteString(ve)
+			sb.WriteString("\n")
 		}
-		errorMsg += "\nPlease adjust your selections or create multiple bookings for large requests."
-		return nil, fmt.Errorf(errorMsg)
+		sb.WriteString("\nPlease adjust your selections or create multiple bookings for large requests.")
+		return nil, errors.New(sb.String())
 	}
 
 	if totalServiceHours > MaxDailyHours {
@@ -520,14 +525,16 @@ func (p *PaymentTasks) CreateQuote(c context.Context, tx pgx.Tx, in *types.Quote
 		dbAddons = append(dbAddons, dbAddon)
 	}
 
-	// If there are validation errors, return them all
 	if len(validationErrors) > 0 {
-		errorMsg := "The following issues were found:\n"
+		var sb strings.Builder
+		sb.WriteString("The following issues were found:\n")
 		for _, ve := range validationErrors {
-			errorMsg += fmt.Sprintf("• %s\n", ve)
+			sb.WriteString("• ")
+			sb.WriteString(ve)
+			sb.WriteString("\n")
 		}
-		errorMsg += "\nPlease adjust your selections or create multiple bookings for large requests."
-		return nil, fmt.Errorf(errorMsg)
+		sb.WriteString("\nPlease adjust your selections or create multiple bookings for large requests.")
+		return nil, errors.New(sb.String())
 	}
 
 	totalPrice := subtotal + addonTotal
