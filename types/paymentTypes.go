@@ -90,12 +90,12 @@ var MattressPrices = map[string]float32{
 	"SINGLE":         1000.00,
 }
 var CarPrices = map[string]float32{
-	"SEDAN":     3250.00,
-	"MPV":       4000.00,
-	"SUV":       4000.00,
-	"VAN":       5200.00,
-	"PICKUP":    3600.00,
-	"CAR_SMALL": 1750.00,
+	"SEDAN_5_SEATER":        3250.00,
+	"MPV_7_SEATER":          4000.00,
+	"SUV_7_8_SEATER":        4000.00,
+	"FAMILY_VAN_10_SEATER":  5200.00,
+	"PICKUP_5_SEATER":       3600.00,
+	"SPORTS_CAR_1_2_SEATER": 1750.00,
 }
 
 var CouchPrices = map[string]float32{
