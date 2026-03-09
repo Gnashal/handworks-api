@@ -459,7 +459,7 @@ func (t *BookingTasks) FetchAllBookings(
 	}
 
 	err := tx.QueryRow(ctx,
-		`SELECT booking.get_all_bookings($1, $2, $3, $4)`,
+		`SELECT booking.fetch_all_bookings($1, $2, $3, $4)`,
 		startDateArg, endDateArg, page, limit).Scan(&rawJSON)
 
 	if err != nil {

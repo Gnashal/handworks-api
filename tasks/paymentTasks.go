@@ -378,8 +378,6 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal addon service: %v", err)
 		}
-
-		addonTotal += addonPrice
 		addonTotalHours += addonHours
 
 		addonHoursBreakdown = append(addonHoursBreakdown,
@@ -746,4 +744,304 @@ func (t *PaymentTasks) FetchQuoteByIDbyCustomer(ctx context.Context, tx pgx.Tx, 
 	quoteResponse.AddonTotal = filteredAddonTotal
 
 	return &quoteResponse, nil
+}
+
+func (t *PaymentTasks) CreateOrder(
+	ctx context.Context,
+	tx pgx.Tx,
+	req types.CreateOrderRequest,
+) (string, error) {
+	// Calculate downpayment
+	downpayment := req.TotalAmount * 0.20
+	remaining := req.TotalAmount - downpayment
+
+	const query = `
+		INSERT INTO payment.orders (
+			order_number,
+			full_payment_method,
+			customer_id,
+			quote_id,
+			currency,
+			subtotal,
+			addon_total,
+			total_amount,
+			downpayment_required,
+			remaining_balance,
+			payment_status,
+			created_at,
+			updated_at
+		)
+		VALUES (
+			$1, $2, $3, $4,
+			$5, $6, $7,
+			$8, $9,
+			$10,
+			NOW(), NOW()
+		)
+		RETURNING id;
+	`
+
+	var orderID string
+
+	err := tx.QueryRow(ctx, query,
+		utils.GenerateOrderNumber(req.QuoteID, time.Now()),
+		req.PaymentMethod,
+		req.CustomerID,
+		req.QuoteID,
+		"PHP",
+		req.Subtotal,
+		req.AddonTotal,
+		req.TotalAmount,
+		downpayment,
+		remaining,
+		"pending_downpayment",
+	).Scan(&orderID)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to create order: %w", err)
+	}
+
+	return orderID, nil
+}
+
+func (t *PaymentTasks) FetchOrderByID(ctx context.Context, tx pgx.Tx, orderId string) (*types.Order, error) {
+	var order types.Order
+
+	err := tx.QueryRow(ctx, `SELECT * FROM payment.orders WHERE id = $1`, orderId).Scan(
+		&order.ID,
+		&order.OrderNumber,
+		&order.CustomerID,
+		&order.QuoteID,
+		&order.Currency,
+		&order.Subtotal,
+		&order.AddonTotal,
+		&order.TotalAmount,
+		&order.DownpaymentRequired,
+		&order.RemainingBalance,
+		&order.PaymentStatus,
+		&order.CreatedAt,
+		&order.UpdatedAt,
+		&order.PaymentMethod,
+	)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("order not found")
+		}
+		return nil, fmt.Errorf("failed to fetch order: %w", err)
+	}
+
+	return &order, nil
+}
+func (t *PaymentTasks) FetchOrders(ctx context.Context, tx pgx.Tx, page, limit int, startDate, endDate string, logger *utils.Logger) (*types.GetOrdersResponse, error) {
+	var response types.GetOrdersResponse
+	var orders []types.Order
+	rows, err := tx.Query(ctx,
+		`SELECT payment.get_orders($1, $2, $3, $4)`,
+		startDate, endDate, page, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var o types.Order
+		if err := rows.Scan(
+			&o.ID,
+			&o.OrderNumber,
+			&o.CustomerID,
+			&o.QuoteID,
+			&o.Currency,
+			&o.Subtotal,
+			&o.AddonTotal,
+			&o.TotalAmount,
+			&o.DownpaymentRequired,
+			&o.RemainingBalance,
+			&o.PaymentStatus,
+			&o.CreatedAt,
+			&o.UpdatedAt,
+			&o.PaymentMethod,
+		); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	response.Orders = orders
+	response.TotalOrders = len(orders)
+	response.OrdersRequested = limit
+	return &response, nil
+}
+func (t *PaymentTasks) FetchOrdersByCustomer(ctx context.Context, tx pgx.Tx, page, limit int, startDate, endDate, customerId string, logger *utils.Logger) (*types.GetOrdersResponse, error) {
+	var response types.GetOrdersResponse
+	var orders []types.Order
+	rows, err := tx.Query(ctx,
+		`SELECT payment.get_orders_by_customer($1, $2, $3, $4, $5)`,
+		startDate, endDate, page, limit, customerId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var o types.Order
+		if err := rows.Scan(
+			&o.ID,
+			&o.OrderNumber,
+			&o.CustomerID,
+			&o.QuoteID,
+			&o.Currency,
+			&o.Subtotal,
+			&o.AddonTotal,
+			&o.TotalAmount,
+			&o.DownpaymentRequired,
+			&o.RemainingBalance,
+			&o.PaymentStatus,
+			&o.CreatedAt,
+			&o.UpdatedAt,
+			&o.PaymentMethod,
+		); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	response.Orders = orders
+	response.TotalOrders = len(orders)
+	response.OrdersRequested = limit
+	return &response, nil
+}
+func (t *PaymentTasks) FetchPaymentsByOrderID(ctx context.Context, tx pgx.Tx, page, limit int, startDate, endDate, orderId string) (*types.GetPaymentsResponse, error) {
+	var response types.GetPaymentsResponse
+	var payments []types.Payment
+	rows, err := tx.Query(ctx,
+		`SELECT payment.get_payments_by_order($1, $2, $3, $4, $5)`,
+		orderId, startDate, endDate, page, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p types.Payment
+		if err := rows.Scan(
+			&p.ID,
+			&p.OrderID,
+			&p.Amount,
+			&p.Currency,
+			&p.FailedReason,
+			&p.PaidAt,
+			&p.PaymentID,
+			&p.PaymentIntentID,
+			&p.Status,
+			&p.Type,
+			&p.Provider,
+			&p.RawResponse,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		payments = append(payments, p)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	response.Payments = payments
+	response.TotalPayments = len(payments)
+	response.PaymentsRequested = limit
+	return &response, nil
+}
+func (t *PaymentTasks) FetchPaymentsByCustomer(ctx context.Context, tx pgx.Tx, page, limit int, startDate, endDate, customerId string) (*types.GetPaymentsResponse, error) {
+	var response types.GetPaymentsResponse
+	var payments []types.Payment
+	rows, err := tx.Query(ctx,
+		`SELECT payment.get_payments_by_customer($1, $2, $3, $4, $5)`,
+		customerId, startDate, endDate, page, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var p types.Payment
+		if err := rows.Scan(
+			&p.ID,
+			&p.OrderID,
+			&p.Amount,
+			&p.Currency,
+			&p.FailedReason,
+			&p.PaidAt,
+			&p.PaymentID,
+			&p.PaymentIntentID,
+			&p.Status,
+			&p.Type,
+			&p.Provider,
+			&p.RawResponse,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		payments = append(payments, p)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	response.Payments = payments
+	response.TotalPayments = len(payments)
+	response.PaymentsRequested = limit
+	return &response, nil
+}
+func (s *PaymentTasks) StorePayment(ctx context.Context, tx pgx.Tx, payment *types.StorePayment) error {
+	const query = `
+		INSERT INTO payment.payments (
+			order_id,
+			client_key,
+			amount,
+			currency,
+			failed_reason,
+			payment_id,
+			payment_intent_id,
+			status,
+			type,
+			provider,
+			raw_response,
+			created_at,
+			updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+	`
+	_, err := tx.Exec(ctx, query,
+		payment.OrderID,
+		payment.ClientKey,
+		payment.Amount,
+		payment.Currency,
+		payment.FailedReason,
+		payment.PaymentID,
+		payment.PaymentIntentID,
+		payment.Status,
+		payment.Type,
+		payment.Provider,
+		payment.RawResponse,
+	)
+	return err
+}
+func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, paymentIntentId, newStatus string) error {
+	const query = `
+		UPDATE payment.orders o
+		SET payment_status = $1, updated_at = NOW()
+		FROM payment.payments p
+		WHERE p.order_id = o.id
+		  AND p.payment_intent_id = $2
+	`
+	_, err := tx.Exec(ctx, query, newStatus, paymentIntentId)
+	return err
 }

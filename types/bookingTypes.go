@@ -146,6 +146,7 @@ type BaseBookingDetails struct {
 	CreatedAt         time.Time  `json:"createdAt" db:"createdat"`
 	UpdatedAt         *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
 	QuoteId           string     `json:"quoteId" db:"quoteid"`
+	OrderId           string     `json:"orderId" db:"orderid"`
 	ExtraHours        float32    `json:"extraHours" db:"extra_hours"`                        // Added
 	ExtraHourCost     float32    `json:"extraHourCost" db:"extra_hour_cost"`                 // Added
 	OriginalEndSched  *time.Time `json:"originalEndSched,omitempty" db:"original_end_sched"` // Added - original end time
@@ -166,6 +167,7 @@ type BaseBookingDetailsRequest struct {
 	UpdatedAt            *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
 	QuoteId              string     `json:"quoteId" db:"quoteid"`
 	ExtraHours           float32    `json:"extraHours"`
+	OrderId              string     `json:"orderId" db:"orderid"`
 }
 
 type Address struct {

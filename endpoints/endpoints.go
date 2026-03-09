@@ -57,13 +57,43 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	}
 }
 func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
-	r.POST("/quote", h.MakeQuotation)
-	r.POST("/quote/preview", h.MakePublicQuotation)
-	r.GET("/quotes", h.GetAllQuotes)
-	r.GET("/quote", h.GetQuoteByIDForCustomer)
+	quote := r.Group("/quote")
+	{
+		quote.GET("/", h.GetQuoteByIDForCustomer)
+		quote.GET("/quotes", h.GetAllQuotes)
+		quote.POST("/", h.MakeQuotation)
+		quote.POST("/preview", h.MakePublicQuotation)
+	}
 	customer := r.Group("/customer")
 	{
 		customer.GET("/quotes", h.GetAllQuotesFromCustomer)
+	}
+	order := r.Group("/order")
+	{
+		order.POST("/", h.CreateOrder)
+		order.GET("/:id", h.GetOrder)
+		order.GET("/orders", h.GetOrders)
+		order.GET("/customer/:id", h.GetOrderByCustomer)
+		// order.PATCH("/:id", h.UpdateOrderPaymentStatus)
+	}
+	payments := r.Group("/payments")
+	{
+		payments.GET("/order/:id", h.GetPaymentsByOrderID)
+		payments.GET("/customer/:id", h.GetPaymentsByCustomerID)
+		intents := payments.Group("/intent")
+		{
+			intents.POST("/downpayment/:id", h.CreateDownpaymentIntent)
+			intents.POST("/fullpayment/:id	", h.CreateFullPaymentIntent)
+		}
+		// execution := payments.Group("/execute")
+		// {
+		// 	execution.POST("/downpayment/:id", h.ExecuteDownpayment)
+		// 	execution.POST("/fullpayment/:id", h.ExecuteFullPayment)
+		// }
+	}
+	webhooks := r.Group("/webhooks")
+	{
+		webhooks.POST("/paymongo", h.HandlePaymongoWebhook)
 	}
 }
 
@@ -72,6 +102,7 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	employees := r.Group("/employee")
 	{
 		employees.POST("/onboard", h.OnboardEmployee)
+
 	}
 }
 
