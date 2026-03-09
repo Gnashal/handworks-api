@@ -6,6 +6,7 @@ import (
 	"handworks-api/types"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,17 +30,30 @@ func (h *PaymentHandler) MakeQuotation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
 		return
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	res, err := h.Service.MakeQuotation(ctx, req)
 	if err != nil {
+		// Check for validation errors (like hours exceeded)
+		if strings.Contains(err.Error(), "exceed maximum allowed limit") ||
+			strings.Contains(err.Error(), "validation failed") ||
+			strings.Contains(err.Error(), "areas above 100 SQM") ||
+			strings.Contains(err.Error(), "daily limit") {
+			// Return 400 Bad Request for validation errors
+			c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+			return
+		}
+		// Return 500 for actual server errors
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}
+
 	c.JSON(http.StatusOK, res)
 }
 
-// MakeQuotation godoc
+// MakePublicQuotation godoc
 // @Summary Create a quotation
 // @Description Generate a new quotation
 // @Tags Payment
@@ -56,13 +70,26 @@ func (h *PaymentHandler) MakePublicQuotation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
 		return
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	res, err := h.Service.MakePublicQuotation(ctx, req)
 	if err != nil {
+		// Check for validation errors
+		if strings.Contains(err.Error(), "exceed maximum allowed limit") ||
+			strings.Contains(err.Error(), "validation failed") ||
+			strings.Contains(err.Error(), "areas above 100 SQM") ||
+			strings.Contains(err.Error(), "daily limit") {
+			// Return 400 Bad Request for validation errors
+			c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+			return
+		}
+		// Return 500 for actual server errors
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}
+
 	c.JSON(http.StatusOK, res)
 }
 
