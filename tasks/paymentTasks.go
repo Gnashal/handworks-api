@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"handworks-api/types"
 	"handworks-api/utils"
+	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -328,12 +329,10 @@ func (t *PaymentTasks) CalculatePriceByServiceType(service *types.ServicesReques
 	return calculatedPrice, calculatedHours, nil
 }
 
-// Updated CalculateQuotePreview with real-time validation
 func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteRequest) (*types.Quote, error) {
 	var dbQuote types.Quote
 	var dbAddons []*types.QuoteAddon
 
-	// Calculate main service with validation
 	mainService := &types.ServicesRequest{
 		ServiceType: in.Service.ServiceType,
 		Details:     in.Service.Details,
@@ -346,6 +345,7 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 
 	// Validate main service first
 	subtotal, mainHours, err := t.CalculatePriceByServiceType(mainService)
+
 	if err != nil {
 		return nil, fmt.Errorf("main service validation failed: %v", err)
 	}
@@ -353,8 +353,8 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 	var addonTotal float32 = 0
 	var addonTotalHours int32 = 0
 	var validationErrors []string
+	var addonHoursBreakdown []string
 
-	// Validate each addon and collect running total
 	for i, addon := range in.Addons {
 		addonService := &types.ServicesRequest{
 			ServiceType: addon.ServiceDetail.ServiceType,
@@ -364,10 +364,9 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 		addonPrice, addonHours, err := t.CalculatePriceByServiceType(addonService)
 		if err != nil {
 			validationErrors = append(validationErrors, fmt.Sprintf("Addon %d (%s): %v", i+1, addon.ServiceDetail.ServiceType, err))
-			continue // Skip this addon but continue validating others
+			continue
 		}
 
-		// Check if adding this addon would exceed daily limit
 		if mainHours+addonTotalHours+addonHours > MaxDailyHours {
 			validationErrors = append(validationErrors,
 				fmt.Sprintf("Addon %d (%s) would exceed daily limit. Current total: %d hours, Addon requires: %d hours, Daily limit: %d hours. Please remove some items or create separate bookings.",
@@ -383,6 +382,9 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 		addonTotal += addonPrice
 		addonTotalHours += addonHours
 
+		addonHoursBreakdown = append(addonHoursBreakdown,
+			fmt.Sprintf("%s: %d hours", addon.ServiceDetail.ServiceType, addonHours))
+
 		dbAddon := &types.QuoteAddon{
 			ServiceType:   string(addon.ServiceDetail.ServiceType),
 			ServiceDetail: serviceDetail,
@@ -395,6 +397,8 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 
 	totalServiceHours := mainHours + addonTotalHours
 
+	log.Printf("DEBUG CalculateQuotePreview - totalServiceHours: %d", totalServiceHours)
+
 	if len(validationErrors) > 0 {
 		errorMsg := "The following issues were found:\n"
 		for _, ve := range validationErrors {
@@ -404,7 +408,6 @@ func (t *PaymentTasks) CalculateQuotePreview(c context.Context, in *types.QuoteR
 		return nil, fmt.Errorf(errorMsg)
 	}
 
-	// Final validation
 	if totalServiceHours > MaxDailyHours {
 		return nil, fmt.Errorf("total service hours (%d) exceed daily limit of %d hours. Please divide your cleaning into multiple bookings (e.g., book different services on separate days)",
 			totalServiceHours, MaxDailyHours)

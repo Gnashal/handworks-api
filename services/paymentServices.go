@@ -56,13 +56,16 @@ func (s *PaymentService) MakePublicQuotation(ctx context.Context, req types.Quot
 	}
 	addonsBreakdown := s.Tasks.MapAddonstoAddonBreakdown(&quotePrev.Addons)
 	return &types.QuoteResponse{
-		QuoteId:          quotePrev.ID,
-		MainServiceName:  quotePrev.MainService,
-		MainServiceTotal: quotePrev.Subtotal,
-		TotalPrice:       quotePrev.TotalPrice,
-		AddonTotal:       quotePrev.AddonTotal,
-		Addons:           addonsBreakdown,
+		QuoteId:           quotePrev.ID,
+		MainServiceName:   quotePrev.MainService,
+		MainServiceTotal:  quotePrev.Subtotal,
+		MainServiceHours:  quotePrev.MainServiceHours,
+		TotalServiceHours: quotePrev.TotalServiceHours,
+		TotalPrice:        quotePrev.TotalPrice,
+		AddonTotal:        quotePrev.AddonTotal,
+		Addons:            addonsBreakdown,
 	}, nil
+
 }
 
 func (s *PaymentService) MakeQuotation(ctx context.Context, req types.QuoteRequest) (*types.QuoteResponse, error) {
