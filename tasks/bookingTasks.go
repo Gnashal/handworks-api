@@ -23,8 +23,6 @@ func (t *BookingTasks) AllocateAll(ctx context.Context, paymentPort PaymentPort,
 		if req.MainService.ServiceType != types.GeneralCleaning {
 			return nil, fmt.Errorf("extra hours can only be added for General Cleaning services")
 		}
-
-		// Optional: Add maximum hours limit
 		if req.ExtraHours > 4 {
 			return nil, fmt.Errorf("extra hours cannot exceed 4 hours")
 		}
@@ -83,8 +81,17 @@ func (t *BookingTasks) AllocateAll(ctx context.Context, paymentPort PaymentPort,
 		alloc = &types.CleaningAllocation{}
 	}
 
-	// Add extra hour cost to prices
-	if extraHourCost > 0 {
+	// ✅ Compute EndSched authoritatively AFTER g.Wait(), no goroutine mutation
+	totalHours := req.TotalServiceHours + req.ExtraHours
+	originalEndSched := req.Base.EndSched
+	req.Base.EndSched = req.Base.StartSched.Add(
+		time.Duration(float64(totalHours) * float64(time.Hour)),
+	)
+
+	// ✅ Compute extra hour cost AFTER cleaners are allocated
+	var extraHourCost float32
+	if req.ExtraHours > 0 && len(cleaners) > 0 {
+		extraHourCost = req.ExtraHours * 250.00 * float32(len(cleaners))
 		prices.ExtraHourCost = extraHourCost
 		prices.MainServicePrice += extraHourCost
 	}
