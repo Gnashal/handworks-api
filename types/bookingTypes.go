@@ -207,10 +207,11 @@ type AddOnRequest struct {
 }
 
 type CreateBookingRequest struct {
-	Base        BaseBookingDetailsRequest `json:"base"`
-	MainService ServicesRequest           `json:"mainService"`
-	Addons      []AddOnRequest            `json:"addons"`
-	ExtraHours  float32                   `json:"extraHours"`
+	Base              BaseBookingDetailsRequest `json:"base"`
+	MainService       ServicesRequest           `json:"mainService"`
+	Addons            []AddOnRequest            `json:"addons"`
+	ExtraHours        float32                   `json:"extraHours"`
+	TotalServiceHours float32                   `json:"totalServiceHours"`
 }
 
 type AddOns struct {

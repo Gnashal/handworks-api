@@ -799,6 +799,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/booking/accept-booking": {
+            "post": {
+                "description": "Updates the booking review status to SCHEDULED, triggering a notification to assigned employees",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Accept a booking",
+                "parameters": [
+                    {
+                        "description": "Accept booking data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.AcceptBookingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AcceptBookingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/dashboard": {
             "get": {
                 "description": "Fetch data for admin dashboard",
@@ -878,6 +924,98 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.SignUpEmployeeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/inventory/assign-equipment": {
+            "post": {
+                "description": "Admin override to manually assign equipment to a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Assign equipment to a booking",
+                "parameters": [
+                    {
+                        "description": "Assign equipment data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignEquipmentToBookingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignInventoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/inventory/assign-resources": {
+            "post": {
+                "description": "Admin override to manually assign resources (supplies) to a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Assign resources to a booking",
+                "parameters": [
+                    {
+                        "description": "Assign resources data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignResourcesToBookingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignInventoryResponse"
                         }
                     },
                     "400": {
@@ -2374,6 +2512,28 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "types.AcceptBookingRequest": {
+            "type": "object",
+            "required": [
+                "bookingId"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.AcceptBookingResponse": {
+            "type": "object",
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Account": {
             "type": "object",
             "properties": {
@@ -2490,6 +2650,53 @@ const docTemplate = `{
                 },
                 "sales": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.AssignEquipmentToBookingRequest": {
+            "type": "object",
+            "required": [
+                "bookingId",
+                "equipment"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "equipment": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.ItemQuantity"
+                    }
+                }
+            }
+        },
+        "types.AssignInventoryResponse": {
+            "type": "object",
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.AssignResourcesToBookingRequest": {
+            "type": "object",
+            "required": [
+                "bookingId",
+                "resources"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.ItemQuantity"
+                    }
                 }
             }
         },
@@ -2802,6 +3009,9 @@ const docTemplate = `{
                 },
                 "mainService": {
                     "$ref": "#/definitions/types.ServicesRequest"
+                },
+                "totalServiceHours": {
+                    "type": "number"
                 }
             }
         },
@@ -3193,6 +3403,21 @@ const docTemplate = `{
                 "CategoryVehicles",
                 "CategoryOther"
             ]
+        },
+        "types.ItemQuantity": {
+            "type": "object",
+            "required": [
+                "itemId",
+                "quantity"
+            ],
+            "properties": {
+                "itemId": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
+                }
+            }
         },
         "types.ItemStatus": {
             "type": "string",

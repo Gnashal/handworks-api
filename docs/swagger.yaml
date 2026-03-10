@@ -1,4 +1,18 @@
 definitions:
+  types.AcceptBookingRequest:
+    properties:
+      bookingId:
+        type: string
+    required:
+    - bookingId
+    type: object
+  types.AcceptBookingResponse:
+    properties:
+      bookingId:
+        type: string
+      status:
+        type: string
+    type: object
   types.Account:
     properties:
       clerk_id:
@@ -75,6 +89,37 @@ definitions:
         $ref: '#/definitions/types.GrowthIndex'
       sales:
         type: integer
+    type: object
+  types.AssignEquipmentToBookingRequest:
+    properties:
+      bookingId:
+        type: string
+      equipment:
+        items:
+          $ref: '#/definitions/types.ItemQuantity'
+        type: array
+    required:
+    - bookingId
+    - equipment
+    type: object
+  types.AssignInventoryResponse:
+    properties:
+      bookingId:
+        type: string
+      message:
+        type: string
+    type: object
+  types.AssignResourcesToBookingRequest:
+    properties:
+      bookingId:
+        type: string
+      resources:
+        items:
+          $ref: '#/definitions/types.ItemQuantity'
+        type: array
+    required:
+    - bookingId
+    - resources
     type: object
   types.BaseBookingDetails:
     properties:
@@ -280,6 +325,8 @@ definitions:
         type: number
       mainService:
         $ref: '#/definitions/types.ServicesRequest'
+      totalServiceHours:
+        type: number
     type: object
   types.CreateItemRequest:
     properties:
@@ -541,6 +588,16 @@ definitions:
     - CategoryAppliances
     - CategoryVehicles
     - CategoryOther
+  types.ItemQuantity:
+    properties:
+      itemId:
+        type: string
+      quantity:
+        type: number
+    required:
+    - itemId
+    - quantity
+    type: object
   types.ItemStatus:
     enum:
     - HIGH
@@ -1586,6 +1643,37 @@ paths:
       summary: Get today's timesheet
       tags:
       - Account
+  /admin/booking/accept-booking:
+    post:
+      consumes:
+      - application/json
+      description: Updates the booking review status to SCHEDULED, triggering a notification
+        to assigned employees
+      parameters:
+      - description: Accept booking data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.AcceptBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AcceptBookingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: Accept a booking
+      tags:
+      - Admin
   /admin/dashboard:
     get:
       consumes:
@@ -1647,6 +1735,66 @@ paths:
           schema:
             $ref: '#/definitions/types.ErrorResponse'
       summary: Onboard a new employee
+      tags:
+      - Admin
+  /admin/inventory/assign-equipment:
+    post:
+      consumes:
+      - application/json
+      description: Admin override to manually assign equipment to a booking
+      parameters:
+      - description: Assign equipment data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.AssignEquipmentToBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AssignInventoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: Assign equipment to a booking
+      tags:
+      - Admin
+  /admin/inventory/assign-resources:
+    post:
+      consumes:
+      - application/json
+      description: Admin override to manually assign resources (supplies) to a booking
+      parameters:
+      - description: Assign resources data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.AssignResourcesToBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AssignInventoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: Assign resources to a booking
       tags:
       - Admin
   /booking:

@@ -78,7 +78,6 @@ func (t *BookingTasks) AllocateCleaners(ctx context.Context, tx pgx.Tx) ([]types
 	if len(cleaners) == 0 {
 		return nil, fmt.Errorf("no available cleaners found")
 	}
-
 	return cleaners, nil
 }
 
@@ -176,7 +175,6 @@ func (t *BookingTasks) MakeBaseBooking(
 	return &createdBaseBook, nil
 }
 
-// insertServiceDetails is a generic helper to persist service detail JSON and return a types.ServiceDetails with Details populated.
 func insertServiceDetails[T any](ctx context.Context, tx pgx.Tx, serviceType types.DetailType, details T, log *utils.Logger) (*types.ServiceDetails, error) {
 	detailsJSON, err := json.Marshal(details)
 	if err != nil {
@@ -196,7 +194,6 @@ func insertServiceDetails[T any](ctx context.Context, tx pgx.Tx, serviceType typ
 	}
 	log.Debug("Raw JSON: %s", string(raw))
 
-	// Unmarshal dynamically using factory
 	factory, ok := types.DetailFactories[serviceType]
 	if !ok {
 		return nil, fmt.Errorf("no factory registered for service type %s", serviceType)
@@ -213,7 +210,6 @@ func insertServiceDetails[T any](ctx context.Context, tx pgx.Tx, serviceType typ
 	return &svc, nil
 }
 
-// createMainServiceBooking converts types.ServiceDetail into DB records by using insertServiceDetails.
 func (t *BookingTasks) CreateMainServiceBooking(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -221,7 +217,6 @@ func (t *BookingTasks) CreateMainServiceBooking(
 	mainService types.ServiceDetail,
 ) (*types.ServiceDetails, error) {
 
-	// detect which union field is set
 	if mainService.General != nil {
 		d := types.GeneralCleaningDetails{
 			HomeType: mainService.General.HomeType,
@@ -287,7 +282,6 @@ func (t *BookingTasks) CreateMainServiceBooking(
 	return nil, fmt.Errorf("unsupported main service type")
 }
 
-// createAddOn creates the service details for the addon and inserts into booking.addons.
 func (t *BookingTasks) CreateAddOn(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -295,12 +289,10 @@ func (t *BookingTasks) CreateAddOn(
 	addonReq types.AddOnRequest,
 	addOnPrice float32,
 ) (*types.AddOns, error) {
-	// create underlying service row
 	addOnServiceDetails, err := t.CreateMainServiceBooking(ctx, tx, logger, addonReq.ServiceDetail.Details)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create service details: %w", err)
 	}
-	// debug log of proto-like structure (optional)
 	out, _ := json.MarshalIndent(addOnServiceDetails.Details, "", "  ")
 	logger.Debug("Create Addon Service Details: %s", string(out))
 
@@ -310,17 +302,11 @@ func (t *BookingTasks) CreateAddOn(
 	}
 
 	err = tx.QueryRow(ctx,
-		`INSERT INTO booking.addons 
-		 (service_id, price)
+		`INSERT INTO booking.addons (service_id, price)
 		 VALUES ($1, $2)
 		 RETURNING id, service_id, price`,
-		addOnServiceDetails.ID,
-		addOnPrice,
-	).Scan(
-		&createdAddon.ID,
-		&createdAddon.ServiceDetail.ID,
-		&createdAddon.Price,
-	)
+		addOnServiceDetails.ID, addOnPrice,
+	).Scan(&createdAddon.ID, &createdAddon.ServiceDetail.ID, &createdAddon.Price)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert addon: %w", err)
 	}
@@ -328,36 +314,27 @@ func (t *BookingTasks) CreateAddOn(
 	return createdAddon, nil
 }
 
-// saveBooking persists the booking composite row and returns the booking id.
 func (t *BookingTasks) SaveBooking(
 	ctx context.Context,
 	tx pgx.Tx,
 	baseBookingID, mainServiceID string,
 	addonIDs, equipmentIDs, resourceIDs, cleanerIDs []string,
-	quoteTotalPrice float32, // Original quote total price
-	extraHourCost float32, // Calculated extra hours cost
+	quoteTotalPrice float32,
+	extraHourCost float32,
 ) (string, error) {
 	var id string
 
-	// Calculate final price
 	finalTotalPrice := quoteTotalPrice + extraHourCost
 
-	query := `
-		INSERT INTO booking.bookings 
-		(base_booking_id, main_service_id, addon_ids, equipment_ids, resource_ids, cleaner_ids, 
+	err := tx.QueryRow(ctx, `
+		INSERT INTO booking.bookings
+		(base_booking_id, main_service_id, addon_ids, equipment_ids, resource_ids, cleaner_ids,
 		 total_price, extra_hour_cost)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id`
-
-	err := tx.QueryRow(ctx, query,
-		baseBookingID,
-		mainServiceID,
-		addonIDs,
-		equipmentIDs,
-		resourceIDs,
-		cleanerIDs,
-		finalTotalPrice,
-		extraHourCost,
+		RETURNING id`,
+		baseBookingID, mainServiceID,
+		addonIDs, equipmentIDs, resourceIDs, cleanerIDs,
+		finalTotalPrice, extraHourCost,
 	).Scan(&id)
 	if err != nil {
 		return "", fmt.Errorf("saveBooking: %w", err)
@@ -367,12 +344,8 @@ func (t *BookingTasks) SaveBooking(
 }
 
 func (t *BookingTasks) FetchBookingByID(ctx context.Context, tx pgx.Tx, bookingID string, logger *utils.Logger) (*types.Booking, error) {
-
 	var rawJSON []byte
-	err := tx.QueryRow(ctx,
-		`SELECT booking.get_booking_by_id($1)`,
-		bookingID).Scan(&rawJSON)
-
+	err := tx.QueryRow(ctx, `SELECT booking.get_booking_by_id($1)`, bookingID).Scan(&rawJSON)
 	if err != nil {
 		return nil, fmt.Errorf("failed calling sproc get_booking_by_id: %w", err)
 	}
@@ -382,7 +355,6 @@ func (t *BookingTasks) FetchBookingByID(ctx context.Context, tx pgx.Tx, bookingI
 		logger.Error("failed to unmarshal booking JSON: %v", err)
 		return nil, fmt.Errorf("unmarhsal booking: %w", err)
 	}
-
 	return &booking, nil
 }
 
@@ -393,18 +365,14 @@ func (t *BookingTasks) FetchAllBookings(
 	page, limit int,
 	logger *utils.Logger,
 ) (*types.FetchAllBookingsResponse, error) {
-
 	var rawJSON []byte
 
-	// Convert empty strings to nil (NULL in database)
 	var startDateArg, endDateArg interface{}
-
 	if startDate == "" {
 		startDateArg = nil
 	} else {
 		startDateArg = startDate
 	}
-
 	if endDate == "" {
 		endDateArg = nil
 	} else {
@@ -414,7 +382,6 @@ func (t *BookingTasks) FetchAllBookings(
 	err := tx.QueryRow(ctx,
 		`SELECT booking.fetch_all_bookings($1, $2, $3, $4)`,
 		startDateArg, endDateArg, page, limit).Scan(&rawJSON)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed calling sproc fetch_all_bookings: %w", err)
 	}
@@ -424,7 +391,6 @@ func (t *BookingTasks) FetchAllBookings(
 		logger.Error("failed to unmarshal bookings JSON: %v", err)
 		return nil, fmt.Errorf("unmarshal bookings: %w", err)
 	}
-
 	return &response, nil
 }
 
@@ -441,7 +407,6 @@ func (t *BookingTasks) FetchAllCustomerBookings(
 		`SELECT booking.get_bookings_by_customer($1, $2::date, $3::date, $4, $5)`,
 		customerId, startDate, endDate, page, limit,
 	).Scan(&rawJSON)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed calling sproc get_bookings_by_customer: %w", err)
 	}
@@ -450,7 +415,6 @@ func (t *BookingTasks) FetchAllCustomerBookings(
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}
-
 	return &response, nil
 }
 
@@ -463,6 +427,7 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 ) (*types.FetchAllBookingsResponse, error) {
 	var rawJSON []byte
 	var response types.FetchAllBookingsResponse
+
 	err := tx.QueryRow(ctx,
 		`SELECT booking.get_bookings_by_cleaner($1, $2, $3, $4, $5)`,
 		employeeId, startDate, endDate, page, limit,
@@ -474,7 +439,6 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}
-
 	return &response, nil
 }
 
@@ -484,14 +448,12 @@ func (t *BookingTasks) FetchBookingSlots(
 	selectedDate string,
 	logger *utils.Logger,
 ) (*types.FetchSlotsResponse, error) {
-
 	var rawJSON []byte
 
 	err := tx.QueryRow(ctx,
 		`SELECT booking.get_daily_booking_slots($1)`,
 		selectedDate,
 	).Scan(&rawJSON)
-
 	if err != nil {
 		logger.Error("failed to call get_daily_booking_slots sproc: %v", err)
 		return nil, fmt.Errorf("failed calling sproc get_daily_booking_slots: %w", err)
@@ -502,6 +464,5 @@ func (t *BookingTasks) FetchBookingSlots(
 		logger.Error("failed to unmarshal booking slots JSON: %v", err)
 		return nil, fmt.Errorf("unmarshal booking slots: %w", err)
 	}
-
 	return &response, nil
 }
