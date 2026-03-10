@@ -1361,6 +1361,100 @@ const docTemplate = `{
                 }
             }
         },
+        "/booking/session/end": {
+            "post": {
+                "description": "Marks a booking as COMPLETED",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "End a booking session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "bookingId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/booking/session/start": {
+            "post": {
+                "description": "Marks a booking as ONGOING",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Start a booking session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "bookingId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/slots": {
             "get": {
                 "security": [
@@ -2728,11 +2822,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "extraHourCost": {
-                    "description": "Added",
                     "type": "number"
                 },
                 "extraHours": {
-                    "description": "Added",
                     "type": "number"
                 },
                 "id": {
@@ -2742,10 +2834,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "originalEndSched": {
-                    "description": "Added - original end time",
-                    "type": "string"
-                },
-                "paymentStatus": {
                     "type": "string"
                 },
                 "photos": {
@@ -2754,13 +2842,13 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "quoteId": {
-                    "type": "string"
-                },
                 "reviewStatus": {
                     "type": "string"
                 },
                 "startSched": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 },
                 "updatedAt": {
@@ -2930,11 +3018,17 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "itemId": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "photoUrl": {
                     "type": "string"
+                },
+                "quantityUsed": {
+                    "type": "number"
                 },
                 "type": {
                     "type": "string"
@@ -2947,11 +3041,17 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "itemId": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "photoUrl": {
                     "type": "string"
+                },
+                "quantityUsed": {
+                    "type": "number"
                 },
                 "type": {
                     "type": "string"
@@ -4236,7 +4336,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/api",
 	Schemes:          []string{},
 	Title:            "Handworks API",
 	Description:      "This is the official API documentation for the Handworks Api.",

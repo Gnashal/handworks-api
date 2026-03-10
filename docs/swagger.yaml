@@ -1,3 +1,4 @@
+basePath: /api
 definitions:
   types.AcceptBookingRequest:
     properties:
@@ -140,29 +141,24 @@ definitions:
       endSched:
         type: string
       extraHourCost:
-        description: Added
         type: number
       extraHours:
-        description: Added
         type: number
       id:
         type: string
       orderId:
         type: string
       originalEndSched:
-        description: Added - original end time
-        type: string
-      paymentStatus:
         type: string
       photos:
         items:
           type: string
         type: array
-      quoteId:
-        type: string
       reviewStatus:
         type: string
       startSched:
+        type: string
+      status:
         type: string
       updatedAt:
         type: string
@@ -273,10 +269,14 @@ definitions:
     properties:
       id:
         type: string
+      itemId:
+        type: string
       name:
         type: string
       photoUrl:
         type: string
+      quantityUsed:
+        type: number
       type:
         type: string
     type: object
@@ -284,10 +284,14 @@ definitions:
     properties:
       id:
         type: string
+      itemId:
+        type: string
       name:
         type: string
       photoUrl:
         type: string
+      quantityUsed:
+        type: number
       type:
         type: string
     type: object
@@ -2063,6 +2067,68 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Employee bookings
+      tags:
+      - Booking
+  /booking/session/end:
+    post:
+      consumes:
+      - application/json
+      description: Marks a booking as COMPLETED
+      parameters:
+      - description: Booking ID
+        in: query
+        name: bookingId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: End a booking session
+      tags:
+      - Booking
+  /booking/session/start:
+    post:
+      consumes:
+      - application/json
+      description: Marks a booking as ONGOING
+      parameters:
+      - description: Booking ID
+        in: query
+        name: bookingId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: Start a booking session
       tags:
       - Booking
   /booking/slots:

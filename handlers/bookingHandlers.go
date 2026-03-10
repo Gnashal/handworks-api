@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"handworks-api/types"
 	"net/http"
 	"strconv"
@@ -317,6 +318,58 @@ func (h *BookingHandler) GetBookedSlots(c *gin.Context) {
 		"status": "success",
 		"data":   result,
 	})
+}
+
+// StartSession godoc
+// @Summary Start a booking session
+// @Description Marks a booking as ONGOING
+// @Tags Booking
+// @Accept json
+// @Produce json
+// @Param bookingId query string true "Booking ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/session/start [post]
+func (h *BookingHandler) StartSession(c *gin.Context) {
+	bookingID := c.Query("bookingId")
+	if bookingID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(fmt.Errorf("bookingId is required")))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := h.Service.StartSession(ctx, bookingID); err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "ONGOING", "bookingId": bookingID})
+}
+
+// EndSession godoc
+// @Summary End a booking session
+// @Description Marks a booking as COMPLETED
+// @Tags Booking
+// @Accept json
+// @Produce json
+// @Param bookingId query string true "Booking ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/session/end [post]
+func (h *BookingHandler) EndSession(c *gin.Context) {
+	bookingID := c.Query("bookingId")
+	if bookingID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(fmt.Errorf("bookingId is required")))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := h.Service.EndSession(ctx, bookingID); err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "COMPLETED", "bookingId": bookingID})
 }
 
 // UpdateBooking godoc

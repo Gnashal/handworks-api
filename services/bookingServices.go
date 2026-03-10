@@ -85,9 +85,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			req.Base.EndSched,
 			req.Base.DirtyScale,
 			req.Base.Photos,
-			order.QuoteID,
-			req.Base.OrderId,
-			order.PaymentStatus,
+			order.ID,
 			req.ExtraHours,
 			extraHourCost,
 			&originalEndSched,
@@ -251,6 +249,26 @@ func (s *BookingService) GetBookedSlots(ctx context.Context, date string) (*type
 	}
 
 	return result, nil
+}
+
+func (s *BookingService) StartSession(ctx context.Context, bookingID string) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		return s.Tasks.StartSession(ctx, tx, bookingID)
+	}); err != nil {
+		s.Logger.Error("failed to start session for booking %s: %v", bookingID, err)
+		return err
+	}
+	return nil
+}
+
+func (s *BookingService) EndSession(ctx context.Context, bookingID string) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		return s.Tasks.EndSession(ctx, tx, bookingID)
+	}); err != nil {
+		s.Logger.Error("failed to end session for booking %s: %v", bookingID, err)
+		return err
+	}
+	return nil
 }
 
 func (s *BookingService) UpdateBooking(ctx context.Context) error {

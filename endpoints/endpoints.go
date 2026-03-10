@@ -64,8 +64,8 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	}
 	session := r.Group("/session")
 	{
-		session.POST("/start")
-		session.POST("/end")
+		session.POST("/start", h.StartSession)
+		session.POST("/end", h.EndSession)
 	}
 }
 func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
@@ -113,7 +113,7 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	}
 	bookings := r.Group("/booking")
 	{
-		bookings.POST("/accept-booking/:id", h.AcceptBooking)
+		bookings.POST("/accept-booking", h.AcceptBooking)
 	}
 	inventory := r.Group("/inventory")
 	{

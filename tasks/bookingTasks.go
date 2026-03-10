@@ -93,9 +93,7 @@ func (t *BookingTasks) MakeBaseBooking(
 	endSched time.Time,
 	dirtyScale int32,
 	photos []string,
-	quoteId string,
 	orderId string,
-	paymentStatus string,
 	extraHours float32,
 	extraHourCost float32,
 	originalEndSched *time.Time,
@@ -113,21 +111,20 @@ func (t *BookingTasks) MakeBaseBooking(
             startsched,
             endsched,
             dirtyscale,
-            paymentstatus,
+            status,
             reviewstatus,
             photos,
             createdat,
             updatedat,
-            quoteid,
             orderid,
             extra_hours,
             extra_hour_cost,
             original_end_sched
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-        RETURNING id, custid, customerfirstname, customerlastname, customer_phone_no, address, 
-            startsched, endsched, dirtyscale, paymentstatus, reviewstatus, 
-            photos, createdat, updatedat, quoteid, orderid, extra_hours, extra_hour_cost, original_end_sched`,
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        RETURNING id, custid, customerfirstname, customerlastname, customer_phone_no, address,
+            startsched, endsched, dirtyscale, status, reviewstatus,
+            photos, createdat, updatedat, orderid, extra_hours, extra_hour_cost, original_end_sched`,
 		custID,
 		customerFirstName,
 		customerLastName,
@@ -136,12 +133,11 @@ func (t *BookingTasks) MakeBaseBooking(
 		startSched,
 		endSched,
 		dirtyScale,
-		paymentStatus,
+		"NOT_STARTED",
 		"PENDING",
 		photos,
 		time.Now(),
 		time.Now(),
-		quoteId,
 		orderId,
 		extraHours,
 		extraHourCost,
@@ -156,12 +152,11 @@ func (t *BookingTasks) MakeBaseBooking(
 		&createdBaseBook.StartSched,
 		&createdBaseBook.EndSched,
 		&createdBaseBook.DirtyScale,
-		&createdBaseBook.PaymentStatus,
+		&createdBaseBook.Status,
 		&createdBaseBook.ReviewStatus,
 		&createdBaseBook.Photos,
 		&createdBaseBook.CreatedAt,
 		&createdBaseBook.UpdatedAt,
-		&createdBaseBook.QuoteId,
 		&createdBaseBook.OrderId,
 		&createdBaseBook.ExtraHours,
 		&createdBaseBook.ExtraHourCost,
@@ -440,6 +435,26 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}
 	return &response, nil
+}
+
+func (t *BookingTasks) StartSession(ctx context.Context, tx pgx.Tx, bookingID string) error {
+	_, err := tx.Exec(ctx,
+		`UPDATE booking.basebookings
+		 SET status = 'ONGOING', updatedat = now()
+		 WHERE id = (SELECT base_booking_id FROM booking.bookings WHERE id = $1)`,
+		bookingID,
+	)
+	return err
+}
+
+func (t *BookingTasks) EndSession(ctx context.Context, tx pgx.Tx, bookingID string) error {
+	_, err := tx.Exec(ctx,
+		`UPDATE booking.basebookings
+		 SET status = 'COMPLETED', updatedat = now()
+		 WHERE id = (SELECT base_booking_id FROM booking.bookings WHERE id = $1)`,
+		bookingID,
+	)
+	return err
 }
 
 func (t *BookingTasks) FetchBookingSlots(
