@@ -119,6 +119,88 @@ func (t *AdminTasks) CreateClerkUser(ctx context.Context, req *types.OnboardEmpl
 	}
 	return newUser, nil
 }
+func (t *AdminTasks) AcceptBooking(ctx context.Context, tx pgx.Tx, bookingID string) error {
+	_, err := tx.Exec(ctx,
+		`UPDATE booking.basebookings
+		 SET reviewstatus = 'SCHEDULED'
+		 WHERE id = $1`,
+		bookingID,
+	)
+	return err
+}
+
+func (t *AdminTasks) AssignResourcesToBooking(ctx context.Context, tx pgx.Tx, bookingID string, resources []types.ItemQuantity) error {
+	// Remove existing resource usage records for this booking
+	_, err := tx.Exec(ctx,
+		`UPDATE booking.bookings
+		 SET resource_ids = '{}'::uuid[]
+		 WHERE base_booking_id = $1`,
+		bookingID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to clear resource_ids: %w", err)
+	}
+
+	var usedIDs []string
+	for _, r := range resources {
+		var usedID string
+		err = tx.QueryRow(ctx,
+			`INSERT INTO booking.booking_inventory_used (item_id, item_type, quantity_used)
+			 VALUES ($1, 'RESOURCE', $2)
+			 RETURNING id`,
+			r.ItemID, r.Quantity,
+		).Scan(&usedID)
+		if err != nil {
+			return fmt.Errorf("failed to insert resource usage for item %s: %w", r.ItemID, err)
+		}
+		usedIDs = append(usedIDs, usedID)
+	}
+
+	_, err = tx.Exec(ctx,
+		`UPDATE booking.bookings
+		 SET resource_ids = $2::uuid[]
+		 WHERE base_booking_id = $1`,
+		bookingID, usedIDs,
+	)
+	return err
+}
+
+func (t *AdminTasks) AssignEquipmentToBooking(ctx context.Context, tx pgx.Tx, bookingID string, equipment []types.ItemQuantity) error {
+	// Remove existing equipment usage records for this booking
+	_, err := tx.Exec(ctx,
+		`UPDATE booking.bookings
+		 SET equipment_ids = '{}'::uuid[]
+		 WHERE base_booking_id = $1`,
+		bookingID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to clear equipment_ids: %w", err)
+	}
+
+	var usedIDs []string
+	for _, e := range equipment {
+		var usedID string
+		err = tx.QueryRow(ctx,
+			`INSERT INTO booking.booking_inventory_used (item_id, item_type, quantity_used)
+			 VALUES ($1, 'EQUIPMENT', $2)
+			 RETURNING id`,
+			e.ItemID, e.Quantity,
+		).Scan(&usedID)
+		if err != nil {
+			return fmt.Errorf("failed to insert equipment usage for item %s: %w", e.ItemID, err)
+		}
+		usedIDs = append(usedIDs, usedID)
+	}
+
+	_, err = tx.Exec(ctx,
+		`UPDATE booking.bookings
+		 SET equipment_ids = $2::uuid[]
+		 WHERE base_booking_id = $1`,
+		bookingID, usedIDs,
+	)
+	return err
+}
+
 func (t *AdminTasks) AddToClerkOrganization(ctx context.Context, clerkUserID, organizationID, role string) (*clerk.OrganizationMembership, error) {
 	params := &organizationmembership.CreateParams{
 		OrganizationID: *clerk.String(organizationID),

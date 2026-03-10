@@ -71,3 +71,84 @@ func (h *AdminHandler) OnboardEmployee(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
+// AcceptBooking godoc
+// @Summary Accept a booking
+// @Description Updates the booking review status to SCHEDULED, triggering a notification to assigned employees
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param input body types.AcceptBookingRequest true "Accept booking data"
+// @Success 200 {object} types.AcceptBookingResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/booking/accept-booking [post]
+func (h *AdminHandler) AcceptBooking(c *gin.Context) {
+	var req types.AcceptBookingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := h.Service.AcceptBooking(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// AssignResourcesToBooking godoc
+// @Summary Assign resources to a booking
+// @Description Admin override to manually assign resources (supplies) to a booking
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param input body types.AssignResourcesToBookingRequest true "Assign resources data"
+// @Success 200 {object} types.AssignInventoryResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/inventory/assign-resources [post]
+func (h *AdminHandler) AssignResourcesToBooking(c *gin.Context) {
+	var req types.AssignResourcesToBookingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := h.Service.AssignResourcesToBooking(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// AssignEquipmentToBooking godoc
+// @Summary Assign equipment to a booking
+// @Description Admin override to manually assign equipment to a booking
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param input body types.AssignEquipmentToBookingRequest true "Assign equipment data"
+// @Success 200 {object} types.AssignInventoryResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/inventory/assign-equipment [post]
+func (h *AdminHandler) AssignEquipmentToBooking(c *gin.Context) {
+	var req types.AssignEquipmentToBookingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := h.Service.AssignEquipmentToBooking(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}

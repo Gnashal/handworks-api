@@ -42,9 +42,9 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 		}
 	}
 
-	alloc, err := s.Tasks.AllocateAll(ctx, s.PaymentPort, &req)
+	order, prices, err := s.Tasks.FetchOrderAndPrices(ctx, s.PaymentPort, req.Base.OrderId)
 	if err != nil {
-		s.Logger.Error("Allocation failed: %v", err)
+		s.Logger.Error("Failed to fetch order and prices: %v", err)
 		return nil, err
 	}
 
@@ -52,23 +52,27 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 
 	err = s.withTx(ctx, func(tx pgx.Tx) error {
 
+		cleaners, err := s.Tasks.AllocateCleaners(ctx, tx)
+		if err != nil {
+			return err
+		}
+
+		allocation, err := s.Tasks.AllocateEquipmentAndResources(ctx, tx, &req)
+		if err != nil {
+			return err
+		}
+
 		mainService, err := s.Tasks.CreateMainServiceBooking(ctx, tx, s.Logger, req.MainService.Details)
 		if err != nil {
 			return err
 		}
 
-		// Store original end schedule before any modifications
 		originalEndSched := req.Base.EndSched
 		var extraHourCost float32
 
-		// Calculate extra hour cost and adjust end time if needed
-		if req.ExtraHours > 0 && len(alloc.CleanerAssigned) > 0 {
-			extraHourCost = req.ExtraHours * 250.00 * float32(len(alloc.CleanerAssigned))
-
-			// Update end schedule with extra hours
-			duration := time.Duration(req.ExtraHours * float32(time.Hour))
-			newEndSched := req.Base.EndSched.Add(duration)
-			req.Base.EndSched = newEndSched
+		if req.ExtraHours > 0 && len(cleaners) > 0 {
+			extraHourCost = req.ExtraHours * 250.00 * float32(len(cleaners))
+			req.Base.EndSched = req.Base.EndSched.Add(time.Duration(req.ExtraHours * float32(time.Hour)))
 		}
 
 		baseBook, err := s.Tasks.MakeBaseBooking(
@@ -83,7 +87,9 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			req.Base.EndSched,
 			req.Base.DirtyScale,
 			req.Base.Photos,
-			req.Base.QuoteId,
+			order.QuoteID,
+			req.Base.OrderId,
+			order.PaymentStatus,
 			req.ExtraHours,
 			extraHourCost,
 			&originalEndSched,
@@ -96,7 +102,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 		var addonIDs []string
 		for _, addonReq := range req.Addons {
 			var addonPrice float32
-			for _, ap := range alloc.CleaningPrices.AddonPrices {
+			for _, ap := range prices.AddonPrices {
 				if ap.AddonName == string(addonReq.ServiceDetail.ServiceType) {
 					addonPrice = ap.AddonPrice
 					break
@@ -111,25 +117,20 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			addonIDs = append(addonIDs, createdAddon.ID)
 		}
 
-		equipmentIDs := make([]string, 0, len(alloc.CleaningAllocation.CleaningEquipment))
-		for _, eq := range alloc.CleaningAllocation.CleaningEquipment {
+		equipmentIDs := make([]string, 0, len(allocation.CleaningEquipment))
+		for _, eq := range allocation.CleaningEquipment {
 			equipmentIDs = append(equipmentIDs, eq.ID)
 		}
 
-		resourceIDs := make([]string, 0, len(alloc.CleaningAllocation.CleaningResources))
-		for _, r := range alloc.CleaningAllocation.CleaningResources {
+		resourceIDs := make([]string, 0, len(allocation.CleaningResources))
+		for _, r := range allocation.CleaningResources {
 			resourceIDs = append(resourceIDs, r.ID)
 		}
 
-		cleanerIDs := make([]string, 0, len(alloc.CleanerAssigned))
-		for _, c := range alloc.CleanerAssigned {
+		cleanerIDs := make([]string, 0, len(cleaners))
+		for _, c := range cleaners {
 			cleanerIDs = append(cleanerIDs, c.ID)
 		}
-
-		// FIX: Get the original quote price (without extra hours)
-		// Since alloc.CleaningPrices.MainServicePrice already includes extraHourCost,
-		// we need to subtract it to get the original quote price
-		originalQuotePrice := alloc.CleaningPrices.MainServicePrice - extraHourCost
 
 		bookingID, err := s.Tasks.SaveBooking(
 			ctx,
@@ -140,25 +141,22 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			equipmentIDs,
 			resourceIDs,
 			cleanerIDs,
-			originalQuotePrice, // Pass the original quote price
-			extraHourCost,      // Pass the extra hour cost separately
+			prices.MainServicePrice,
+			extraHourCost,
 		)
 		if err != nil {
 			return err
 		}
-
-		// Calculate final total for the response
-		finalTotalPrice := originalQuotePrice + extraHourCost
 
 		createdBooking = &types.Booking{
 			ID:          bookingID,
 			Base:        *baseBook,
 			MainService: *mainService,
 			Addons:      addonModels,
-			Equipments:  alloc.CleaningAllocation.CleaningEquipment,
-			Resources:   alloc.CleaningAllocation.CleaningResources,
-			Cleaners:    alloc.CleanerAssigned,
-			TotalPrice:  finalTotalPrice, // Set to the correct total
+			Equipments:  allocation.CleaningEquipment,
+			Resources:   allocation.CleaningResources,
+			Cleaners:    cleaners,
+			TotalPrice:  prices.MainServicePrice + extraHourCost,
 		}
 
 		return nil

@@ -2520,10 +2520,22 @@ const docTemplate = `{
                 "endSched": {
                     "type": "string"
                 },
+                "extraHourCost": {
+                    "description": "Added",
+                    "type": "number"
+                },
+                "extraHours": {
+                    "description": "Added",
+                    "type": "number"
+                },
                 "id": {
                     "type": "string"
                 },
                 "orderId": {
+                    "type": "string"
+                },
+                "originalEndSched": {
+                    "description": "Added - original end time",
                     "type": "string"
                 },
                 "paymentStatus": {
@@ -2576,6 +2588,9 @@ const docTemplate = `{
                 "endSched": {
                     "type": "string"
                 },
+                "extraHours": {
+                    "type": "number"
+                },
                 "orderId": {
                     "type": "string"
                 },
@@ -2606,7 +2621,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "durationHours": {
-                    "description": "optional if frontend needs it",
                     "type": "number"
                 },
                 "endSched": {
@@ -2640,6 +2654,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/types.CleaningEquipment"
                     }
+                },
+                "extraHourCost": {
+                    "type": "number"
                 },
                 "id": {
                     "type": "string"
@@ -2780,11 +2797,11 @@ const docTemplate = `{
                 "base": {
                     "$ref": "#/definitions/types.BaseBookingDetailsRequest"
                 },
+                "extraHours": {
+                    "type": "number"
+                },
                 "mainService": {
                     "$ref": "#/definitions/types.ServicesRequest"
-                },
-                "quoteId": {
-                    "type": "string"
                 }
             }
         },
@@ -3018,7 +3035,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "hours": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "sqm": {
                     "type": "integer"
