@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"handworks-api/types"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -32,7 +31,7 @@ func (s *BookingService) withTx(
 func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBookingRequest) (*types.Booking, error) {
 	s.Logger.Info("Creating booking for customer: %s...", req.Base.CustomerFirstName)
 
-	// Validate extra hours if provided
+	// ✅ Validate once only
 	if req.ExtraHours > 0 {
 		if req.MainService.ServiceType != types.GeneralCleaning {
 			return nil, fmt.Errorf("extra hours can only be added for General Cleaning services")
@@ -42,34 +41,32 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 		}
 	}
 
+	// ✅ AllocateAll is the single source of truth for EndSched, extraHourCost, originalEndSched
 	alloc, err := s.Tasks.AllocateAll(ctx, s.PaymentPort, &req)
 	if err != nil {
 		s.Logger.Error("Allocation failed: %v", err)
 		return nil, err
 	}
 
+	s.Logger.Debug("=== SCHEDULE DEBUG ===")
+	s.Logger.Debug("StartSched:        %v", req.Base.StartSched)
+	s.Logger.Debug("TotalServiceHours: %v", req.TotalServiceHours)
+	s.Logger.Debug("ExtraHours:        %v", req.ExtraHours)
+	s.Logger.Debug("EndSched after AllocateAll: %v", req.Base.EndSched)
+	s.Logger.Debug("OriginalEndSched:  %v", alloc.OriginalEndSched)
+	s.Logger.Debug("======================")
+
 	var createdBooking *types.Booking
 
 	err = s.withTx(ctx, func(tx pgx.Tx) error {
-
 		mainService, err := s.Tasks.CreateMainServiceBooking(ctx, tx, s.Logger, req.MainService.Details)
 		if err != nil {
 			return err
 		}
 
-		// Store original end schedule before any modifications
-		originalEndSched := req.Base.EndSched
-		var extraHourCost float32
-
-		// Calculate extra hour cost and adjust end time if needed
-		if req.ExtraHours > 0 && len(alloc.CleanerAssigned) > 0 {
-			extraHourCost = req.ExtraHours * 250.00 * float32(len(alloc.CleanerAssigned))
-
-			// Update end schedule with extra hours
-			duration := time.Duration(req.ExtraHours * float32(time.Hour))
-			newEndSched := req.Base.EndSched.Add(duration)
-			req.Base.EndSched = newEndSched
-		}
+		// ✅ Use values directly from alloc — no recomputation, no EndSched mutation
+		extraHourCost := alloc.ExtraHourCost
+		originalEndSched := alloc.OriginalEndSched
 
 		baseBook, err := s.Tasks.MakeBaseBooking(
 			ctx,
@@ -80,7 +77,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			req.Base.CustomerPhoneNo,
 			req.Base.Address,
 			req.Base.StartSched,
-			req.Base.EndSched,
+			req.Base.EndSched, // ✅ set correctly by AllocateAll
 			req.Base.DirtyScale,
 			req.Base.Photos,
 			req.Base.QuoteId,
@@ -102,7 +99,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 					break
 				}
 			}
-
 			createdAddon, err := s.Tasks.CreateAddOn(ctx, tx, s.Logger, addonReq, addonPrice)
 			if err != nil {
 				return err
@@ -126,29 +122,19 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			cleanerIDs = append(cleanerIDs, c.ID)
 		}
 
-		// FIX: Get the original quote price (without extra hours)
-		// Since alloc.CleaningPrices.MainServicePrice already includes extraHourCost,
-		// we need to subtract it to get the original quote price
+		// ✅ Subtract extraHourCost to get base quote price (AllocateAll already added it to MainServicePrice)
 		originalQuotePrice := alloc.CleaningPrices.MainServicePrice - extraHourCost
 
 		bookingID, err := s.Tasks.SaveBooking(
-			ctx,
-			tx,
-			baseBook.ID,
-			mainService.ID,
-			addonIDs,
-			equipmentIDs,
-			resourceIDs,
-			cleanerIDs,
-			originalQuotePrice, // Pass the original quote price
-			extraHourCost,      // Pass the extra hour cost separately
+			ctx, tx,
+			baseBook.ID, mainService.ID,
+			addonIDs, equipmentIDs, resourceIDs, cleanerIDs,
+			originalQuotePrice,
+			extraHourCost,
 		)
 		if err != nil {
 			return err
 		}
-
-		// Calculate final total for the response
-		finalTotalPrice := originalQuotePrice + extraHourCost
 
 		createdBooking = &types.Booking{
 			ID:          bookingID,
@@ -158,7 +144,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			Equipments:  alloc.CleaningAllocation.CleaningEquipment,
 			Resources:   alloc.CleaningAllocation.CleaningResources,
 			Cleaners:    alloc.CleanerAssigned,
-			TotalPrice:  finalTotalPrice, // Set to the correct total
+			TotalPrice:  originalQuotePrice + extraHourCost,
 		}
 
 		return nil
@@ -176,7 +162,6 @@ func (s *BookingService) GetBookings(
 	startDate, endDate string,
 	page, limit int,
 ) (*types.FetchAllBookingsResponse, error) {
-
 	var result *types.FetchAllBookingsResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
@@ -189,23 +174,19 @@ func (s *BookingService) GetBookings(
 	}
 
 	return result, nil
-
 }
 
 func (s *BookingService) GetCustomerBookings(
 	ctx context.Context,
 	customerId, startDate, endDate string,
-	page, limit int) (*types.FetchAllBookingsResponse, error) {
-
+	page, limit int,
+) (*types.FetchAllBookingsResponse, error) {
 	var result *types.FetchAllBookingsResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		result, err = s.Tasks.FetchAllCustomerBookings(ctx, tx, customerId, startDate, endDate, page,
-			limit, s.Logger)
-
+		result, err = s.Tasks.FetchAllCustomerBookings(ctx, tx, customerId, startDate, endDate, page, limit, s.Logger)
 		return err
-
 	}); err != nil {
 		s.Logger.Error("failed to fetch customer bookings: %v", err)
 		return nil, err
@@ -217,17 +198,14 @@ func (s *BookingService) GetCustomerBookings(
 func (s *BookingService) GetEmployeeAssignedBookings(
 	ctx context.Context,
 	employeeId, startDate, endDate string,
-	page, limit int) (*types.FetchAllBookingsResponse, error) {
-
+	page, limit int,
+) (*types.FetchAllBookingsResponse, error) {
 	var result *types.FetchAllBookingsResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		result, err = s.Tasks.FetchAllEmployeeAssignedBookings(ctx, tx, employeeId, startDate, endDate, page,
-			limit, s.Logger)
-
+		result, err = s.Tasks.FetchAllEmployeeAssignedBookings(ctx, tx, employeeId, startDate, endDate, page, limit, s.Logger)
 		return err
-
 	}); err != nil {
 		s.Logger.Error("failed to fetch employee assigned bookings: %v", err)
 		return nil, err
