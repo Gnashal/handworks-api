@@ -82,7 +82,7 @@ func (h *AdminHandler) OnboardEmployee(c *gin.Context) {
 // @Success 200 {object} types.AcceptBookingResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /admin/booking/accept-booking [post]
+// @Router /admin/booking/approve [post]
 func (h *AdminHandler) AcceptBooking(c *gin.Context) {
 	var req types.AcceptBookingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
