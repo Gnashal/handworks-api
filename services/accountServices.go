@@ -201,6 +201,7 @@ func (s *AccountService) GetEmployee(ctx context.Context, id string) (*types.Get
 		employee.Account = *acc
 		return nil
 	}); err != nil {
+		s.Logger.Error("failed to get employee: %v", err)
 		return nil, fmt.Errorf("could not fetch employee: %w", err)
 	}
 

@@ -299,7 +299,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/account/employee/": {
+        "/account/employee": {
             "get": {
                 "security": [
                     {
@@ -319,7 +319,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Employee ID",
                         "name": "id",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -337,7 +337,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/account/employee/": {
             "put": {
                 "security": [
                     {
@@ -402,14 +404,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all customer info",
+                "description": "Retrieve all employees",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Account"
                 ],
-                "summary": "Get all customers",
+                "summary": "Get all employees",
                 "parameters": [
                     {
                         "type": "integer",

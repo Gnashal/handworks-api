@@ -1329,12 +1329,12 @@ paths:
       summary: Sign up a new customer
       tags:
       - Account
-  /account/employee/:
+  /account/employee:
     get:
       description: Retrieve employee info
       parameters:
       - description: Employee ID
-        in: path
+        in: query
         name: id
         required: true
         type: string
@@ -1354,6 +1354,7 @@ paths:
       summary: Get an employee by ID
       tags:
       - Account
+  /account/employee/:
     put:
       consumes:
       - application/json
@@ -1496,7 +1497,7 @@ paths:
       - Account
   /account/employee/employees:
     get:
-      description: Retrieve all customer info
+      description: Retrieve all employees
       parameters:
       - default: 0
         description: Page number
@@ -1521,7 +1522,7 @@ paths:
             $ref: '#/definitions/types.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get all customers
+      summary: Get all employees
       tags:
       - Account
   /account/employee/signup:
