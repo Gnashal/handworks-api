@@ -32,6 +32,32 @@ func (s *PaymentService) withTx(
 	return fn(tx)
 }
 
+func (s *PaymentService) FetchOrderAndPrices(ctx context.Context, orderId string) (*types.Order, *types.CleaningPrices, error) {
+	dbCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var order *types.Order
+	var prices *types.CleaningPrices
+
+	if err := s.withTx(dbCtx, func(tx pgx.Tx) error {
+		var err error
+		order, err = s.Tasks.FetchOrderByID(dbCtx, tx, orderId)
+		if err != nil {
+			return err
+		}
+		prices, err = s.Tasks.VerifyQuoteAndFetchPrices(dbCtx, tx, order.QuoteID)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch order and prices: %v", err)
+		return nil, nil, err
+	}
+
+	// Use the order's total amount as the authoritative price for booking calculations
+	prices.MainServicePrice = order.TotalAmount
+
+	return order, prices, nil
+}
+
 func (s *PaymentService) GetQuotePrices(ctx context.Context, quoteId string) (*types.CleaningPrices, error) {
 	dbCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

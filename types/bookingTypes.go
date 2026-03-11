@@ -6,9 +6,10 @@ type BookingAllocation struct {
 	CleaningAllocation *CleaningAllocation
 	CleanerAssigned    []CleanerAssigned
 	CleaningPrices     *CleaningPrices
-	ExtraHours         float32   `json:"extraHours"`       // Added
-	ExtraHourCost      float32   `json:"extraHourCost"`    // Added
-	OriginalEndSched   time.Time `json:"originalEndSched"` // Added - original end time before extension
+	Order              *Order
+	ExtraHours         float32   `json:"extraHours"`
+	ExtraHourCost      float32   `json:"extraHourCost"`
+	OriginalEndSched   time.Time `json:"originalEndSched"`
 }
 
 type CleaningAllocation struct {
@@ -17,17 +18,21 @@ type CleaningAllocation struct {
 }
 
 type CleaningEquipment struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	PhotoURL string `json:"photoUrl"`
+	ID           string  `json:"id"`
+	ItemID       string  `json:"itemId"`
+	Name         string  `json:"name"`
+	Type         string  `json:"type"`
+	PhotoURL     string  `json:"photoUrl"`
+	QuantityUsed float64 `json:"quantityUsed"`
 }
 
 type CleaningResources struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	PhotoURL string `json:"photoUrl"`
+	ID           string  `json:"id"`
+	ItemID       string  `json:"itemId"`
+	Name         string  `json:"name"`
+	Type         string  `json:"type"`
+	PhotoURL     string  `json:"photoUrl"`
+	QuantityUsed float64 `json:"quantityUsed"`
 }
 
 type CleanerAssigned struct {
@@ -140,16 +145,15 @@ type BaseBookingDetails struct {
 	StartSched        time.Time  `json:"startSched" db:"startsched"`
 	EndSched          time.Time  `json:"endSched" db:"endsched"`
 	DirtyScale        int32      `json:"dirtyScale" db:"dirtyscale"`
-	PaymentStatus     string     `json:"paymentStatus" db:"paymentstatus"`
+	Status            string     `json:"status" db:"status"`
 	ReviewStatus      string     `json:"reviewStatus" db:"reviewstatus"`
 	Photos            []string   `json:"photos" db:"photos"`
 	CreatedAt         time.Time  `json:"createdAt" db:"createdat"`
 	UpdatedAt         *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
-	QuoteId           string     `json:"quoteId" db:"quoteid"`
 	OrderId           string     `json:"orderId" db:"orderid"`
-	ExtraHours        float32    `json:"extraHours" db:"extra_hours"`                        // Added
-	ExtraHourCost     float32    `json:"extraHourCost" db:"extra_hour_cost"`                 // Added
-	OriginalEndSched  *time.Time `json:"originalEndSched,omitempty" db:"original_end_sched"` // Added - original end time
+	ExtraHours        float32    `json:"extraHours" db:"extra_hours"`
+	ExtraHourCost     float32    `json:"extraHourCost" db:"extra_hour_cost"`
+	OriginalEndSched  *time.Time `json:"originalEndSched,omitempty" db:"original_end_sched"`
 }
 
 type BaseBookingDetailsRequest struct {
@@ -165,9 +169,9 @@ type BaseBookingDetailsRequest struct {
 	Photos               []string   `json:"photos" db:"photos"`
 	CreatedAt            time.Time  `json:"createdAt" db:"createdat"`
 	UpdatedAt            *time.Time `json:"updatedAt,omitempty" db:"updatedat"`
+	OrderId              string     `json:"orderId" db:"orderid"`
 	QuoteId              string     `json:"quoteId" db:"quoteid"`
 	ExtraHours           float32    `json:"extraHours"`
-	OrderId              string     `json:"orderId" db:"orderid"`
 }
 
 type Address struct {
@@ -209,9 +213,8 @@ type CreateBookingRequest struct {
 	Base              BaseBookingDetailsRequest `json:"base"`
 	MainService       ServicesRequest           `json:"mainService"`
 	Addons            []AddOnRequest            `json:"addons"`
-	QuoteId           string                    `json:"quoteId"`
 	ExtraHours        float32                   `json:"extraHours"`
-	TotalServiceHours float32                   `json:"totalServiceHours"` // ✅ add this
+	TotalServiceHours float32                   `json:"totalServiceHours"`
 }
 
 type AddOns struct {
