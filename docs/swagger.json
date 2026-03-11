@@ -292,7 +292,7 @@
                 }
             }
         },
-        "/account/employee/": {
+        "/account/employee": {
             "get": {
                 "security": [
                     {
@@ -312,7 +312,7 @@
                         "type": "string",
                         "description": "Employee ID",
                         "name": "id",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -330,7 +330,9 @@
                         }
                     }
                 }
-            },
+            }
+        },
+        "/account/employee/": {
             "put": {
                 "security": [
                     {
@@ -395,14 +397,14 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all customer info",
+                "description": "Retrieve all employees",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Account"
                 ],
-                "summary": "Get all customers",
+                "summary": "Get all employees",
                 "parameters": [
                     {
                         "type": "integer",
