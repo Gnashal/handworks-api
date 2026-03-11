@@ -1668,6 +1668,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Accept a booking
       tags:
       - Admin
@@ -1701,6 +1703,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Fetch data for admin dashboard
       tags:
       - Admin
@@ -1731,6 +1735,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Onboard a new employee
       tags:
       - Admin
@@ -1761,6 +1767,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Assign equipment to a booking
       tags:
       - Admin
@@ -1791,6 +1799,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Assign resources to a booking
       tags:
       - Admin

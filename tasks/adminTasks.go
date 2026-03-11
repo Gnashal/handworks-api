@@ -121,9 +121,11 @@ func (t *AdminTasks) CreateClerkUser(ctx context.Context, req *types.OnboardEmpl
 }
 func (t *AdminTasks) AcceptBooking(ctx context.Context, tx pgx.Tx, bookingID string) error {
 	_, err := tx.Exec(ctx,
-		`UPDATE booking.basebookings
-		 SET reviewstatus = 'SCHEDULED'
-		 WHERE id = $1`,
+		`UPDATE booking.basebookings bb
+		SET reviewstatus = 'SCHEDULED'
+		FROM booking.bookings b
+		WHERE bb.id = b.base_booking_id
+		AND b.id = $1`,
 		bookingID,
 	)
 	return err
@@ -134,7 +136,7 @@ func (t *AdminTasks) AssignResourcesToBooking(ctx context.Context, tx pgx.Tx, bo
 	_, err := tx.Exec(ctx,
 		`UPDATE booking.bookings
 		 SET resource_ids = '{}'::uuid[]
-		 WHERE base_booking_id = $1`,
+		 WHERE id = $1`,
 		bookingID,
 	)
 	if err != nil {
@@ -159,7 +161,7 @@ func (t *AdminTasks) AssignResourcesToBooking(ctx context.Context, tx pgx.Tx, bo
 	_, err = tx.Exec(ctx,
 		`UPDATE booking.bookings
 		 SET resource_ids = $2::uuid[]
-		 WHERE base_booking_id = $1`,
+		 WHERE id = $1`,
 		bookingID, usedIDs,
 	)
 	return err

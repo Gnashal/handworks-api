@@ -803,6 +803,11 @@ const docTemplate = `{
         },
         "/admin/booking/approve/{id}": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Updates the booking review status to SCHEDULED, triggering a notification to assigned employees",
                 "consumes": [
                     "application/json"
@@ -847,6 +852,11 @@ const docTemplate = `{
         },
         "/admin/dashboard": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Fetch data for admin dashboard",
                 "consumes": [
                     "application/json"
@@ -897,6 +907,11 @@ const docTemplate = `{
         },
         "/admin/employee/onboard": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new employee account",
                 "consumes": [
                     "application/json"
@@ -943,6 +958,11 @@ const docTemplate = `{
         },
         "/admin/inventory/assign-equipment": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Admin override to manually assign equipment to a booking",
                 "consumes": [
                     "application/json"
@@ -989,6 +1009,11 @@ const docTemplate = `{
         },
         "/admin/inventory/assign-resources": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Admin override to manually assign resources (supplies) to a booking",
                 "consumes": [
                     "application/json"

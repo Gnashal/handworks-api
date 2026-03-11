@@ -37,7 +37,6 @@ func ClerkAuthMiddleware(publicPaths []string, logger *utils.Logger) gin.Handler
 		// Check each public path
 		for _, p := range publicPaths {
 			match := strings.HasPrefix(path, p)
-			logger.Info("Checking public path %s against %s: %v", path, p, match)
 			if match {
 				logger.Info("Path is public. Allowing access without auth")
 				c.Next()

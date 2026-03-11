@@ -76,6 +76,7 @@ func (s *AdminService) OnboardEmployee(ctx context.Context, req *types.OnboardEm
 }
 
 func (s *AdminService) AcceptBooking(ctx context.Context, bookingId string) (*types.AcceptBookingResponse, error) {
+	s.Logger.Info("Accepting booking with ID: %s", bookingId)
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		return s.Tasks.AcceptBooking(ctx, tx, bookingId)
 	}); err != nil {
