@@ -113,7 +113,7 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	}
 	bookings := r.Group("/booking")
 	{
-		bookings.POST("/accept-booking", h.AcceptBooking)
+		bookings.POST("/approve/:id", h.AcceptBooking)
 	}
 	inventory := r.Group("/inventory")
 	{

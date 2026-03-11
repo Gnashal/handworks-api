@@ -801,8 +801,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/booking/accept-booking": {
+        "/admin/booking/approve/{id}": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Updates the booking review status to SCHEDULED, triggering a notification to assigned employees",
                 "consumes": [
                     "application/json"
@@ -816,13 +821,11 @@ const docTemplate = `{
                 "summary": "Accept a booking",
                 "parameters": [
                     {
-                        "description": "Accept booking data",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.AcceptBookingRequest"
-                        }
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -849,6 +852,11 @@ const docTemplate = `{
         },
         "/admin/dashboard": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Fetch data for admin dashboard",
                 "consumes": [
                     "application/json"
@@ -899,6 +907,11 @@ const docTemplate = `{
         },
         "/admin/employee/onboard": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new employee account",
                 "consumes": [
                     "application/json"
@@ -945,6 +958,11 @@ const docTemplate = `{
         },
         "/admin/inventory/assign-equipment": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Admin override to manually assign equipment to a booking",
                 "consumes": [
                     "application/json"
@@ -991,6 +1009,11 @@ const docTemplate = `{
         },
         "/admin/inventory/assign-resources": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Admin override to manually assign resources (supplies) to a booking",
                 "consumes": [
                     "application/json"
@@ -2608,17 +2631,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "types.AcceptBookingRequest": {
-            "type": "object",
-            "required": [
-                "bookingId"
-            ],
-            "properties": {
-                "bookingId": {
-                    "type": "string"
-                }
-            }
-        },
         "types.AcceptBookingResponse": {
             "type": "object",
             "properties": {
