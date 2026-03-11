@@ -19,8 +19,7 @@ func LoadBaseBooking(ctx context.Context, tx pgx.Tx, id string) (*types.BaseBook
 
 	query := `
 		SELECT id, cust_id, customer_first_name, customer_last_name,
-		       address, start_sched, end_sched, dirty_scale,
-		       payment_status, review_status, photos,
+		       address, start_sched, end_sched, dirty_scale, review_status, photos,
 		       created_at, updated_at, quote_id
 		FROM booking.basebookings
 		WHERE id = $1
@@ -30,7 +29,7 @@ func LoadBaseBooking(ctx context.Context, tx pgx.Tx, id string) (*types.BaseBook
 		&base.ID, &base.CustID, &base.CustomerFirstName,
 		&base.CustomerLastName, &base.Address,
 		&base.StartSched, &base.EndSched, &base.DirtyScale,
-		&base.PaymentStatus, &base.ReviewStatus, &base.Photos,
+		&base.ReviewStatus, &base.Photos,
 		&base.CreatedAt, &base.UpdatedAt, &base.QuoteId,
 	); err != nil {
 		return nil, fmt.Errorf("load base booking: %w", err)

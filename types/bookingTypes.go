@@ -140,7 +140,6 @@ type BaseBookingDetails struct {
 	StartSched        time.Time  `json:"startSched" db:"startsched"`
 	EndSched          time.Time  `json:"endSched" db:"endsched"`
 	DirtyScale        int32      `json:"dirtyScale" db:"dirtyscale"`
-	PaymentStatus     string     `json:"paymentStatus" db:"paymentstatus"`
 	ReviewStatus      string     `json:"reviewStatus" db:"reviewstatus"`
 	Photos            []string   `json:"photos" db:"photos"`
 	CreatedAt         time.Time  `json:"createdAt" db:"createdat"`

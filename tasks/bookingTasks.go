@@ -138,13 +138,13 @@ func (t *BookingTasks) MakeBaseBooking(
 	err := tx.QueryRow(ctx,
 		`INSERT INTO booking.basebookings (
 			custid, customerfirstname, customerlastname, customer_phone_no,
-			address, startsched, endsched, dirtyscale, paymentstatus, reviewstatus,
+			address, startsched, endsched, dirtyscale, reviewstatus,
 			photos, createdat, updatedat, quoteid,
 			extra_hours, extra_hour_cost, original_end_sched
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 		RETURNING id, custid, customerfirstname, customerlastname, customer_phone_no, address,
-			startsched, endsched, dirtyscale, paymentstatus, reviewstatus,
+			startsched, endsched, dirtyscale, reviewstatus,
 			photos, createdat, updatedat, quoteid, extra_hours, extra_hour_cost, original_end_sched`,
 		custID, customerFirstName, customerLastName, customerPhoneNo,
 		address, startSched, endSched, dirtyScale,
@@ -161,7 +161,6 @@ func (t *BookingTasks) MakeBaseBooking(
 		&createdBaseBook.StartSched,
 		&createdBaseBook.EndSched,
 		&createdBaseBook.DirtyScale,
-		&createdBaseBook.PaymentStatus,
 		&createdBaseBook.ReviewStatus,
 		&createdBaseBook.Photos,
 		&createdBaseBook.CreatedAt,
