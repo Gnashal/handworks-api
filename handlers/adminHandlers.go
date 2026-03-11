@@ -78,20 +78,16 @@ func (h *AdminHandler) OnboardEmployee(c *gin.Context) {
 // @Tags Admin
 // @Accept json
 // @Produce json
-// @Param input body types.AcceptBookingRequest true "Accept booking data"
+// @Param id path string true "Booking ID"
 // @Success 200 {object} types.AcceptBookingResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /admin/booking/approve [post]
+// @Router /admin/booking/approve/{id} [post]
 func (h *AdminHandler) AcceptBooking(c *gin.Context) {
-	var req types.AcceptBookingRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
-		return
-	}
+	bookingId := c.Param("id")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	res, err := h.Service.AcceptBooking(ctx, &req)
+	res, err := h.Service.AcceptBooking(ctx, bookingId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return

@@ -801,7 +801,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/booking/accept-booking": {
+        "/admin/booking/approve/{id}": {
             "post": {
                 "description": "Updates the booking review status to SCHEDULED, triggering a notification to assigned employees",
                 "consumes": [
@@ -816,13 +816,11 @@ const docTemplate = `{
                 "summary": "Accept a booking",
                 "parameters": [
                     {
-                        "description": "Accept booking data",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.AcceptBookingRequest"
-                        }
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -2608,17 +2606,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "types.AcceptBookingRequest": {
-            "type": "object",
-            "required": [
-                "bookingId"
-            ],
-            "properties": {
-                "bookingId": {
-                    "type": "string"
-                }
-            }
-        },
         "types.AcceptBookingResponse": {
             "type": "object",
             "properties": {

@@ -1,12 +1,5 @@
 basePath: /api
 definitions:
-  types.AcceptBookingRequest:
-    properties:
-      bookingId:
-        type: string
-    required:
-    - bookingId
-    type: object
   types.AcceptBookingResponse:
     properties:
       bookingId:
@@ -1648,19 +1641,18 @@ paths:
       summary: Get today's timesheet
       tags:
       - Account
-  /admin/booking/accept-booking:
+  /admin/booking/approve/{id}:
     post:
       consumes:
       - application/json
       description: Updates the booking review status to SCHEDULED, triggering a notification
         to assigned employees
       parameters:
-      - description: Accept booking data
-        in: body
-        name: input
+      - description: Booking ID
+        in: path
+        name: id
         required: true
-        schema:
-          $ref: '#/definitions/types.AcceptBookingRequest'
+        type: string
       produces:
       - application/json
       responses:
