@@ -181,17 +181,21 @@ func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, c
 
 func (s *PaymentService) CreateOrder(ctx context.Context, req types.CreateOrderRequest) (*types.CreateOrderResponse, error) {
 	var orderId string
-
+	var order *types.Order
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
 		orderId, err = s.Tasks.CreateOrder(ctx, tx, req)
+		order, err = s.Tasks.FetchOrderByID(ctx, tx, orderId)
+		if err != nil {
+			return fmt.Errorf("failed to create order for quote %s: %v", req.QuoteID, err)
+		}
 		return err
 	}); err != nil {
 		s.Logger.Error("Failed to create order for quote %s: %v", req.QuoteID, err)
 		return nil, err
 	}
 
-	return &types.CreateOrderResponse{OrderID: orderId}, nil
+	return &types.CreateOrderResponse{Order: *order}, nil
 }
 
 func (s *PaymentService) GetOrder(ctx context.Context, orderId string) (*types.Order, error) {
