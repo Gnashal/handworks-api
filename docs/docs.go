@@ -299,7 +299,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/account/employee/": {
+        "/account/employee": {
             "get": {
                 "security": [
                     {
@@ -319,7 +319,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Employee ID",
                         "name": "id",
-                        "in": "path",
+                        "in": "query",
                         "required": true
                     }
                 ],
@@ -337,7 +337,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
+            }
+        },
+        "/account/employee/": {
             "put": {
                 "security": [
                     {
@@ -402,14 +404,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve all customer info",
+                "description": "Retrieve all employees",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Account"
                 ],
-                "summary": "Get all customers",
+                "summary": "Get all employees",
                 "parameters": [
                     {
                         "type": "integer",
@@ -799,8 +801,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/booking/approve/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates the booking review status to SCHEDULED, triggering a notification to assigned employees",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Accept a booking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AcceptBookingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/dashboard": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Fetch data for admin dashboard",
                 "consumes": [
                     "application/json"
@@ -851,6 +907,11 @@ const docTemplate = `{
         },
         "/admin/employee/onboard": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new employee account",
                 "consumes": [
                     "application/json"
@@ -878,6 +939,108 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.SignUpEmployeeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/inventory/assign-equipment": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin override to manually assign equipment to a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Assign equipment to a booking",
+                "parameters": [
+                    {
+                        "description": "Assign equipment data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignEquipmentToBookingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignInventoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/inventory/assign-resources": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin override to manually assign resources (supplies) to a booking",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Assign resources to a booking",
+                "parameters": [
+                    {
+                        "description": "Assign resources data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignResourcesToBookingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignInventoryResponse"
                         }
                     },
                     "400": {
@@ -1210,6 +1373,100 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/booking/session/end": {
+            "post": {
+                "description": "Marks a booking as COMPLETED",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "End a booking session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "bookingId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/booking/session/start": {
+            "post": {
+                "description": "Marks a booking as ONGOING",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Start a booking session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "bookingId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/types.ErrorResponse"
                         }
@@ -2374,6 +2631,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "types.AcceptBookingResponse": {
+            "type": "object",
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Account": {
             "type": "object",
             "properties": {
@@ -2493,6 +2761,53 @@ const docTemplate = `{
                 }
             }
         },
+        "types.AssignEquipmentToBookingRequest": {
+            "type": "object",
+            "required": [
+                "bookingId",
+                "equipment"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "equipment": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.ItemQuantity"
+                    }
+                }
+            }
+        },
+        "types.AssignInventoryResponse": {
+            "type": "object",
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.AssignResourcesToBookingRequest": {
+            "type": "object",
+            "required": [
+                "bookingId",
+                "resources"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "resources": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.ItemQuantity"
+                    }
+                }
+            }
+        },
         "types.BaseBookingDetails": {
             "type": "object",
             "properties": {
@@ -2520,13 +2835,19 @@ const docTemplate = `{
                 "endSched": {
                     "type": "string"
                 },
+                "extraHourCost": {
+                    "type": "number"
+                },
+                "extraHours": {
+                    "type": "number"
+                },
                 "id": {
                     "type": "string"
                 },
                 "orderId": {
                     "type": "string"
                 },
-                "paymentStatus": {
+                "originalEndSched": {
                     "type": "string"
                 },
                 "photos": {
@@ -2535,13 +2856,13 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "quoteId": {
-                    "type": "string"
-                },
                 "reviewStatus": {
                     "type": "string"
                 },
                 "startSched": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 },
                 "updatedAt": {
@@ -2576,6 +2897,9 @@ const docTemplate = `{
                 "endSched": {
                     "type": "string"
                 },
+                "extraHours": {
+                    "type": "number"
+                },
                 "orderId": {
                     "type": "string"
                 },
@@ -2606,7 +2930,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "durationHours": {
-                    "description": "optional if frontend needs it",
                     "type": "number"
                 },
                 "endSched": {
@@ -2640,6 +2963,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/types.CleaningEquipment"
                     }
+                },
+                "extraHourCost": {
+                    "type": "number"
                 },
                 "id": {
                     "type": "string"
@@ -2706,11 +3032,17 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "itemId": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "photoUrl": {
                     "type": "string"
+                },
+                "quantityUsed": {
+                    "type": "number"
                 },
                 "type": {
                     "type": "string"
@@ -2723,11 +3055,17 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "itemId": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "photoUrl": {
                     "type": "string"
+                },
+                "quantityUsed": {
+                    "type": "number"
                 },
                 "type": {
                     "type": "string"
@@ -2780,11 +3118,14 @@ const docTemplate = `{
                 "base": {
                     "$ref": "#/definitions/types.BaseBookingDetailsRequest"
                 },
+                "extraHours": {
+                    "type": "number"
+                },
                 "mainService": {
                     "$ref": "#/definitions/types.ServicesRequest"
                 },
-                "quoteId": {
-                    "type": "string"
+                "totalServiceHours": {
+                    "type": "number"
                 }
             }
         },
@@ -3018,7 +3359,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "hours": {
-                    "type": "integer"
+                    "type": "number"
                 },
                 "sqm": {
                     "type": "integer"
@@ -3176,6 +3517,21 @@ const docTemplate = `{
                 "CategoryVehicles",
                 "CategoryOther"
             ]
+        },
+        "types.ItemQuantity": {
+            "type": "object",
+            "required": [
+                "itemId",
+                "quantity"
+            ],
+            "properties": {
+                "itemId": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
+                }
+            }
         },
         "types.ItemStatus": {
             "type": "string",
@@ -3994,7 +4350,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/api",
 	Schemes:          []string{},
 	Title:            "Handworks API",
 	Description:      "This is the official API documentation for the Handworks Api.",

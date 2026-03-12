@@ -64,8 +64,8 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	}
 	session := r.Group("/session")
 	{
-		session.POST("/start")
-		session.POST("/end")
+		session.POST("/start", h.StartSession)
+		session.POST("/end", h.EndSession)
 	}
 }
 func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
@@ -97,11 +97,6 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 			intents.POST("/downpayment/:id", h.CreateDownpaymentIntent)
 			intents.POST("/fullpayment/:id	", h.CreateFullPaymentIntent)
 		}
-		// execution := payments.Group("/execute")
-		// {
-		// 	execution.POST("/downpayment/:id", h.ExecuteDownpayment)
-		// 	execution.POST("/fullpayment/:id", h.ExecuteFullPayment)
-		// }
 	}
 	webhooks := r.Group("/webhooks")
 	{
@@ -114,6 +109,16 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	employees := r.Group("/employee")
 	{
 		employees.POST("/onboard", h.OnboardEmployee)
+		// employees.POST("/assign-to-booking", h.AssignEmployeeToBooking)
+	}
+	bookings := r.Group("/booking")
+	{
+		bookings.POST("/approve/:id", h.AcceptBooking)
+	}
+	inventory := r.Group("/inventory")
+	{
+		inventory.POST("/assign-resources", h.AssignResourcesToBooking)
+		inventory.POST("/assign-equipment", h.AssignEquipmentToBooking)
 	}
 }
 

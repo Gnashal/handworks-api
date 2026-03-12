@@ -14,6 +14,7 @@ import (
 // @Summary Fetch data for admin dashboard
 // @Description Fetch data for admin dashboard
 // @Tags Admin
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param adminId query string true "Admin ID"
@@ -49,6 +50,7 @@ func (h *AdminHandler) GetAdminDashboard(c *gin.Context) {
 // @Summary Onboard a new employee
 // @Description Create a new employee account
 // @Tags Admin
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param input body types.OnboardEmployeeRequest true "Employee onboard data"
@@ -65,6 +67,90 @@ func (h *AdminHandler) OnboardEmployee(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	res, err := h.Service.OnboardEmployee(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// AcceptBooking godoc
+// @Summary Accept a booking
+// @Description Updates the booking review status to SCHEDULED, triggering a notification to assigned employees
+// @Tags Admin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param id path string true "Booking ID"
+// @Success 200 {object} types.AcceptBookingResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/booking/approve/{id} [post]
+func (h *AdminHandler) AcceptBooking(c *gin.Context) {
+	bookingId := c.Param("id")
+	if bookingId == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("Booking ID is required")))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := h.Service.AcceptBooking(ctx, bookingId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// AssignResourcesToBooking godoc
+// @Summary Assign resources to a booking
+// @Description Admin override to manually assign resources (supplies) to a booking
+// @Tags Admin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param input body types.AssignResourcesToBookingRequest true "Assign resources data"
+// @Success 200 {object} types.AssignInventoryResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/inventory/assign-resources [post]
+func (h *AdminHandler) AssignResourcesToBooking(c *gin.Context) {
+	var req types.AssignResourcesToBookingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := h.Service.AssignResourcesToBooking(ctx, &req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+// AssignEquipmentToBooking godoc
+// @Summary Assign equipment to a booking
+// @Description Admin override to manually assign equipment to a booking
+// @Tags Admin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param input body types.AssignEquipmentToBookingRequest true "Assign equipment data"
+// @Success 200 {object} types.AssignInventoryResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/inventory/assign-equipment [post]
+func (h *AdminHandler) AssignEquipmentToBooking(c *gin.Context) {
+	var req types.AssignEquipmentToBookingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	res, err := h.Service.AssignEquipmentToBooking(ctx, &req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return

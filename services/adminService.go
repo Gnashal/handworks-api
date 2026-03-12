@@ -74,3 +74,46 @@ func (s *AdminService) OnboardEmployee(ctx context.Context, req *types.OnboardEm
 
 	return emp, nil
 }
+
+func (s *AdminService) AcceptBooking(ctx context.Context, bookingId string) (*types.AcceptBookingResponse, error) {
+	s.Logger.Info("Accepting booking with ID: %s", bookingId)
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		return s.Tasks.AcceptBooking(ctx, tx, bookingId)
+	}); err != nil {
+		s.Logger.Error("Failed to accept booking: %v", err)
+		return nil, err
+	}
+
+	return &types.AcceptBookingResponse{
+		BookingID: bookingId,
+		Status:    "SCHEDULED",
+	}, nil
+}
+
+func (s *AdminService) AssignResourcesToBooking(ctx context.Context, req *types.AssignResourcesToBookingRequest) (*types.AssignInventoryResponse, error) {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		return s.Tasks.AssignResourcesToBooking(ctx, tx, req.BookingID, req.Resources)
+	}); err != nil {
+		s.Logger.Error("Failed to assign resources to booking: %v", err)
+		return nil, err
+	}
+
+	return &types.AssignInventoryResponse{
+		BookingID: req.BookingID,
+		Message:   "Resources assigned successfully",
+	}, nil
+}
+
+func (s *AdminService) AssignEquipmentToBooking(ctx context.Context, req *types.AssignEquipmentToBookingRequest) (*types.AssignInventoryResponse, error) {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		return s.Tasks.AssignEquipmentToBooking(ctx, tx, req.BookingID, req.Equipment)
+	}); err != nil {
+		s.Logger.Error("Failed to assign equipment to booking: %v", err)
+		return nil, err
+	}
+
+	return &types.AssignInventoryResponse{
+		BookingID: req.BookingID,
+		Message:   "Equipment assigned successfully",
+	}, nil
+}

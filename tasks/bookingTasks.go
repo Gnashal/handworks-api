@@ -9,91 +9,24 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"golang.org/x/sync/errgroup"
 )
 
 type BookingTasks struct{}
 type PaymentPort interface {
-	GetQuotePrices(ctx context.Context, quoteId string) (*types.CleaningPrices, error)
+	FetchOrderAndPrices(ctx context.Context, orderId string) (*types.Order, *types.CleaningPrices, error)
 }
 
-func (t *BookingTasks) AllocateAll(ctx context.Context, paymentPort PaymentPort, req *types.CreateBookingRequest) (*types.BookingAllocation, error) {
-	if req.ExtraHours > 0 {
-		if req.MainService.ServiceType != types.GeneralCleaning {
-			return nil, fmt.Errorf("extra hours can only be added for General Cleaning services")
-		}
-		if req.ExtraHours > 4 {
-			return nil, fmt.Errorf("extra hours cannot exceed 4 hours")
-		}
+func (t *BookingTasks) FetchOrderAndPrices(ctx context.Context, paymentPort PaymentPort, orderId string) (*types.Order, *types.CleaningPrices, error) {
+	order, prices, err := paymentPort.FetchOrderAndPrices(ctx, orderId)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch order and prices: %w", err)
 	}
-
-	g, c := errgroup.WithContext(ctx)
-
-	var (
-		prices   *types.CleaningPrices
-		alloc    *types.CleaningAllocation
-		cleaners []types.CleanerAssigned
-	)
-
-	g.Go(func() error {
-		var err error
-		prices, err = paymentPort.GetQuotePrices(c, req.QuoteId)
-		return err
-	})
-
-	g.Go(func() error {
-		var err error
-		alloc, err = t.AllocateEquipmentAndResources(c, req)
-		return err
-	})
-
-	g.Go(func() error {
-		var err error
-		cleaners, err = t.AllocateCleaners(c, req)
-		return err
-	})
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	if prices == nil {
-		prices = &types.CleaningPrices{}
-	}
-	if alloc == nil {
-		alloc = &types.CleaningAllocation{}
-	}
-
-	// ✅ originalEndSched = base end WITHOUT extra hours
-	originalEndSched := req.Base.StartSched.Add(
-		time.Duration(float64(req.TotalServiceHours) * float64(time.Hour)),
-	)
-
-	// ✅ Full EndSched = base + extra hours, pure float64
-	totalHours := req.TotalServiceHours + req.ExtraHours
-	req.Base.EndSched = req.Base.StartSched.Add(
-		time.Duration(float64(totalHours) * float64(time.Hour)),
-	)
-
-	// ✅ extraHourCost computed once here, used everywhere else via alloc
-	var extraHourCost float32
-	if req.ExtraHours > 0 && len(cleaners) > 0 {
-		extraHourCost = req.ExtraHours * 250.00 * float32(len(cleaners))
-		prices.ExtraHourCost = extraHourCost
-		prices.MainServicePrice += extraHourCost
-	}
-
-	return &types.BookingAllocation{
-		CleaningAllocation: alloc,
-		CleanerAssigned:    cleaners,
-		CleaningPrices:     prices,
-		ExtraHours:         req.ExtraHours,
-		ExtraHourCost:      extraHourCost,
-		OriginalEndSched:   originalEndSched,
-	}, nil
+	return order, prices, nil
 }
 
-func (t *BookingTasks) AllocateEquipmentAndResources(ctx context.Context, req *types.CreateBookingRequest) (*types.CleaningAllocation, error) {
+func (t *BookingTasks) AllocateEquipmentAndResources(ctx context.Context, tx pgx.Tx, req *types.CreateBookingRequest) (*types.CleaningAllocation, error) {
+	// FOR TESTING PA NI, I HAVE NOT IMPLEMENTED THE REAL LOGIC YET
+	// TODO: Automation logic for resource and equipment allocation
 	equipments := []types.CleaningEquipment{
 		{ID: "7849f478-f70b-42a7-82d2-aadc81d3e6d6", Name: "Vacuum Cleaner", Type: "Electrical", PhotoURL: "https://example.com/vacuum.jpg"},
 		{ID: "a4cd7e23-787b-4344-80d7-c50199d85ecd", Name: "Mop", Type: "Manual", PhotoURL: "https://example.com/mop.jpg"},
@@ -107,10 +40,43 @@ func (t *BookingTasks) AllocateEquipmentAndResources(ctx context.Context, req *t
 	}, nil
 }
 
-func (t *BookingTasks) AllocateCleaners(ctx context.Context, req *types.CreateBookingRequest) ([]types.CleanerAssigned, error) {
-	cleaners := []types.CleanerAssigned{
-		{ID: "7aa794fa-e3f9-446f-8368-bcb55518bc29", CleanerFirstName: "Charles", CleanerLastName: "Boquecosa"},
-		{ID: "cb32d23a-31a8-4461-ba3e-228d418ba6f3", CleanerFirstName: "Clarence", CleanerLastName: "Diangco"},
+func (t *BookingTasks) AllocateCleaners(ctx context.Context, tx pgx.Tx) ([]types.CleanerAssigned, error) {
+	query := `
+		SELECT e.id, a.first_name, a.last_name
+		FROM account.employees e
+		JOIN account.accounts a ON a.id = e.account_id
+		WHERE e.status = 'ACTIVE'
+		AND e.position = 'cleaner'
+		ORDER BY
+			CASE WHEN e.id = ANY(
+				SELECT UNNEST(b.cleaner_ids)
+				FROM booking.bookings b
+				JOIN booking.basebookings bb ON bb.id = b.base_booking_id
+				ORDER BY bb.startsched DESC
+				LIMIT 1
+			) THEN 1 ELSE 0 END ASC`
+
+	rows, err := tx.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query active cleaners: %w", err)
+	}
+	defer rows.Close()
+
+	var cleaners []types.CleanerAssigned
+	for rows.Next() {
+		var cleaner types.CleanerAssigned
+		if err := rows.Scan(&cleaner.ID, &cleaner.CleanerFirstName, &cleaner.CleanerLastName); err != nil {
+			return nil, fmt.Errorf("failed to scan cleaner row: %w", err)
+		}
+		cleaners = append(cleaners, cleaner)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed iterating cleaner rows: %w", err)
+	}
+
+	if len(cleaners) == 0 {
+		return nil, fmt.Errorf("no available cleaners found")
 	}
 	return cleaners, nil
 }
@@ -127,7 +93,7 @@ func (t *BookingTasks) MakeBaseBooking(
 	endSched time.Time,
 	dirtyScale int32,
 	photos []string,
-	quoteId string,
+	orderId string,
 	extraHours float32,
 	extraHourCost float32,
 	originalEndSched *time.Time,
@@ -137,20 +103,45 @@ func (t *BookingTasks) MakeBaseBooking(
 
 	err := tx.QueryRow(ctx,
 		`INSERT INTO booking.basebookings (
-			custid, customerfirstname, customerlastname, customer_phone_no,
-			address, startsched, endsched, dirtyscale, paymentstatus, reviewstatus,
-			photos, createdat, updatedat, quoteid,
-			extra_hours, extra_hour_cost, original_end_sched
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-		RETURNING id, custid, customerfirstname, customerlastname, customer_phone_no, address,
-			startsched, endsched, dirtyscale, paymentstatus, reviewstatus,
-			photos, createdat, updatedat, quoteid, extra_hours, extra_hour_cost, original_end_sched`,
-		custID, customerFirstName, customerLastName, customerPhoneNo,
-		address, startSched, endSched, dirtyScale,
-		"UNPAID", "PENDING",
-		photos, time.Now(), time.Now(), quoteId,
-		extraHours, extraHourCost, originalEndSched,
+            custid,
+            customerfirstname,
+            customerlastname,
+            customer_phone_no,
+            address,
+            startsched,
+            endsched,
+            dirtyscale,
+            status,
+            reviewstatus,
+            photos,
+            createdat,
+            updatedat,
+            orderid,
+            extra_hours,
+            extra_hour_cost,
+            original_end_sched
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        RETURNING id, custid, customerfirstname, customerlastname, customer_phone_no, address,
+            startsched, endsched, dirtyscale, status, reviewstatus,
+            photos, createdat, updatedat, orderid, extra_hours, extra_hour_cost, original_end_sched`,
+		custID,
+		customerFirstName,
+		customerLastName,
+		customerPhoneNo,
+		address,
+		startSched,
+		endSched,
+		dirtyScale,
+		"NOT_STARTED",
+		"PENDING",
+		photos,
+		time.Now(),
+		time.Now(),
+		orderId,
+		extraHours,
+		extraHourCost,
+		originalEndSched,
 	).Scan(
 		&createdBaseBook.ID,
 		&createdBaseBook.CustID,
@@ -161,12 +152,12 @@ func (t *BookingTasks) MakeBaseBooking(
 		&createdBaseBook.StartSched,
 		&createdBaseBook.EndSched,
 		&createdBaseBook.DirtyScale,
-		&createdBaseBook.PaymentStatus,
+		&createdBaseBook.Status,
 		&createdBaseBook.ReviewStatus,
 		&createdBaseBook.Photos,
 		&createdBaseBook.CreatedAt,
 		&createdBaseBook.UpdatedAt,
-		&createdBaseBook.QuoteId,
+		&createdBaseBook.OrderId,
 		&createdBaseBook.ExtraHours,
 		&createdBaseBook.ExtraHourCost,
 		&createdBaseBook.OriginalEndSched,
@@ -444,6 +435,26 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 		return nil, fmt.Errorf("failed to unmarshal bookings: %w", err)
 	}
 	return &response, nil
+}
+
+func (t *BookingTasks) StartSession(ctx context.Context, tx pgx.Tx, bookingID string) error {
+	_, err := tx.Exec(ctx,
+		`UPDATE booking.basebookings
+		 SET status = 'ONGOING', updatedat = now()
+		 WHERE id = (SELECT base_booking_id FROM booking.bookings WHERE id = $1)`,
+		bookingID,
+	)
+	return err
+}
+
+func (t *BookingTasks) EndSession(ctx context.Context, tx pgx.Tx, bookingID string) error {
+	_, err := tx.Exec(ctx,
+		`UPDATE booking.basebookings
+		 SET status = 'COMPLETED', updatedat = now()
+		 WHERE id = (SELECT base_booking_id FROM booking.bookings WHERE id = $1)`,
+		bookingID,
+	)
+	return err
 }
 
 func (t *BookingTasks) FetchBookingSlots(
