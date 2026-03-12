@@ -3196,11 +3196,8 @@ const docTemplate = `{
         "types.CreateOrderResponse": {
             "type": "object",
             "properties": {
-                "orderId": {
-                    "type": "string"
-                },
-                "orderNumber": {
-                    "type": "string"
+                "order": {
+                    "$ref": "#/definitions/types.Order"
                 }
             }
         },

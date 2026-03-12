@@ -373,10 +373,8 @@ definitions:
     type: object
   types.CreateOrderResponse:
     properties:
-      orderId:
-        type: string
-      orderNumber:
-        type: string
+      order:
+        $ref: '#/definitions/types.Order'
     type: object
   types.Customer:
     properties:
