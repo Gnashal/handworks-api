@@ -185,6 +185,9 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req types.CreateOrderR
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
 		orderId, err = s.Tasks.CreateOrder(ctx, tx, req)
+		if err != nil {
+			return fmt.Errorf("failed to create order for quote %s: %v", req.QuoteID, err)
+		}
 		order, err = s.Tasks.FetchOrderByID(ctx, tx, orderId)
 		if err != nil {
 			return fmt.Errorf("failed to create order for quote %s: %v", req.QuoteID, err)
