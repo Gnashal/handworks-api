@@ -179,7 +179,7 @@ func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, c
 	return quote, nil
 }
 
-func (s *PaymentService) CreateOrder(ctx context.Context, req types.CreateOrderRequest) (string, error) {
+func (s *PaymentService) CreateOrder(ctx context.Context, req types.CreateOrderRequest) (*types.CreateOrderResponse, error) {
 	var orderId string
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
@@ -188,10 +188,10 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req types.CreateOrderR
 		return err
 	}); err != nil {
 		s.Logger.Error("Failed to create order for quote %s: %v", req.QuoteID, err)
-		return "", err
+		return nil, err
 	}
 
-	return orderId, nil
+	return &types.CreateOrderResponse{OrderID: orderId}, nil
 }
 
 func (s *PaymentService) GetOrder(ctx context.Context, orderId string) (*types.Order, error) {
