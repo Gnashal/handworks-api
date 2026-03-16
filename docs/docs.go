@@ -1252,6 +1252,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Booking Status",
+                        "name": "status",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Start date (YYYY-MM-DD)",
                         "name": "startDate",
                         "in": "query"
@@ -3164,7 +3171,6 @@ const docTemplate = `{
         "types.CreateOrderRequest": {
             "type": "object",
             "required": [
-                "addonTotal",
                 "customerId",
                 "paymentMethod",
                 "quoteId",
@@ -3173,13 +3179,14 @@ const docTemplate = `{
             ],
             "properties": {
                 "addonTotal": {
+                    "description": "can be null",
                     "type": "number"
                 },
                 "customerId": {
                     "type": "string"
                 },
                 "paymentMethod": {
-                    "description": "e.g. \"paymongo\", \"cash\"",
+                    "description": "e.g. \"online\", \"cash\"",
                     "type": "string"
                 },
                 "quoteId": {

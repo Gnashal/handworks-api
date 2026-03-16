@@ -392,7 +392,7 @@ func (t *BookingTasks) FetchAllBookings(
 func (t *BookingTasks) FetchAllCustomerBookings(
 	ctx context.Context,
 	tx pgx.Tx,
-	customerId, startDate, endDate string,
+	customerId, startDate, endDate, status string,
 	page, limit int,
 	logger *utils.Logger,
 ) (*types.FetchAllBookingsResponse, error) {
