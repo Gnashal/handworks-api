@@ -351,11 +351,12 @@ definitions:
   types.CreateOrderRequest:
     properties:
       addonTotal:
+        description: can be null
         type: number
       customerId:
         type: string
       paymentMethod:
-        description: e.g. "paymongo", "cash"
+        description: e.g. "online", "cash"
         type: string
       quoteId:
         type: string
@@ -364,7 +365,6 @@ definitions:
       totalAmount:
         type: number
     required:
-    - addonTotal
     - customerId
     - paymentMethod
     - quoteId
@@ -1973,6 +1973,11 @@ paths:
       - description: Customer ID
         in: query
         name: customerId
+        required: true
+        type: string
+      - description: Booking Status
+        in: query
+        name: status
         required: true
         type: string
       - description: Start date (YYYY-MM-DD)

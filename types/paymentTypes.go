@@ -136,12 +136,12 @@ type Order struct {
 }
 
 type CreateOrderRequest struct {
-	QuoteID       string  `json:"quoteId" binding:"required"`
-	CustomerID    string  `json:"customerId" binding:"required"`
-	PaymentMethod string  `json:"paymentMethod" binding:"required"` // e.g. "paymongo", "cash"
-	Subtotal      float32 `json:"subtotal" binding:"required"`
-	AddonTotal    float32 `json:"addonTotal" binding:"required"`
-	TotalAmount   float32 `json:"totalAmount" binding:"required"`
+	QuoteID       string   `json:"quoteId" binding:"required"`
+	CustomerID    string   `json:"customerId" binding:"required"`
+	PaymentMethod string   `json:"paymentMethod" binding:"required"` // e.g. "online", "cash"
+	Subtotal      float32  `json:"subtotal" binding:"required"`
+	AddonTotal    *float32 `json:"addonTotal"` // can be null
+	TotalAmount   float32  `json:"totalAmount" binding:"required"`
 }
 type CreateOrderResponse struct {
 	Order Order `json:"order"`

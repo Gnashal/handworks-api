@@ -757,7 +757,10 @@ func (t *PaymentTasks) CreateOrder(
 	// Calculate downpayment
 	downpayment := req.TotalAmount * 0.20
 	remaining := req.TotalAmount - downpayment
-
+	var addonTotal float32 = 0.00
+	if req.AddonTotal != nil {
+		addonTotal = *req.AddonTotal
+	}
 	const query = `
 		INSERT INTO payment.orders (
 			order_number,
@@ -793,7 +796,7 @@ func (t *PaymentTasks) CreateOrder(
 		req.QuoteID,
 		"PHP",
 		req.Subtotal,
-		req.AddonTotal,
+		addonTotal,
 		req.TotalAmount,
 		downpayment,
 		remaining,

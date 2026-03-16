@@ -20,14 +20,13 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 
 	employee := r.Group("/employee")
 	{
-		employee.POST("/signup", h.SignUpEmployee)
-		timesheet := r.Group("/timesheet")
+		timesheet := employee.Group("/timesheet")
 		{
 			timesheet.POST("/timein", h.EmployeeTimeIn)
 			timesheet.POST("/timeout", h.EmployeeTimeOut)
 			timesheet.GET("/today", h.TimesheetToday)
-			// timesheet.GET("/timesheets")
 		}
+		employee.POST("/signup", h.SignUpEmployee)
 		employee.GET("/", h.GetEmployee)
 		employee.GET("/employees", h.GetEmployees)
 		employee.PUT("/", h.UpdateEmployee)
