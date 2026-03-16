@@ -144,8 +144,7 @@ type CreateOrderRequest struct {
 	TotalAmount   float32 `json:"totalAmount" binding:"required"`
 }
 type CreateOrderResponse struct {
-	OrderID     string `json:"orderId"`
-	OrderNumber string `json:"orderNumber"`
+	Order Order `json:"order"`
 }
 type GetOrdersResponse struct {
 	OrdersRequested int     `json:"ordersRequested"`
