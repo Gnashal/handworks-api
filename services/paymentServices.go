@@ -442,6 +442,8 @@ func (s *PaymentService) HasExistingDownpayment(ctx context.Context, orderID str
 	}); err != nil {
 		s.Logger.Error("Failed to check existing downpayment for order %s: %v", orderID, err)
 		return nil, err
+		return nil, err
 	}
+	return res, nil
 	return res, nil
 }
