@@ -2282,6 +2282,7 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.ExistingDownpaymentResponse"
+                            "$ref": "#/definitions/types.ExistingDownpaymentResponse"
                         }
                     },
                     "400": {

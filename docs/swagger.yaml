@@ -2816,6 +2816,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/types.ExistingDownpaymentResponse'
+            $ref: '#/definitions/types.ExistingDownpaymentResponse'
         "400":
           description: Bad Request
           schema:
