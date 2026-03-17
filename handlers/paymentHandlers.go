@@ -609,7 +609,7 @@ func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param orderId query string true "Order ID"
-// @Success 200 {object} map[string]bool
+// @Success 200 {object} types.ExistingDownpaymentResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /payment/payments/existing-downpayment [get]
@@ -623,11 +623,11 @@ func (h *PaymentHandler) HasExistingDownpayment(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	hasDownpayment, err := h.Service.HasExistingDownpayment(ctx, orderId)
+	res, err := h.Service.HasExistingDownpayment(ctx, orderId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"hasExistingDownpayment": hasDownpayment})
+	c.JSON(http.StatusOK, res)
 }

@@ -469,6 +469,13 @@ definitions:
       error:
         type: string
     type: object
+  types.ExistingDownpaymentResponse:
+    properties:
+      clientKey:
+        type: string
+      hasExistingDownpayment:
+        type: boolean
+    type: object
   types.FetchAllBookingsResponse:
     properties:
       bookings:
@@ -2756,9 +2763,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: boolean
-            type: object
+            $ref: '#/definitions/types.ExistingDownpaymentResponse'
         "400":
           description: Bad Request
           schema:

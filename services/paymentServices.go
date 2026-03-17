@@ -411,8 +411,9 @@ func (s *PaymentService) CreateFullPaymentIntent(ctx context.Context, orderID st
 }
 func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.WebhookEventData) error {
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
+	paymentId := data.Attributes.Data.ID
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, "pending_fullpayment")
+		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "pending_fullpayment")
 		return err
 	}); err != nil {
 		s.Logger.Error("Failed to update order payment status for payment intent %s: %v", paymentIntentId, err)
@@ -422,8 +423,9 @@ func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.Webho
 }
 func (s *PaymentService) HandlePaymentFailed(ctx context.Context, data types.WebhookEventData) error {
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
+	paymentId := data.Attributes.Data.ID
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, "failed")
+		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "failed")
 		return err
 	}); err != nil {
 		s.Logger.Error("Failed to update order payment status for payment intent %s: %v", paymentIntentId, err)
@@ -431,15 +433,15 @@ func (s *PaymentService) HandlePaymentFailed(ctx context.Context, data types.Web
 	}
 	return nil
 }
-func (s *PaymentService) HasExistingDownpayment(ctx context.Context, orderID string) (bool, error) {
-	var hasDownpayment bool
+func (s *PaymentService) HasExistingDownpayment(ctx context.Context, orderID string) (*types.ExistingDownpaymentResponse, error) {
+	res := &types.ExistingDownpaymentResponse{}
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		hasDownpayment, err = s.Tasks.CheckExistingDownpayment(ctx, tx, orderID)
+		res.HasExistingDownpayment, res.ClientKey, err = s.Tasks.CheckExistingDownpayment(ctx, tx, orderID)
 		return err
 	}); err != nil {
 		s.Logger.Error("Failed to check existing downpayment for order %s: %v", orderID, err)
-		return false, err
+		return nil, err
 	}
-	return hasDownpayment, nil
+	return res, nil
 }

@@ -1040,30 +1040,38 @@ func (s *PaymentTasks) StorePayment(ctx context.Context, tx pgx.Tx, payment *typ
 	)
 	return err
 }
-func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, paymentIntentId, newStatus string) error {
+func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, paymentIntentId, paymentId, newStatus string) error {
 	const query = `
 		UPDATE payment.orders o
-		SET payment_status = $1, updated_at = NOW()
+		SET payment_status = $1, updated_at = NOW(), payment_id = $3
 		FROM payment.payments p
 		WHERE p.order_id = o.id
 		  AND p.payment_intent_id = $2
 	`
-	_, err := tx.Exec(ctx, query, newStatus, paymentIntentId)
+	_, err := tx.Exec(ctx, query, newStatus, paymentIntentId, paymentId)
 	return err
 }
 
-func (s *PaymentTasks) CheckExistingDownpayment(ctx context.Context, tx pgx.Tx, quoteId string) (bool, error) {
+func (s *PaymentTasks) CheckExistingDownpayment(ctx context.Context, tx pgx.Tx, orderID string) (bool, *string, error) {
 	const query = `
-		SELECT EXISTS (
-			SELECT 1
-			FROM payment.orders o
-			JOIN payment.payments p ON p.order_id = o.id
-			WHERE o.order_id = $1
-			  AND p.type = 'DOWNPAYMENT'
-			  AND p.status = 'awaiting_payment_method'
-		)
+		SELECT p.client_key
+		FROM payment.orders o
+		JOIN payment.payments p ON p.order_id = o.id
+		WHERE o.id = $1
+		  AND p.type = 'DOWNPAYMENT'
+		  AND p.status = 'awaiting_payment_method'
+		ORDER BY p.created_at DESC
+		LIMIT 1
 	`
-	var exists bool
-	err := tx.QueryRow(ctx, query, quoteId).Scan(&exists)
-	return exists, err
+
+	var clientKey string
+	err := tx.QueryRow(ctx, query, orderID).Scan(&clientKey)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false, nil, nil
+		}
+		return false, nil, err
+	}
+
+	return true, &clientKey, nil
 }

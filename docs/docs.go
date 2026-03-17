@@ -2281,10 +2281,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "boolean"
-                            }
+                            "$ref": "#/definitions/types.ExistingDownpaymentResponse"
                         }
                     },
                     "400": {
@@ -3455,6 +3452,17 @@ const docTemplate = `{
             "properties": {
                 "error": {
                     "type": "string"
+                }
+            }
+        },
+        "types.ExistingDownpaymentResponse": {
+            "type": "object",
+            "properties": {
+                "clientKey": {
+                    "type": "string"
+                },
+                "hasExistingDownpayment": {
+                    "type": "boolean"
                 }
             }
         },
