@@ -2050,7 +2050,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Order ID",
                         "name": "id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -2099,7 +2099,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Order ID",
                         "name": "id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
