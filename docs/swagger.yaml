@@ -2428,69 +2428,6 @@ paths:
       summary: Get all quotations for a customer
       tags:
       - Payment
-  /payment/intent/downpayment/{id}:
-    post:
-      consumes:
-      - application/json
-      description: Create a PayMongo payment intent for the order's downpayment amount
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.PaymentIntentResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create downpayment payment intent
-      tags:
-      - Payment
-  /payment/intent/fullpayment/{id}:
-    post:
-      consumes:
-      - application/json
-      description: Create a PayMongo payment intent for the order's full remaining
-        balance
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.PaymentIntentResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create full payment payment intent
-      tags:
-      - Payment
   /payment/order:
     get:
       consumes:
@@ -2632,6 +2569,69 @@ paths:
       security:
       - BearerAuth: []
       summary: Get all orders
+      tags:
+      - Payment
+  /payment/payments/intent/downpayment/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create a PayMongo payment intent for the order's downpayment amount
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create downpayment payment intent
+      tags:
+      - Payment
+  /payment/payments/intent/fullpayment/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create a PayMongo payment intent for the order's full remaining
+        balance
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create full payment payment intent
       tags:
       - Payment
   /payment/payments/order:
