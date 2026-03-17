@@ -2282,6 +2282,7 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.ExistingDownpaymentResponse"
+                            "$ref": "#/definitions/types.ExistingDownpaymentResponse"
                         }
                     },
                     "400": {
@@ -3558,6 +3559,9 @@ const docTemplate = `{
                 },
                 "hasExistingDownpayment": {
                     "type": "boolean"
+                },
+                "paymentIntentId": {
+                    "type": "string"
                 }
             }
         },

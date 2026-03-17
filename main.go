@@ -78,15 +78,9 @@ func main() {
 	publicPaths := []string{
 		"/api/account/customer/signup",
 		"/api/account/employee/signup",
-		"/api/account/employee",
 		"/api/account/admin/signup",
 		"/api/payment/quote/preview",
-		"/api/payment/quote",
-		"/api/payment/customer",
-		"/api/admin/dashboard",
-		"/api/booking/",
-		"/api/booking/employee",
-		"/api/booking/bookings",
+		"/api/payment/webhooks/paymongo",
 	}
 
 	// websocket

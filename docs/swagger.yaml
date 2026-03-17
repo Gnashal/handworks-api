@@ -501,6 +501,8 @@ definitions:
         type: string
       hasExistingDownpayment:
         type: boolean
+      paymentIntentId:
+        type: string
     type: object
   types.FetchAllBookingsResponse:
     properties:
@@ -2931,6 +2933,7 @@ paths:
         "200":
           description: OK
           schema:
+            $ref: '#/definitions/types.ExistingDownpaymentResponse'
             $ref: '#/definitions/types.ExistingDownpaymentResponse'
         "400":
           description: Bad Request
