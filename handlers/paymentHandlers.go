@@ -562,17 +562,47 @@ func (h *PaymentHandler) CreateFullPaymentIntent(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-// HandlePaymongoWebhook godoc
-// @Summary Handle PayMongo webhook events
-// @Description Receives PayMongo webhook events and updates payment state based on event type
+// CreateStaticQRPHCode godoc
+// @Summary Create QRPH static code
+// @Security BearerAuth
+// @Description Create a PayMongo QRPH static code and return the generated QR image payload
 // @Tags Payment
 // @Accept json
 // @Produce json
-// @Param payload body types.WebhookEvent true "PayMongo webhook payload"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /payment/webhooks/paymongo [post]
+// @Param input body types.CreateQRPHCodeRequest true "QRPH code request"
+// @Success 200 {object} types.QRPHCodeResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/payments/intent/qrph-static [post]
+func (h *PaymentHandler) CreateStaticQRPHCode(c *gin.Context) {
+	var req types.CreateQRPHCodeRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	if strings.TrimSpace(req.MobileNumber) == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("mobile_number is required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	res, err := h.Service.CreateStaticQRPHCode(ctx, req)
+	if err != nil {
+		if strings.Contains(err.Error(), "kind must be instore") {
+			c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
 // HandlePaymongoWebhook godoc
 // @Summary Handle PayMongo webhook events
 // @Description Receives PayMongo webhook events and updates payment state based on event type
@@ -592,7 +622,7 @@ func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	switch webhook.Data.Type {
+	switch webhook.Data.Attributes.Type {
 	case "payment.paid":
 		if err := h.Service.HandlePaymentPaid(ctx, webhook.Data); err != nil {
 			h.Logger.Error("failed to handle payment.paid webhook: %v", err)

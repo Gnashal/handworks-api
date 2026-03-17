@@ -351,3 +351,31 @@ type AttachPaymentIntentAttributes struct {
 	ClientKey     string  `json:"client_key,omitempty"` // required if using public key
 	ReturnURL     *string `json:"return_url,omitempty"` // required for redirect-based methods
 }
+
+type CreateQRPHCodeRequest struct {
+	MobileNumber string  `json:"mobile_number" binding:"required"`
+	Kind         string  `json:"kind"`
+	Notes        *string `json:"notes,omitempty"`
+}
+
+type QRPHCodeResponse struct {
+	Data QRPHCodeData `json:"data"`
+}
+
+type QRPHCodeData struct {
+	ID         string             `json:"id"`
+	Type       string             `json:"type"`
+	Attributes QRPHCodeAttributes `json:"attributes"`
+}
+
+type QRPHCodeAttributes struct {
+	Kind         string  `json:"kind"`
+	Livemode     bool    `json:"livemode"`
+	MobileNumber string  `json:"mobile_number"`
+	Notes        *string `json:"notes"`
+	QRImage      string  `json:"qr_image"`
+	ReferenceID  string  `json:"reference_id"`
+	Status       string  `json:"status"`
+	CreatedAt    int64   `json:"created_at"`
+	Name         string  `json:"name"`
+}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"handworks-api/types"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -409,6 +410,39 @@ func (s *PaymentService) CreateFullPaymentIntent(ctx context.Context, orderID st
 
 	return intent, nil
 }
+
+func (s *PaymentService) CreateStaticQRPHCode(ctx context.Context, req types.CreateQRPHCodeRequest) (*types.QRPHCodeResponse, error) {
+	kind := strings.TrimSpace(strings.ToLower(req.Kind))
+	if kind == "" {
+		kind = "instore"
+	}
+
+	if kind != "instore" {
+		return nil, errors.New("kind must be instore")
+	}
+
+	body := map[string]any{
+		"data": map[string]any{
+			"attributes": map[string]any{
+				"mobile_number": req.MobileNumber,
+				"kind":          kind,
+			},
+		},
+	}
+
+	if req.Notes != nil {
+		body["data"].(map[string]any)["attributes"].(map[string]any)["notes"] = *req.Notes
+	}
+
+	res, err := s.PaymongoClient.CreateQRPHCode(ctx, body)
+	if err != nil {
+		s.Logger.Error("Failed to create QRPH static code: %v", err)
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.WebhookEventData) error {
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
 	paymentId := data.Attributes.Data.ID

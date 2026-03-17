@@ -2140,6 +2140,51 @@
         }
       }
     },
+    "/payment/payments/intent/qrph-static": {
+      "post": {
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "description": "Create a PayMongo QRPH static code and return the generated QR image payload",
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "tags": ["Payment"],
+        "summary": "Create QRPH static code",
+        "parameters": [
+          {
+            "description": "QRPH code request",
+            "name": "input",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/types.CreateQRPHCodeRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/types.QRPHCodeResponse"
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "schema": {
+              "$ref": "#/definitions/types.ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/types.ErrorResponse"
+            }
+          }
+        }
+      }
+    },
     "/payment/payments/order": {
       "get": {
         "security": [
@@ -3047,6 +3092,21 @@
         }
       }
     },
+    "types.CreateQRPHCodeRequest": {
+      "type": "object",
+      "required": ["mobile_number"],
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "mobile_number": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
     "types.Customer": {
       "type": "object",
       "properties": {
@@ -3859,6 +3919,66 @@
       "properties": {
         "id": {
           "type": "string"
+        }
+      }
+    },
+    "types.QRPHCodeAttributes": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "integer"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "livemode": {
+          "type": "boolean"
+        },
+        "mobile_number": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "print_origin_type": {
+          "type": "string"
+        },
+        "qr_delivery": {
+          "type": "string"
+        },
+        "qr_image": {
+          "type": "string"
+        },
+        "reference_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "types.QRPHCodeData": {
+      "type": "object",
+      "properties": {
+        "attributes": {
+          "$ref": "#/definitions/types.QRPHCodeAttributes"
+        },
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "types.QRPHCodeResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "$ref": "#/definitions/types.QRPHCodeData"
         }
       }
     },
