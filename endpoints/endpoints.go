@@ -91,6 +91,7 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	{
 		payments.GET("/order", h.GetPaymentsByOrderID)
 		payments.GET("/customer", h.GetPaymentsByCustomerID)
+		payments.GET("/existing-downpayment", h.HasExistingDownpayment)
 		intents := payments.Group("/intent")
 		{
 			intents.POST("/downpayment/:id", h.CreateDownpaymentIntent)

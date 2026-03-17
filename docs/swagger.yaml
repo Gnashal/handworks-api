@@ -191,6 +191,32 @@ definitions:
       updatedAt:
         type: string
     type: object
+  types.BillingAddress:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      line1:
+        type: string
+      line2:
+        type: string
+      postal_code:
+        type: string
+      state:
+        type: string
+    type: object
+  types.BillingInfo:
+    properties:
+      address:
+        $ref: '#/definitions/types.BillingAddress'
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    type: object
   types.BookedSlot:
     properties:
       bookingID:
@@ -738,6 +764,87 @@ definitions:
       updated_at:
         type: string
     type: object
+  types.PaymentAttributesPaid:
+    properties:
+      access_url:
+        type: string
+      amount:
+        type: integer
+      available_at:
+        description: only for paid
+        type: integer
+      balance_transaction_id:
+        type: string
+      billing:
+        $ref: '#/definitions/types.BillingInfo'
+      created_at:
+        type: integer
+      credited_at:
+        type: integer
+      currency:
+        type: string
+      description:
+        type: string
+      disputed:
+        type: boolean
+      external_reference_number:
+        type: string
+      failed_code:
+        description: only for failed
+        type: string
+      failed_message:
+        description: only for failed
+        type: string
+      fee:
+        type: integer
+      instant_settlement:
+        type: string
+      livemode:
+        type: boolean
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      net_amount:
+        type: integer
+      origin:
+        type: string
+      paid_at:
+        type: integer
+      payment_intent_id:
+        type: string
+      payout:
+        type: string
+      promotion: {}
+      refunds:
+        items: {}
+        type: array
+      source:
+        $ref: '#/definitions/types.PaymentSource'
+      statement_descriptor:
+        type: string
+      status:
+        description: '"paid" or "failed"'
+        type: string
+      tax_amount:
+        type: integer
+      taxes:
+        items: {}
+        type: array
+      updated_at:
+        type: integer
+    type: object
+  types.PaymentData:
+    properties:
+      attributes:
+        $ref: '#/definitions/types.PaymentAttributesPaid'
+      id:
+        description: pay_...
+        type: string
+      type:
+        description: '"payment"'
+        type: string
+    type: object
   types.PaymentIntentAttributes:
     properties:
       amount:
@@ -812,10 +919,36 @@ definitions:
       data:
         $ref: '#/definitions/types.PaymentIntentData'
     type: object
+  types.PaymentSource:
+    properties:
+      brand:
+        description: for cards
+        type: string
+      country:
+        description: for cards
+        type: string
+      id:
+        type: string
+      last4:
+        description: for cards
+        type: string
+      provider:
+        $ref: '#/definitions/types.ProviderInfo'
+      provider_id:
+        type: string
+      type:
+        description: '"gcash", "card", etc.'
+        type: string
+    type: object
   types.PostConstructionDetails:
     properties:
       sqm:
         type: integer
+    type: object
+  types.ProviderInfo:
+    properties:
+      id:
+        type: string
     type: object
   types.Quote:
     properties:
@@ -1131,6 +1264,41 @@ definitions:
     properties:
       ok:
         type: boolean
+    type: object
+  types.WebhookEvent:
+    properties:
+      data:
+        $ref: '#/definitions/types.WebhookEventData'
+    type: object
+  types.WebhookEventAttributes:
+    properties:
+      created_at:
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/types.PaymentData'
+        description: resource data
+      livemode:
+        type: boolean
+      pending_webhooks:
+        type: integer
+      previous_data: {}
+      type:
+        description: '"payment.paid" or "payment.failed"'
+        type: string
+      updated_at:
+        type: integer
+    type: object
+  types.WebhookEventData:
+    properties:
+      attributes:
+        $ref: '#/definitions/types.WebhookEventAttributes'
+      id:
+        description: evt_...
+        type: string
+      type:
+        description: always "event"
+        type: string
     type: object
 info:
   contact: {}
@@ -2571,6 +2739,39 @@ paths:
       summary: Get all orders
       tags:
       - Payment
+  /payment/payments/existing-downpayment:
+    get:
+      consumes:
+      - application/json
+      description: Check whether an order already has an existing downpayment
+      parameters:
+      - description: Order ID
+        in: query
+        name: orderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Check existing downpayment
+      tags:
+      - Payment
   /payment/payments/intent/downpayment/{id}:
     post:
       consumes:
@@ -2818,6 +3019,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Get all quotations
+      tags:
+      - Payment
+  /payment/webhooks/paymongo:
+    post:
+      consumes:
+      - application/json
+      description: Receives PayMongo webhook events and updates payment state based
+        on event type
+      parameters:
+      - description: PayMongo webhook payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/types.WebhookEvent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Handle PayMongo webhook events
       tags:
       - Payment
 securityDefinitions:
