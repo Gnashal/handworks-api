@@ -573,17 +573,6 @@ func (h *PaymentHandler) CreateFullPaymentIntent(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /payment/webhooks/paymongo [post]
-// HandlePaymongoWebhook godoc
-// @Summary Handle PayMongo webhook events
-// @Description Receives PayMongo webhook events and updates payment state based on event type
-// @Tags Payment
-// @Accept json
-// @Produce json
-// @Param payload body types.WebhookEvent true "PayMongo webhook payload"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /payment/webhooks/paymongo [post]
 func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
 	var webhook types.WebhookEvent
 	if err := c.ShouldBindJSON(&webhook); err != nil {

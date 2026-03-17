@@ -434,10 +434,10 @@ func (s *PaymentService) HandlePaymentFailed(ctx context.Context, data types.Web
 	return nil
 }
 func (s *PaymentService) HasExistingDownpayment(ctx context.Context, orderID string) (*types.ExistingDownpaymentResponse, error) {
-	res := &types.ExistingDownpaymentResponse{}
+	var res *types.ExistingDownpaymentResponse
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		res.HasExistingDownpayment, res.ClientKey, err = s.Tasks.CheckExistingDownpayment(ctx, tx, orderID)
+		res, err = s.Tasks.CheckExistingDownpayment(ctx, tx, orderID)
 		return err
 	}); err != nil {
 		s.Logger.Error("Failed to check existing downpayment for order %s: %v", orderID, err)

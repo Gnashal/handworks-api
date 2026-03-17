@@ -202,6 +202,7 @@ type GetPaymentsResponse struct {
 type ExistingDownpaymentResponse struct {
 	HasExistingDownpayment bool    `json:"hasExistingDownpayment"`
 	ClientKey              *string `json:"clientKey,omitempty"`
+	PaymentIntentID        *string `json:"paymentIntentId,omitempty"`
 }
 
 // --- Paymongo Types ---

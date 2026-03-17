@@ -1052,9 +1052,9 @@ func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, 
 	return err
 }
 
-func (s *PaymentTasks) CheckExistingDownpayment(ctx context.Context, tx pgx.Tx, orderID string) (bool, *string, error) {
+func (s *PaymentTasks) CheckExistingDownpayment(ctx context.Context, tx pgx.Tx, orderID string) (*types.ExistingDownpaymentResponse, error) {
 	const query = `
-		SELECT p.client_key
+		SELECT p.client_key, p.payment_intent_id
 		FROM payment.orders o
 		JOIN payment.payments p ON p.order_id = o.id
 		WHERE o.id = $1
@@ -1064,14 +1064,22 @@ func (s *PaymentTasks) CheckExistingDownpayment(ctx context.Context, tx pgx.Tx, 
 		LIMIT 1
 	`
 
-	var clientKey string
-	err := tx.QueryRow(ctx, query, orderID).Scan(&clientKey)
+	var clientKey, paymentIntentId string
+	err := tx.QueryRow(ctx, query, orderID).Scan(&clientKey, &paymentIntentId)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return false, nil, nil
+			return &types.ExistingDownpaymentResponse{
+				HasExistingDownpayment: false,
+			}, nil
 		}
-		return false, nil, err
+		return &types.ExistingDownpaymentResponse{
+			HasExistingDownpayment: false,
+		}, err
 	}
 
-	return true, &clientKey, nil
+	return &types.ExistingDownpaymentResponse{
+		HasExistingDownpayment: true,
+		ClientKey:              &clientKey,
+		PaymentIntentID:        &paymentIntentId,
+	}, nil
 }
