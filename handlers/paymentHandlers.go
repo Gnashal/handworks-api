@@ -507,7 +507,7 @@ func (h *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
 // @Tags Payment
 // @Accept json
 // @Produce json
-// @Param id query string true "Order ID"
+// @Param id path string true "Order ID"
 // @Success 200 {object} types.PaymentIntentResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
@@ -538,7 +538,7 @@ func (h *PaymentHandler) CreateDownpaymentIntent(c *gin.Context) {
 // @Tags Payment
 // @Accept json
 // @Produce json
-// @Param id query string true "Order ID"
+// @Param id path string true "Order ID"
 // @Success 200 {object} types.PaymentIntentResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse

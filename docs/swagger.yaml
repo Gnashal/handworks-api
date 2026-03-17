@@ -2435,7 +2435,7 @@ paths:
       description: Create a PayMongo payment intent for the order's downpayment amount
       parameters:
       - description: Order ID
-        in: query
+        in: path
         name: id
         required: true
         type: string
@@ -2467,7 +2467,7 @@ paths:
         balance
       parameters:
       - description: Order ID
-        in: query
+        in: path
         name: id
         required: true
         type: string
