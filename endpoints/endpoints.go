@@ -95,7 +95,8 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 		intents := payments.Group("/intent")
 		{
 			intents.POST("/downpayment/:id", h.CreateDownpaymentIntent)
-			intents.POST("/fullpayment/:id	", h.CreateFullPaymentIntent)
+			intents.POST("/fullpayment/:id", h.CreateFullPaymentIntent)
+			intents.POST("/qrph-static", h.CreateStaticQRPHCode)
 		}
 	}
 	webhooks := r.Group("/webhooks")
