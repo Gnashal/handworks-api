@@ -1051,3 +1051,19 @@ func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, 
 	_, err := tx.Exec(ctx, query, newStatus, paymentIntentId)
 	return err
 }
+
+func (s *PaymentTasks) CheckExistingDownpayment(ctx context.Context, tx pgx.Tx, quoteId string) (bool, error) {
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			FROM payment.orders o
+			JOIN payment.payments p ON p.order_id = o.id
+			WHERE o.order_id = $1
+			  AND p.type = 'DOWNPAYMENT'
+			  AND p.status = 'awaiting_payment_method'
+		)
+	`
+	var exists bool
+	err := tx.QueryRow(ctx, query, quoteId).Scan(&exists)
+	return exists, err
+}
