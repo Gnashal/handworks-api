@@ -573,6 +573,17 @@ func (h *PaymentHandler) CreateFullPaymentIntent(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /payment/webhooks/paymongo [post]
+// HandlePaymongoWebhook godoc
+// @Summary Handle PayMongo webhook events
+// @Description Receives PayMongo webhook events and updates payment state based on event type
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param payload body types.WebhookEvent true "PayMongo webhook payload"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /payment/webhooks/paymongo [post]
 func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
 	var webhook types.WebhookEvent
 	if err := c.ShouldBindJSON(&webhook); err != nil {
@@ -609,7 +620,7 @@ func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param orderId query string true "Order ID"
-// @Success 200 {object} map[string]bool
+// @Success 200 {object} types.ExistingDownpaymentResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /payment/payments/existing-downpayment [get]
@@ -623,11 +634,11 @@ func (h *PaymentHandler) HasExistingDownpayment(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	hasDownpayment, err := h.Service.HasExistingDownpayment(ctx, orderId)
+	res, err := h.Service.HasExistingDownpayment(ctx, orderId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"hasExistingDownpayment": hasDownpayment})
+	c.JSON(http.StatusOK, res)
 }
