@@ -446,11 +446,12 @@ func (s *PaymentService) CreateStaticQRPHCode(ctx context.Context, req types.Cre
 func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.WebhookEventData) error {
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
 	paymentId := data.Attributes.Data.ID
+	status := data.Attributes.Data.Attributes.Status
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		if err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "pending_downpayment"); err != nil {
+		if err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "pending_fullpayment"); err != nil {
 			return err
 		}
-		if err := s.Tasks.UpdatePaymentStatus(ctx, tx, paymentId, paymentIntentId); err != nil {
+		if err := s.Tasks.UpdatePaymentStatus(ctx, tx, paymentId, paymentIntentId, status); err != nil {
 			return err
 		}
 		return nil
@@ -464,11 +465,12 @@ func (s *PaymentService) HandlePaymentFailed(ctx context.Context, data types.Web
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
 	paymentId := data.Attributes.Data.ID
 	failMessage := data.Attributes.Data.Attributes.FailedMessage
+	status := data.Attributes.Data.Attributes.Status
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		if err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "failed"); err != nil {
 			return err
 		}
-		if err := s.Tasks.UpdatePaymentStatusFailed(ctx, tx, paymentId, paymentIntentId, *failMessage); err != nil {
+		if err := s.Tasks.UpdatePaymentStatusFailed(ctx, tx, paymentId, paymentIntentId, *failMessage, status); err != nil {
 			return err
 		}
 		return nil
