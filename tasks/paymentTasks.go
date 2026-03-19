@@ -1044,7 +1044,6 @@ func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, 
 	const query = `
 		UPDATE payment.orders o
 		SET payment_status = $1, updated_at = NOW(), payment_id = $3
-		SET payment_status = $1, updated_at = NOW(), payment_id = $3
 		FROM payment.payments p
 		WHERE p.order_id = o.id
 		  AND p.payment_intent_id = $2
