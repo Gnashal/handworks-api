@@ -447,8 +447,13 @@ func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.Webho
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
 	paymentId := data.Attributes.Data.ID
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "pending_fullpayment")
-		return err
+		if err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "pending_downpayment"); err != nil {
+			return err
+		}
+		if err := s.Tasks.UpdatePaymentStatus(ctx, tx, paymentId, paymentIntentId); err != nil {
+			return err
+		}
+		return nil
 	}); err != nil {
 		s.Logger.Error("Failed to update order payment status for payment intent %s: %v", paymentIntentId, err)
 		return err
@@ -458,9 +463,15 @@ func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.Webho
 func (s *PaymentService) HandlePaymentFailed(ctx context.Context, data types.WebhookEventData) error {
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
 	paymentId := data.Attributes.Data.ID
+	failMessage := data.Attributes.Data.Attributes.FailedMessage
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "failed")
-		return err
+		if err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "failed"); err != nil {
+			return err
+		}
+		if err := s.Tasks.UpdatePaymentStatusFailed(ctx, tx, paymentId, paymentIntentId, *failMessage); err != nil {
+			return err
+		}
+		return nil
 	}); err != nil {
 		s.Logger.Error("Failed to update order payment status for payment intent %s: %v", paymentIntentId, err)
 		return err

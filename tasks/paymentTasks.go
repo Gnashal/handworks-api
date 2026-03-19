@@ -1041,14 +1041,35 @@ func (s *PaymentTasks) StorePayment(ctx context.Context, tx pgx.Tx, payment *typ
 	return err
 }
 func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, paymentIntentId, paymentId, newStatus string) error {
-	const query = `
+	const updateOrderQuery = `
 		UPDATE payment.orders o
-		SET payment_status = $1, updated_at = NOW(), payment_id = $3
+		SET payment_status = $1, updated_at = NOW()
 		FROM payment.payments p
 		WHERE p.order_id = o.id
 		  AND p.payment_intent_id = $2
 	`
-	_, err := tx.Exec(ctx, query, newStatus, paymentIntentId, paymentId)
+
+	_, err := tx.Exec(ctx, updateOrderQuery, newStatus, paymentIntentId)
+	return err
+}
+func (s *PaymentTasks) UpdatePaymentStatus(ctx context.Context, tx pgx.Tx, paymentId, paymentIntentId string) error {
+	const updatePaymentQuery = `
+		UPDATE payment.payments
+		SET payment_id = $1, updated_at = NOW(), paid_at = NOW()
+		WHERE payment_intent_id = $2
+	`
+
+	_, err := tx.Exec(ctx, updatePaymentQuery, paymentId, paymentIntentId)
+	return err
+}
+func (s *PaymentTasks) UpdatePaymentStatusFailed(ctx context.Context, tx pgx.Tx, paymentId, paymentIntentId, failedReason string) error {
+	const updatePaymentQuery = `
+		UPDATE payment.payments
+		SET payment_id = $1, updated_at = NOW(), paid_at = NOW(), failed_reason = $3
+		WHERE payment_intent_id = $2
+	`
+
+	_, err := tx.Exec(ctx, updatePaymentQuery, paymentId, paymentIntentId, failedReason)
 	return err
 }
 
