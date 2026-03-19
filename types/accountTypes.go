@@ -156,7 +156,7 @@ type DeleteCustomerResponse struct {
 
 type EmployeeTimesheet struct {
 	TimesheetId string     `json:"id" db:"id"`
-	EmployeeId  string     `json:"employee_id" db:"employee_id"`
+	EmployeeId  string     `json:"employee_id," db:"employee_id"`
 	WorkDate    time.Time  `json:"work_date" db:"work_date"`
 	TimeIn      *time.Time `json:"time_in" db:"time_in"`
 	TimeOut     *time.Time `json:"time_out" db:"time_out"`
@@ -164,6 +164,11 @@ type EmployeeTimesheet struct {
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
+
+type TimesheetToday struct {
+	Timesheet *EmployeeTimesheet `json:"timesheet,omitempty"`
+}
+
 type TimeInRequest struct {
 	EmployeeId string    `json:"employee_id"`
 	TimeIn     time.Time `json:"time_in"`
