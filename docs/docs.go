@@ -620,7 +620,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.EmployeeTimesheet"
+                            "$ref": "#/definitions/types.TimesheetToday"
                         }
                     },
                     "400": {
@@ -4626,6 +4626,14 @@ const docTemplate = `{
                 },
                 "time_out": {
                     "type": "string"
+                }
+            }
+        },
+        "types.TimesheetToday": {
+            "type": "object",
+            "properties": {
+                "timesheet": {
+                    "$ref": "#/definitions/types.EmployeeTimesheet"
                 }
             }
         },

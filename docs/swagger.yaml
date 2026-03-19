@@ -1224,6 +1224,11 @@ definitions:
       time_out:
         type: string
     type: object
+  types.TimesheetToday:
+    properties:
+      timesheet:
+        $ref: '#/definitions/types.EmployeeTimesheet'
+    type: object
   types.UpdateCustomerRequest:
     properties:
       customer_id:
@@ -1848,7 +1853,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.EmployeeTimesheet'
+            $ref: '#/definitions/types.TimesheetToday'
         "400":
           description: Bad Request
           schema:
