@@ -457,7 +457,7 @@ func (h *AccountHandler) EmployeeTimeOut(c *gin.Context) {
 // @Tags Account
 // @Produce json
 // @Param id query string true "Employee ID"
-// @Success 200 {object} types.EmployeeTimesheet
+// @Success 200 {object} types.TimesheetToday
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /account/employee/timesheet/today [get]

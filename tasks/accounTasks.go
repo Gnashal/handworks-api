@@ -400,6 +400,37 @@ func (a *AccountTasks) EmployeeTimeIn(c context.Context, tx pgx.Tx, status strin
 	return timesheet, nil
 }
 
+func (a *AccountTasks) TimesheetToday(c context.Context, tx pgx.Tx, empId, currentDate string) (*types.EmployeeTimesheet, error) {
+	timesheet := &types.EmployeeTimesheet{}
+
+	query := `
+	SELECT id, employee_id, work_date, time_in, time_out, status, created_at, updated_at
+	FROM account.employee_timesheet
+	WHERE employee_id = $1
+	AND work_date = $2
+	`
+
+	err := tx.QueryRow(c, query, empId, currentDate).Scan(
+		&timesheet.TimesheetId,
+		&timesheet.EmployeeId,
+		&timesheet.WorkDate,
+		&timesheet.TimeIn,
+		&timesheet.TimeOut,
+		&timesheet.Status,
+		&timesheet.CreatedAt,
+		&timesheet.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil // No timesheet for today
+		}
+		return nil, fmt.Errorf("could not query employee_timesheet: %w", err)
+	}
+
+	return timesheet, nil
+}
+
 func (a *AccountTasks) EmployeeTimeOut(c context.Context, tx pgx.Tx, req types.TimeOutRequest) (*types.EmployeeTimesheet, error) {
 
 	timesheet := &types.EmployeeTimesheet{}

@@ -2282,7 +2282,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.ExistingDownpaymentResponse"
-                            "$ref": "#/definitions/types.ExistingDownpaymentResponse"
                         }
                     },
                     "400": {
@@ -4269,12 +4268,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "notes": {
-                    "type": "string"
-                },
-                "print_origin_type": {
-                    "type": "string"
-                },
-                "qr_delivery": {
                     "type": "string"
                 },
                 "qr_image": {
