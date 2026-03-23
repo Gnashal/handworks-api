@@ -669,12 +669,12 @@ func (t *PaymentTasks) FetchAllQuotesByCustomer(
 
 	var rawJSON []byte
 	err := tx.QueryRow(ctx,
-		`SELECT payment.get_quotes_by_customer($1, $2, $3, $4, $5)`,
+		`SELECT payment.get_customer_quotes($1, $2, $3, $4, $5)`,
 		customerId, startDate, endDate, page, limit,
 	).Scan(&rawJSON)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed calling sproc get_quotes_by_customer: %w", err)
+		return nil, fmt.Errorf("failed calling sproc get_customer_quotes: %w", err)
 	}
 
 	var response types.FetchAllQuotesResponse
