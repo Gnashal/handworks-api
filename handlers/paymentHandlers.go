@@ -507,11 +507,11 @@ func (h *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
 // @Tags Payment
 // @Accept json
 // @Produce json
-// @Param id query string true "Order ID"
+// @Param id path string true "Order ID"
 // @Success 200 {object} types.PaymentIntentResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/intent/downpayment/{id} [post]
+// @Router /payment/payments/intent/downpayment/{id} [post]
 func (h *PaymentHandler) CreateDownpaymentIntent(c *gin.Context) {
 	orderId := c.Param("id")
 	if orderId == "" {
@@ -538,11 +538,11 @@ func (h *PaymentHandler) CreateDownpaymentIntent(c *gin.Context) {
 // @Tags Payment
 // @Accept json
 // @Produce json
-// @Param id query string true "Order ID"
+// @Param id path string true "Order ID"
 // @Success 200 {object} types.PaymentIntentResponse
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
-// @Router /payment/intent/fullpayment/{id} [post]
+// @Router /payment/payments/intent/fullpayment/{id} [post]
 func (h *PaymentHandler) CreateFullPaymentIntent(c *gin.Context) {
 	orderId := c.Param("id")
 	if orderId == "" {
@@ -562,6 +562,58 @@ func (h *PaymentHandler) CreateFullPaymentIntent(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// CreateStaticQRPHCode godoc
+// @Summary Create QRPH static code
+// @Security BearerAuth
+// @Description Create a PayMongo QRPH static code and return the generated QR image payload
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param input body types.CreateQRPHCodeRequest true "QRPH code request"
+// @Success 200 {object} types.QRPHCodeResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/payments/intent/qrph-static [post]
+func (h *PaymentHandler) CreateStaticQRPHCode(c *gin.Context) {
+	var req types.CreateQRPHCodeRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	if strings.TrimSpace(req.MobileNumber) == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("mobile_number is required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	res, err := h.Service.CreateStaticQRPHCode(ctx, req)
+	if err != nil {
+		if strings.Contains(err.Error(), "kind must be instore") {
+			c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+// HandlePaymongoWebhook godoc
+// @Summary Handle PayMongo webhook events
+// @Description Receives PayMongo webhook events and updates payment state based on event type
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param payload body types.WebhookEvent true "PayMongo webhook payload"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /payment/webhooks/paymongo [post]
 func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
 	var webhook types.WebhookEvent
 	if err := c.ShouldBindJSON(&webhook); err != nil {
@@ -570,7 +622,7 @@ func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	switch webhook.Data.Type {
+	switch webhook.Data.Attributes.Type {
 	case "payment.paid":
 		if err := h.Service.HandlePaymentPaid(ctx, webhook.Data); err != nil {
 			h.Logger.Error("failed to handle payment.paid webhook: %v", err)
@@ -587,5 +639,36 @@ func (h *PaymentHandler) HandlePaymongoWebhook(c *gin.Context) {
 		h.Logger.Info("unhandled webhook event type: %s", webhook.Data.Type)
 	}
 	res := gin.H{"status": "success"}
+	c.JSON(http.StatusOK, res)
+}
+
+// HasExistingDownpayment godoc
+// @Summary Check existing downpayment
+// @Security BearerAuth
+// @Description Check whether an order already has an existing downpayment
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param orderId query string true "Order ID"
+// @Success 200 {object} types.ExistingDownpaymentResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/payments/existing-downpayment [get]
+func (h *PaymentHandler) HasExistingDownpayment(c *gin.Context) {
+	orderId := c.Query("orderId")
+	if orderId == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.Service.HasExistingDownpayment(ctx, orderId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
 	c.JSON(http.StatusOK, res)
 }

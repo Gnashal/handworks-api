@@ -137,6 +137,7 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param customerId query string true "Customer ID"
+// @Param status query string true "Booking Status"
 // @Param startDate query string false "Start date (YYYY-MM-DD)"
 // @Param endDate query string false "End date (YYYY-MM-DD)"
 // @Param page query int false "Page number" default(0)
@@ -148,6 +149,7 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 // @Router /booking/customer [get]
 func (h *BookingHandler) GetCustomerBookings(c *gin.Context) {
 	customerId := c.Query("customerId")
+	status := c.Query("status")
 	if customerId == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  "error",
@@ -186,7 +188,7 @@ func (h *BookingHandler) GetCustomerBookings(c *gin.Context) {
 	defer cancel()
 
 	// Pass empty strings (not nil pointers)
-	result, err := h.Service.GetCustomerBookings(ctx, customerId, startDate, endDate, page, limit)
+	result, err := h.Service.GetCustomerBookings(ctx, customerId, startDate, endDate, status, page, limit)
 	if err != nil {
 		h.Logger.Error("failed to get customer bookings: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{

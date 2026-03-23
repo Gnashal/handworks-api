@@ -185,14 +185,14 @@ func (s *BookingService) GetBookings(
 
 func (s *BookingService) GetCustomerBookings(
 	ctx context.Context,
-	customerId, startDate, endDate string,
+	customerId, startDate, endDate, status string,
 	page, limit int,
 ) (*types.FetchAllBookingsResponse, error) {
 	var result *types.FetchAllBookingsResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		result, err = s.Tasks.FetchAllCustomerBookings(ctx, tx, customerId, startDate, endDate, page, limit, s.Logger)
+		result, err = s.Tasks.FetchAllCustomerBookings(ctx, tx, customerId, startDate, endDate, status, page, limit, s.Logger)
 		return err
 	}); err != nil {
 		s.Logger.Error("failed to fetch customer bookings: %v", err)

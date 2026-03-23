@@ -20,14 +20,13 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 
 	employee := r.Group("/employee")
 	{
-		employee.POST("/signup", h.SignUpEmployee)
-		timesheet := r.Group("/timesheet")
+		timesheet := employee.Group("/timesheet")
 		{
 			timesheet.POST("/timein", h.EmployeeTimeIn)
 			timesheet.POST("/timeout", h.EmployeeTimeOut)
 			timesheet.GET("/today", h.TimesheetToday)
-			// timesheet.GET("/timesheets")
 		}
+		employee.POST("/signup", h.SignUpEmployee)
 		employee.GET("/", h.GetEmployee)
 		employee.GET("/employees", h.GetEmployees)
 		employee.PUT("/", h.UpdateEmployee)
@@ -92,10 +91,12 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 	{
 		payments.GET("/order", h.GetPaymentsByOrderID)
 		payments.GET("/customer", h.GetPaymentsByCustomerID)
+		payments.GET("/existing-downpayment", h.HasExistingDownpayment)
 		intents := payments.Group("/intent")
 		{
 			intents.POST("/downpayment/:id", h.CreateDownpaymentIntent)
-			intents.POST("/fullpayment/:id	", h.CreateFullPaymentIntent)
+			intents.POST("/fullpayment/:id", h.CreateFullPaymentIntent)
+			intents.POST("/qrph-static", h.CreateStaticQRPHCode)
 		}
 	}
 	webhooks := r.Group("/webhooks")

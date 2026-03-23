@@ -620,7 +620,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.EmployeeTimesheet"
+                            "$ref": "#/definitions/types.TimesheetToday"
                         }
                     },
                     "400": {
@@ -1247,6 +1247,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Customer ID",
                         "name": "customerId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Booking Status",
+                        "name": "status",
                         "in": "query",
                         "required": true
                     },
@@ -2020,104 +2027,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/payment/intent/downpayment/{id}": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a PayMongo payment intent for the order's downpayment amount",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Payment"
-                ],
-                "summary": "Create downpayment payment intent",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.PaymentIntentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/types.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/types.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/payment/intent/fullpayment/{id}": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a PayMongo payment intent for the order's full remaining balance",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Payment"
-                ],
-                "summary": "Create full payment payment intent",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.PaymentIntentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/types.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/types.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/payment/order": {
             "get": {
                 "security": [
@@ -2324,6 +2233,204 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.GetOrdersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/payments/existing-downpayment": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Check whether an order already has an existing downpayment",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Check existing downpayment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "orderId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ExistingDownpaymentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/payments/intent/downpayment/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a PayMongo payment intent for the order's downpayment amount",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Create downpayment payment intent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.PaymentIntentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/payments/intent/fullpayment/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a PayMongo payment intent for the order's full remaining balance",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Create full payment payment intent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.PaymentIntentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payment/payments/intent/qrph-static": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a PayMongo QRPH static code and return the generated QR image payload",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Create QRPH static code",
+                "parameters": [
+                    {
+                        "description": "QRPH code request",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateQRPHCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.QRPHCodeResponse"
                         }
                     },
                     "400": {
@@ -2628,6 +2735,61 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/payment/webhooks/paymongo": {
+            "post": {
+                "description": "Receives PayMongo webhook events and updates payment state based on event type",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Handle PayMongo webhook events",
+                "parameters": [
+                    {
+                        "description": "PayMongo webhook payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.WebhookEvent"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2923,6 +3085,46 @@ const docTemplate = `{
                 }
             }
         },
+        "types.BillingAddress": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "line1": {
+                    "type": "string"
+                },
+                "line2": {
+                    "type": "string"
+                },
+                "postal_code": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.BillingInfo": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "$ref": "#/definitions/types.BillingAddress"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
         "types.BookedSlot": {
             "type": "object",
             "properties": {
@@ -3164,7 +3366,6 @@ const docTemplate = `{
         "types.CreateOrderRequest": {
             "type": "object",
             "required": [
-                "addonTotal",
                 "customerId",
                 "paymentMethod",
                 "quoteId",
@@ -3173,13 +3374,14 @@ const docTemplate = `{
             ],
             "properties": {
                 "addonTotal": {
+                    "description": "can be null",
                     "type": "number"
                 },
                 "customerId": {
                     "type": "string"
                 },
                 "paymentMethod": {
-                    "description": "e.g. \"paymongo\", \"cash\"",
+                    "description": "e.g. \"online\", \"cash\"",
                     "type": "string"
                 },
                 "quoteId": {
@@ -3198,6 +3400,23 @@ const docTemplate = `{
             "properties": {
                 "order": {
                     "$ref": "#/definitions/types.Order"
+                }
+            }
+        },
+        "types.CreateQRPHCodeRequest": {
+            "type": "object",
+            "required": [
+                "mobile_number"
+            ],
+            "properties": {
+                "kind": {
+                    "type": "string"
+                },
+                "mobile_number": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
                 }
             }
         },
@@ -3300,6 +3519,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.ExistingDownpaymentResponse": {
+            "type": "object",
+            "properties": {
+                "clientKey": {
+                    "type": "string"
+                },
+                "hasExistingDownpayment": {
+                    "type": "boolean"
+                },
+                "paymentIntentId": {
                     "type": "string"
                 }
             }
@@ -3737,6 +3970,124 @@ const docTemplate = `{
                 }
             }
         },
+        "types.PaymentAttributesPaid": {
+            "type": "object",
+            "properties": {
+                "access_url": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "integer"
+                },
+                "available_at": {
+                    "description": "only for paid",
+                    "type": "integer"
+                },
+                "balance_transaction_id": {
+                    "type": "string"
+                },
+                "billing": {
+                    "$ref": "#/definitions/types.BillingInfo"
+                },
+                "created_at": {
+                    "type": "integer"
+                },
+                "credited_at": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "disputed": {
+                    "type": "boolean"
+                },
+                "external_reference_number": {
+                    "type": "string"
+                },
+                "failed_code": {
+                    "description": "only for failed",
+                    "type": "string"
+                },
+                "failed_message": {
+                    "description": "only for failed",
+                    "type": "string"
+                },
+                "fee": {
+                    "type": "integer"
+                },
+                "instant_settlement": {
+                    "type": "string"
+                },
+                "livemode": {
+                    "type": "boolean"
+                },
+                "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "net_amount": {
+                    "type": "integer"
+                },
+                "origin": {
+                    "type": "string"
+                },
+                "paid_at": {
+                    "type": "integer"
+                },
+                "payment_intent_id": {
+                    "type": "string"
+                },
+                "payout": {
+                    "type": "string"
+                },
+                "promotion": {},
+                "refunds": {
+                    "type": "array",
+                    "items": {}
+                },
+                "source": {
+                    "$ref": "#/definitions/types.PaymentSource"
+                },
+                "statement_descriptor": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "\"paid\" or \"failed\"",
+                    "type": "string"
+                },
+                "tax_amount": {
+                    "type": "integer"
+                },
+                "taxes": {
+                    "type": "array",
+                    "items": {}
+                },
+                "updated_at": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.PaymentData": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "$ref": "#/definitions/types.PaymentAttributesPaid"
+                },
+                "id": {
+                    "description": "pay_...",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "\"payment\"",
+                    "type": "string"
+                }
+            }
+        },
         "types.PaymentIntentAttributes": {
             "type": "object",
             "properties": {
@@ -3852,11 +4203,103 @@ const docTemplate = `{
                 }
             }
         },
+        "types.PaymentSource": {
+            "type": "object",
+            "properties": {
+                "brand": {
+                    "description": "for cards",
+                    "type": "string"
+                },
+                "country": {
+                    "description": "for cards",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last4": {
+                    "description": "for cards",
+                    "type": "string"
+                },
+                "provider": {
+                    "$ref": "#/definitions/types.ProviderInfo"
+                },
+                "provider_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "description": "\"gcash\", \"card\", etc.",
+                    "type": "string"
+                }
+            }
+        },
         "types.PostConstructionDetails": {
             "type": "object",
             "properties": {
                 "sqm": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.ProviderInfo": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.QRPHCodeAttributes": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "livemode": {
+                    "type": "boolean"
+                },
+                "mobile_number": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "qr_image": {
+                    "type": "string"
+                },
+                "reference_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.QRPHCodeData": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "$ref": "#/definitions/types.QRPHCodeAttributes"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.QRPHCodeResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/types.QRPHCodeData"
                 }
             }
         },
@@ -4186,6 +4629,14 @@ const docTemplate = `{
                 }
             }
         },
+        "types.TimesheetToday": {
+            "type": "object",
+            "properties": {
+                "timesheet": {
+                    "$ref": "#/definitions/types.EmployeeTimesheet"
+                }
+            }
+        },
         "types.UpdateCustomerRequest": {
             "type": "object",
             "required": [
@@ -4329,6 +4780,60 @@ const docTemplate = `{
             "properties": {
                 "ok": {
                     "type": "boolean"
+                }
+            }
+        },
+        "types.WebhookEvent": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/types.WebhookEventData"
+                }
+            }
+        },
+        "types.WebhookEventAttributes": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
+                "data": {
+                    "description": "resource data",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.PaymentData"
+                        }
+                    ]
+                },
+                "livemode": {
+                    "type": "boolean"
+                },
+                "pending_webhooks": {
+                    "type": "integer"
+                },
+                "previous_data": {},
+                "type": {
+                    "description": "\"payment.paid\" or \"payment.failed\"",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.WebhookEventData": {
+            "type": "object",
+            "properties": {
+                "attributes": {
+                    "$ref": "#/definitions/types.WebhookEventAttributes"
+                },
+                "id": {
+                    "description": "evt_...",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "always \"event\"",
+                    "type": "string"
                 }
             }
         }

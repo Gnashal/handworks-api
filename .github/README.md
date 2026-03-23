@@ -2,29 +2,6 @@
 
 A Go-based REST API for Handworks Cleaning Services, built with Gin, PostgreSQL, and Swagger/Redoc documentation.
 
-## Features
-
-- **Account Management**
-  - Customer & Employee signup, update, and deletion
-  - Employee performance and status updates
-
-- **Booking Management**
-  - Create, update, fetch, and delete bookings
-
-- **Inventory Management**
-  - CRUD operations for items
-  - Filter items by type, status, or category
-
-- **Payments & Quotes**
-  - Generate quotations
-  - Fetch customer quotes
-
-- **API Documentation**
-  - Swagger annotations in Go handlers
-  - Documentation available via Redoc
-
----
-
 ## Requirements
 
 - Go 1.25+
@@ -69,6 +46,7 @@ go run main.go
 5. Run api with hot reload:
 
 ```bash
+go install github.com/air-verse/air@latest
 air
 ```
 
