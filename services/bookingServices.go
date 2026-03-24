@@ -82,7 +82,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			req.Base.CustomerPhoneNo,
 			req.Base.Address,
 			req.Base.StartSched,
-			req.Base.EndSched,
+			req.Base.EndSched, // ✅ set correctly by AllocateAll
 			req.Base.DirtyScale,
 			req.Base.Photos,
 			order.ID,
