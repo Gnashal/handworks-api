@@ -165,6 +165,14 @@ func CalculateCouchCleaning(details *types.CouchCleaningDetails) (float32, int32
 
 		var couchHours float32
 		switch spec.CouchType {
+		case "SEATER_1":
+			couchHours = 1.0
+		case "SEATER_2":
+			couchHours = 1.5
+		case "SEATER_3":
+			couchHours = 2.0
+		case "SEATER_3_LTYPE_SMALL":
+			couchHours = 2.5
 		case "SEATER_3_LTYPE_LARGE":
 			couchHours = 3.0
 		case "SEATER_4_LTYPE_SMALL":
@@ -177,7 +185,7 @@ func CalculateCouchCleaning(details *types.CouchCleaningDetails) (float32, int32
 			couchHours = 4.0
 		case "OTTOMAN":
 			couchHours = 0.5
-		case "LAZY_BOY":
+		case "LAZBOY": // was LAZY_BOY — typo fixed
 			couchHours = 1.0
 		case "CHAIR":
 			couchHours = 0.5
