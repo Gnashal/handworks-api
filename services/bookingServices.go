@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"handworks-api/types"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -31,7 +32,6 @@ func (s *BookingService) withTx(
 func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBookingRequest) (*types.Booking, error) {
 	s.Logger.Info("Creating booking for customer: %s...", req.Base.CustomerFirstName)
 
-	// ✅ Validate once only
 	if req.ExtraHours > 0 {
 		if req.MainService.ServiceType != types.GeneralCleaning {
 			return nil, fmt.Errorf("extra hours can only be added for General Cleaning services")
@@ -41,32 +41,37 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 		}
 	}
 
-	// ✅ AllocateAll is the single source of truth for EndSched, extraHourCost, originalEndSched
-	alloc, err := s.Tasks.AllocateAll(ctx, s.PaymentPort, &req)
+	order, prices, err := s.Tasks.FetchOrderAndPrices(ctx, s.PaymentPort, req.Base.OrderId)
 	if err != nil {
-		s.Logger.Error("Allocation failed: %v", err)
+		s.Logger.Error("Failed to fetch order and prices: %v", err)
 		return nil, err
 	}
-
-	s.Logger.Debug("=== SCHEDULE DEBUG ===")
-	s.Logger.Debug("StartSched:        %v", req.Base.StartSched)
-	s.Logger.Debug("TotalServiceHours: %v", req.TotalServiceHours)
-	s.Logger.Debug("ExtraHours:        %v", req.ExtraHours)
-	s.Logger.Debug("EndSched after AllocateAll: %v", req.Base.EndSched)
-	s.Logger.Debug("OriginalEndSched:  %v", alloc.OriginalEndSched)
-	s.Logger.Debug("======================")
-
 	var createdBooking *types.Booking
 
 	err = s.withTx(ctx, func(tx pgx.Tx) error {
+
+		cleaners, err := s.Tasks.AllocateCleaners(ctx, tx)
+		if err != nil {
+			return err
+		}
+
+		allocation, err := s.Tasks.AllocateEquipmentAndResources(ctx, tx, &req)
+		if err != nil {
+			return err
+		}
+
 		mainService, err := s.Tasks.CreateMainServiceBooking(ctx, tx, s.Logger, req.MainService.Details)
 		if err != nil {
 			return err
 		}
 
-		// ✅ Use values directly from alloc — no recomputation, no EndSched mutation
-		extraHourCost := alloc.ExtraHourCost
-		originalEndSched := alloc.OriginalEndSched
+		originalEndSched := req.Base.EndSched
+		var extraHourCost float32
+
+		if req.ExtraHours > 0 && len(cleaners) > 0 {
+			extraHourCost = req.ExtraHours * 250.00 * float32(len(cleaners))
+			req.Base.EndSched = req.Base.EndSched.Add(time.Duration(req.ExtraHours * float32(time.Hour)))
+		}
 
 		baseBook, err := s.Tasks.MakeBaseBooking(
 			ctx,
@@ -80,7 +85,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			req.Base.EndSched, // ✅ set correctly by AllocateAll
 			req.Base.DirtyScale,
 			req.Base.Photos,
-			req.Base.QuoteId,
+			order.ID,
 			req.ExtraHours,
 			extraHourCost,
 			&originalEndSched,
@@ -93,7 +98,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 		var addonIDs []string
 		for _, addonReq := range req.Addons {
 			var addonPrice float32
-			for _, ap := range alloc.CleaningPrices.AddonPrices {
+			for _, ap := range prices.AddonPrices {
 				if ap.AddonName == string(addonReq.ServiceDetail.ServiceType) {
 					addonPrice = ap.AddonPrice
 					break
@@ -107,29 +112,31 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			addonIDs = append(addonIDs, createdAddon.ID)
 		}
 
-		equipmentIDs := make([]string, 0, len(alloc.CleaningAllocation.CleaningEquipment))
-		for _, eq := range alloc.CleaningAllocation.CleaningEquipment {
+		equipmentIDs := make([]string, 0, len(allocation.CleaningEquipment))
+		for _, eq := range allocation.CleaningEquipment {
 			equipmentIDs = append(equipmentIDs, eq.ID)
 		}
 
-		resourceIDs := make([]string, 0, len(alloc.CleaningAllocation.CleaningResources))
-		for _, r := range alloc.CleaningAllocation.CleaningResources {
+		resourceIDs := make([]string, 0, len(allocation.CleaningResources))
+		for _, r := range allocation.CleaningResources {
 			resourceIDs = append(resourceIDs, r.ID)
 		}
 
-		cleanerIDs := make([]string, 0, len(alloc.CleanerAssigned))
-		for _, c := range alloc.CleanerAssigned {
+		cleanerIDs := make([]string, 0, len(cleaners))
+		for _, c := range cleaners {
 			cleanerIDs = append(cleanerIDs, c.ID)
 		}
 
-		// ✅ Subtract extraHourCost to get base quote price (AllocateAll already added it to MainServicePrice)
-		originalQuotePrice := alloc.CleaningPrices.MainServicePrice - extraHourCost
-
 		bookingID, err := s.Tasks.SaveBooking(
-			ctx, tx,
-			baseBook.ID, mainService.ID,
-			addonIDs, equipmentIDs, resourceIDs, cleanerIDs,
-			originalQuotePrice,
+			ctx,
+			tx,
+			baseBook.ID,
+			mainService.ID,
+			addonIDs,
+			equipmentIDs,
+			resourceIDs,
+			cleanerIDs,
+			prices.MainServicePrice,
 			extraHourCost,
 		)
 		if err != nil {
@@ -141,10 +148,10 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			Base:        *baseBook,
 			MainService: *mainService,
 			Addons:      addonModels,
-			Equipments:  alloc.CleaningAllocation.CleaningEquipment,
-			Resources:   alloc.CleaningAllocation.CleaningResources,
-			Cleaners:    alloc.CleanerAssigned,
-			TotalPrice:  originalQuotePrice + extraHourCost,
+			Equipments:  allocation.CleaningEquipment,
+			Resources:   allocation.CleaningResources,
+			Cleaners:    cleaners,
+			TotalPrice:  prices.MainServicePrice + extraHourCost,
 		}
 
 		return nil
@@ -178,14 +185,14 @@ func (s *BookingService) GetBookings(
 
 func (s *BookingService) GetCustomerBookings(
 	ctx context.Context,
-	customerId, startDate, endDate string,
+	customerId, startDate, endDate, status string,
 	page, limit int,
 ) (*types.FetchAllBookingsResponse, error) {
 	var result *types.FetchAllBookingsResponse
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		result, err = s.Tasks.FetchAllCustomerBookings(ctx, tx, customerId, startDate, endDate, page, limit, s.Logger)
+		result, err = s.Tasks.FetchAllCustomerBookings(ctx, tx, customerId, startDate, endDate, status, page, limit, s.Logger)
 		return err
 	}); err != nil {
 		s.Logger.Error("failed to fetch customer bookings: %v", err)
@@ -242,6 +249,26 @@ func (s *BookingService) GetBookedSlots(ctx context.Context, date string) (*type
 	}
 
 	return result, nil
+}
+
+func (s *BookingService) StartSession(ctx context.Context, bookingID string) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		return s.Tasks.StartSession(ctx, tx, bookingID)
+	}); err != nil {
+		s.Logger.Error("failed to start session for booking %s: %v", bookingID, err)
+		return err
+	}
+	return nil
+}
+
+func (s *BookingService) EndSession(ctx context.Context, bookingID string) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		return s.Tasks.EndSession(ctx, tx, bookingID)
+	}); err != nil {
+		s.Logger.Error("failed to end session for booking %s: %v", bookingID, err)
+		return err
+	}
+	return nil
 }
 
 func (s *BookingService) UpdateBooking(ctx context.Context) error {

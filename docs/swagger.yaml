@@ -1,4 +1,12 @@
+basePath: /api
 definitions:
+  types.AcceptBookingResponse:
+    properties:
+      bookingId:
+        type: string
+      status:
+        type: string
+    type: object
   types.Account:
     properties:
       clerk_id:
@@ -76,6 +84,37 @@ definitions:
       sales:
         type: integer
     type: object
+  types.AssignEquipmentToBookingRequest:
+    properties:
+      bookingId:
+        type: string
+      equipment:
+        items:
+          $ref: '#/definitions/types.ItemQuantity'
+        type: array
+    required:
+    - bookingId
+    - equipment
+    type: object
+  types.AssignInventoryResponse:
+    properties:
+      bookingId:
+        type: string
+      message:
+        type: string
+    type: object
+  types.AssignResourcesToBookingRequest:
+    properties:
+      bookingId:
+        type: string
+      resources:
+        items:
+          $ref: '#/definitions/types.ItemQuantity'
+        type: array
+    required:
+    - bookingId
+    - resources
+    type: object
   types.BaseBookingDetails:
     properties:
       address:
@@ -94,21 +133,25 @@ definitions:
         type: integer
       endSched:
         type: string
+      extraHourCost:
+        type: number
+      extraHours:
+        type: number
       id:
         type: string
       orderId:
         type: string
-      paymentStatus:
+      originalEndSched:
         type: string
       photos:
         items:
           type: string
         type: array
-      quoteId:
-        type: string
       reviewStatus:
         type: string
       startSched:
+        type: string
+      status:
         type: string
       updatedAt:
         type: string
@@ -131,6 +174,8 @@ definitions:
         type: integer
       endSched:
         type: string
+      extraHours:
+        type: number
       orderId:
         type: string
       photos:
@@ -146,12 +191,37 @@ definitions:
       updatedAt:
         type: string
     type: object
+  types.BillingAddress:
+    properties:
+      city:
+        type: string
+      country:
+        type: string
+      line1:
+        type: string
+      line2:
+        type: string
+      postal_code:
+        type: string
+      state:
+        type: string
+    type: object
+  types.BillingInfo:
+    properties:
+      address:
+        $ref: '#/definitions/types.BillingAddress'
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    type: object
   types.BookedSlot:
     properties:
       bookingID:
         type: string
       durationHours:
-        description: optional if frontend needs it
         type: number
       endSched:
         type: string
@@ -174,6 +244,8 @@ definitions:
         items:
           $ref: '#/definitions/types.CleaningEquipment'
         type: array
+      extraHourCost:
+        type: number
       id:
         type: string
       mainService:
@@ -216,10 +288,14 @@ definitions:
     properties:
       id:
         type: string
+      itemId:
+        type: string
       name:
         type: string
       photoUrl:
         type: string
+      quantityUsed:
+        type: number
       type:
         type: string
     type: object
@@ -227,10 +303,14 @@ definitions:
     properties:
       id:
         type: string
+      itemId:
+        type: string
       name:
         type: string
       photoUrl:
         type: string
+      quantityUsed:
+        type: number
       type:
         type: string
     type: object
@@ -264,10 +344,12 @@ definitions:
         type: array
       base:
         $ref: '#/definitions/types.BaseBookingDetailsRequest'
+      extraHours:
+        type: number
       mainService:
         $ref: '#/definitions/types.ServicesRequest'
-      quoteId:
-        type: string
+      totalServiceHours:
+        type: number
     type: object
   types.CreateItemRequest:
     properties:
@@ -295,11 +377,12 @@ definitions:
   types.CreateOrderRequest:
     properties:
       addonTotal:
+        description: can be null
         type: number
       customerId:
         type: string
       paymentMethod:
-        description: e.g. "paymongo", "cash"
+        description: e.g. "online", "cash"
         type: string
       quoteId:
         type: string
@@ -308,7 +391,6 @@ definitions:
       totalAmount:
         type: number
     required:
-    - addonTotal
     - customerId
     - paymentMethod
     - quoteId
@@ -317,10 +399,19 @@ definitions:
     type: object
   types.CreateOrderResponse:
     properties:
-      orderId:
+      order:
+        $ref: '#/definitions/types.Order'
+    type: object
+  types.CreateQRPHCodeRequest:
+    properties:
+      kind:
         type: string
-      orderNumber:
+      mobile_number:
         type: string
+      notes:
+        type: string
+    required:
+    - mobile_number
     type: object
   types.Customer:
     properties:
@@ -389,6 +480,15 @@ definitions:
       error:
         type: string
     type: object
+  types.ExistingDownpaymentResponse:
+    properties:
+      clientKey:
+        type: string
+      hasExistingDownpayment:
+        type: boolean
+      paymentIntentId:
+        type: string
+    type: object
   types.FetchAllBookingsResponse:
     properties:
       bookings:
@@ -423,7 +523,7 @@ definitions:
       homeType:
         type: string
       hours:
-        type: integer
+        type: number
       sqm:
         type: integer
     type: object
@@ -529,6 +629,16 @@ definitions:
     - CategoryAppliances
     - CategoryVehicles
     - CategoryOther
+  types.ItemQuantity:
+    properties:
+      itemId:
+        type: string
+      quantity:
+        type: number
+    required:
+    - itemId
+    - quantity
+    type: object
   types.ItemStatus:
     enum:
     - HIGH
@@ -674,6 +784,87 @@ definitions:
       updated_at:
         type: string
     type: object
+  types.PaymentAttributesPaid:
+    properties:
+      access_url:
+        type: string
+      amount:
+        type: integer
+      available_at:
+        description: only for paid
+        type: integer
+      balance_transaction_id:
+        type: string
+      billing:
+        $ref: '#/definitions/types.BillingInfo'
+      created_at:
+        type: integer
+      credited_at:
+        type: integer
+      currency:
+        type: string
+      description:
+        type: string
+      disputed:
+        type: boolean
+      external_reference_number:
+        type: string
+      failed_code:
+        description: only for failed
+        type: string
+      failed_message:
+        description: only for failed
+        type: string
+      fee:
+        type: integer
+      instant_settlement:
+        type: string
+      livemode:
+        type: boolean
+      metadata:
+        additionalProperties:
+          type: string
+        type: object
+      net_amount:
+        type: integer
+      origin:
+        type: string
+      paid_at:
+        type: integer
+      payment_intent_id:
+        type: string
+      payout:
+        type: string
+      promotion: {}
+      refunds:
+        items: {}
+        type: array
+      source:
+        $ref: '#/definitions/types.PaymentSource'
+      statement_descriptor:
+        type: string
+      status:
+        description: '"paid" or "failed"'
+        type: string
+      tax_amount:
+        type: integer
+      taxes:
+        items: {}
+        type: array
+      updated_at:
+        type: integer
+    type: object
+  types.PaymentData:
+    properties:
+      attributes:
+        $ref: '#/definitions/types.PaymentAttributesPaid'
+      id:
+        description: pay_...
+        type: string
+      type:
+        description: '"payment"'
+        type: string
+    type: object
   types.PaymentIntentAttributes:
     properties:
       amount:
@@ -748,10 +939,71 @@ definitions:
       data:
         $ref: '#/definitions/types.PaymentIntentData'
     type: object
+  types.PaymentSource:
+    properties:
+      brand:
+        description: for cards
+        type: string
+      country:
+        description: for cards
+        type: string
+      id:
+        type: string
+      last4:
+        description: for cards
+        type: string
+      provider:
+        $ref: '#/definitions/types.ProviderInfo'
+      provider_id:
+        type: string
+      type:
+        description: '"gcash", "card", etc.'
+        type: string
+    type: object
   types.PostConstructionDetails:
     properties:
       sqm:
         type: integer
+    type: object
+  types.ProviderInfo:
+    properties:
+      id:
+        type: string
+    type: object
+  types.QRPHCodeAttributes:
+    properties:
+      created_at:
+        type: integer
+      kind:
+        type: string
+      livemode:
+        type: boolean
+      mobile_number:
+        type: string
+      name:
+        type: string
+      notes:
+        type: string
+      qr_image:
+        type: string
+      reference_id:
+        type: string
+      status:
+        type: string
+    type: object
+  types.QRPHCodeData:
+    properties:
+      attributes:
+        $ref: '#/definitions/types.QRPHCodeAttributes'
+      id:
+        type: string
+      type:
+        type: string
+    type: object
+  types.QRPHCodeResponse:
+    properties:
+      data:
+        $ref: '#/definitions/types.QRPHCodeData'
     type: object
   types.Quote:
     properties:
@@ -972,6 +1224,11 @@ definitions:
       time_out:
         type: string
     type: object
+  types.TimesheetToday:
+    properties:
+      timesheet:
+        $ref: '#/definitions/types.EmployeeTimesheet'
+    type: object
   types.UpdateCustomerRequest:
     properties:
       customer_id:
@@ -1067,6 +1324,41 @@ definitions:
     properties:
       ok:
         type: boolean
+    type: object
+  types.WebhookEvent:
+    properties:
+      data:
+        $ref: '#/definitions/types.WebhookEventData'
+    type: object
+  types.WebhookEventAttributes:
+    properties:
+      created_at:
+        type: integer
+      data:
+        allOf:
+        - $ref: '#/definitions/types.PaymentData'
+        description: resource data
+      livemode:
+        type: boolean
+      pending_webhooks:
+        type: integer
+      previous_data: {}
+      type:
+        description: '"payment.paid" or "payment.failed"'
+        type: string
+      updated_at:
+        type: integer
+    type: object
+  types.WebhookEventData:
+    properties:
+      attributes:
+        $ref: '#/definitions/types.WebhookEventAttributes'
+      id:
+        description: evt_...
+        type: string
+      type:
+        description: always "event"
+        type: string
     type: object
 info:
   contact: {}
@@ -1256,12 +1548,12 @@ paths:
       summary: Sign up a new customer
       tags:
       - Account
-  /account/employee/:
+  /account/employee:
     get:
       description: Retrieve employee info
       parameters:
       - description: Employee ID
-        in: path
+        in: query
         name: id
         required: true
         type: string
@@ -1281,6 +1573,7 @@ paths:
       summary: Get an employee by ID
       tags:
       - Account
+  /account/employee/:
     put:
       consumes:
       - application/json
@@ -1423,7 +1716,7 @@ paths:
       - Account
   /account/employee/employees:
     get:
-      description: Retrieve all customer info
+      description: Retrieve all employees
       parameters:
       - default: 0
         description: Page number
@@ -1448,7 +1741,7 @@ paths:
             $ref: '#/definitions/types.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Get all customers
+      summary: Get all employees
       tags:
       - Account
   /account/employee/signup:
@@ -1560,7 +1853,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.EmployeeTimesheet'
+            $ref: '#/definitions/types.TimesheetToday'
         "400":
           description: Bad Request
           schema:
@@ -1574,6 +1867,38 @@ paths:
       summary: Get today's timesheet
       tags:
       - Account
+  /admin/booking/approve/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Updates the booking review status to SCHEDULED, triggering a notification
+        to assigned employees
+      parameters:
+      - description: Booking ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AcceptBookingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Accept a booking
+      tags:
+      - Admin
   /admin/dashboard:
     get:
       consumes:
@@ -1604,6 +1929,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Fetch data for admin dashboard
       tags:
       - Admin
@@ -1634,7 +1961,73 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Onboard a new employee
+      tags:
+      - Admin
+  /admin/inventory/assign-equipment:
+    post:
+      consumes:
+      - application/json
+      description: Admin override to manually assign equipment to a booking
+      parameters:
+      - description: Assign equipment data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.AssignEquipmentToBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AssignInventoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign equipment to a booking
+      tags:
+      - Admin
+  /admin/inventory/assign-resources:
+    post:
+      consumes:
+      - application/json
+      description: Admin override to manually assign resources (supplies) to a booking
+      parameters:
+      - description: Assign resources data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.AssignResourcesToBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AssignInventoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign resources to a booking
       tags:
       - Admin
   /booking:
@@ -1810,6 +2203,11 @@ paths:
         name: customerId
         required: true
         type: string
+      - description: Booking Status
+        in: query
+        name: status
+        required: true
+        type: string
       - description: Start date (YYYY-MM-DD)
         in: query
         name: startDate
@@ -1903,6 +2301,68 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Employee bookings
+      tags:
+      - Booking
+  /booking/session/end:
+    post:
+      consumes:
+      - application/json
+      description: Marks a booking as COMPLETED
+      parameters:
+      - description: Booking ID
+        in: query
+        name: bookingId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: End a booking session
+      tags:
+      - Booking
+  /booking/session/start:
+    post:
+      consumes:
+      - application/json
+      description: Marks a booking as ONGOING
+      parameters:
+      - description: Booking ID
+        in: query
+        name: bookingId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: Start a booking session
       tags:
       - Booking
   /booking/slots:
@@ -2196,69 +2656,6 @@ paths:
       summary: Get all quotations for a customer
       tags:
       - Payment
-  /payment/intent/downpayment/{id}:
-    post:
-      consumes:
-      - application/json
-      description: Create a PayMongo payment intent for the order's downpayment amount
-      parameters:
-      - description: Order ID
-        in: query
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.PaymentIntentResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create downpayment payment intent
-      tags:
-      - Payment
-  /payment/intent/fullpayment/{id}:
-    post:
-      consumes:
-      - application/json
-      description: Create a PayMongo payment intent for the order's full remaining
-        balance
-      parameters:
-      - description: Order ID
-        in: query
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.PaymentIntentResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/types.ErrorResponse'
-      security:
-      - BearerAuth: []
-      summary: Create full payment payment intent
-      tags:
-      - Payment
   /payment/order:
     get:
       consumes:
@@ -2400,6 +2797,133 @@ paths:
       security:
       - BearerAuth: []
       summary: Get all orders
+      tags:
+      - Payment
+  /payment/payments/existing-downpayment:
+    get:
+      consumes:
+      - application/json
+      description: Check whether an order already has an existing downpayment
+      parameters:
+      - description: Order ID
+        in: query
+        name: orderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ExistingDownpaymentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Check existing downpayment
+      tags:
+      - Payment
+  /payment/payments/intent/downpayment/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create a PayMongo payment intent for the order's downpayment amount
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create downpayment payment intent
+      tags:
+      - Payment
+  /payment/payments/intent/fullpayment/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create a PayMongo payment intent for the order's full remaining
+        balance
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.PaymentIntentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create full payment payment intent
+      tags:
+      - Payment
+  /payment/payments/intent/qrph-static:
+    post:
+      consumes:
+      - application/json
+      description: Create a PayMongo QRPH static code and return the generated QR
+        image payload
+      parameters:
+      - description: QRPH code request
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateQRPHCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.QRPHCodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create QRPH static code
       tags:
       - Payment
   /payment/payments/order:
@@ -2586,6 +3110,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Get all quotations
+      tags:
+      - Payment
+  /payment/webhooks/paymongo:
+    post:
+      consumes:
+      - application/json
+      description: Receives PayMongo webhook events and updates payment state based
+        on event type
+      parameters:
+      - description: PayMongo webhook payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/types.WebhookEvent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Handle PayMongo webhook events
       tags:
       - Payment
 securityDefinitions:

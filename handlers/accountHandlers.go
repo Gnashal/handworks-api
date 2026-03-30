@@ -217,10 +217,10 @@ func (h *AccountHandler) SignUpEmployee(c *gin.Context) {
 // @Security BearerAuth
 // @Tags Account
 // @Produce json
-// @Param id path string true "Employee ID"
+// @Param id query string true "Employee ID"
 // @Success 200 {object} types.GetEmployeeResponse
 // @Failure 404 {object} types.ErrorResponse
-// @Router /account/employee/ [get]
+// @Router /account/employee [get]
 func (h *AccountHandler) GetEmployee(c *gin.Context) {
 	id := c.Query("id")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -235,8 +235,8 @@ func (h *AccountHandler) GetEmployee(c *gin.Context) {
 }
 
 // GetEmployees godoc
-// @Summary Get all customers
-// @Description Retrieve all customer info
+// @Summary Get all employees
+// @Description Retrieve all employees
 // @Security BearerAuth
 // @Tags Account
 // @Produce json
@@ -457,7 +457,7 @@ func (h *AccountHandler) EmployeeTimeOut(c *gin.Context) {
 // @Tags Account
 // @Produce json
 // @Param id query string true "Employee ID"
-// @Success 200 {object} types.EmployeeTimesheet
+// @Success 200 {object} types.TimesheetToday
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /account/employee/timesheet/today [get]

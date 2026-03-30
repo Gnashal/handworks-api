@@ -669,12 +669,12 @@ func (t *PaymentTasks) FetchAllQuotesByCustomer(
 
 	var rawJSON []byte
 	err := tx.QueryRow(ctx,
-		`SELECT payment.get_quotes_by_customer($1, $2, $3, $4, $5)`,
+		`SELECT payment.get_customer_quotes($1, $2, $3, $4, $5)`,
 		customerId, startDate, endDate, page, limit,
 	).Scan(&rawJSON)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed calling sproc get_quotes_by_customer: %w", err)
+		return nil, fmt.Errorf("failed calling sproc get_customer_quotes: %w", err)
 	}
 
 	var response types.FetchAllQuotesResponse
@@ -757,7 +757,10 @@ func (t *PaymentTasks) CreateOrder(
 	// Calculate downpayment
 	downpayment := req.TotalAmount * 0.20
 	remaining := req.TotalAmount - downpayment
-
+	var addonTotal float32 = 0.00
+	if req.AddonTotal != nil {
+		addonTotal = *req.AddonTotal
+	}
 	const query = `
 		INSERT INTO payment.orders (
 			order_number,
@@ -778,7 +781,7 @@ func (t *PaymentTasks) CreateOrder(
 			$1, $2, $3, $4,
 			$5, $6, $7,
 			$8, $9,
-			$10,
+			$10, $11,
 			NOW(), NOW()
 		)
 		RETURNING id;
@@ -793,7 +796,7 @@ func (t *PaymentTasks) CreateOrder(
 		req.QuoteID,
 		"PHP",
 		req.Subtotal,
-		req.AddonTotal,
+		addonTotal,
 		req.TotalAmount,
 		downpayment,
 		remaining,
@@ -1037,14 +1040,67 @@ func (s *PaymentTasks) StorePayment(ctx context.Context, tx pgx.Tx, payment *typ
 	)
 	return err
 }
-func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, paymentIntentId, newStatus string) error {
-	const query = `
+func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, paymentIntentId, paymentId, newStatus string) error {
+	const updateOrderQuery = `
 		UPDATE payment.orders o
 		SET payment_status = $1, updated_at = NOW()
 		FROM payment.payments p
 		WHERE p.order_id = o.id
 		  AND p.payment_intent_id = $2
 	`
-	_, err := tx.Exec(ctx, query, newStatus, paymentIntentId)
+
+	_, err := tx.Exec(ctx, updateOrderQuery, newStatus, paymentIntentId)
 	return err
+}
+func (s *PaymentTasks) UpdatePaymentStatus(ctx context.Context, tx pgx.Tx, paymentId, paymentIntentId, newStatus string) error {
+	const updatePaymentQuery = `
+		UPDATE payment.payments
+		SET payment_id = $1, updated_at = NOW(), paid_at = NOW(), status = $3
+		WHERE payment_intent_id = $2
+	`
+
+	_, err := tx.Exec(ctx, updatePaymentQuery, paymentId, paymentIntentId, newStatus)
+	return err
+}
+func (s *PaymentTasks) UpdatePaymentStatusFailed(ctx context.Context, tx pgx.Tx, paymentId, paymentIntentId, failedReason, newStatus string) error {
+	const updatePaymentQuery = `
+		UPDATE payment.payments
+		SET payment_id = $1, updated_at = NOW(), paid_at = NOW(), failed_reason = $3, status = $4
+		WHERE payment_intent_id = $2
+	`
+
+	_, err := tx.Exec(ctx, updatePaymentQuery, paymentId, paymentIntentId, failedReason, newStatus)
+	return err
+}
+
+func (s *PaymentTasks) CheckExistingDownpayment(ctx context.Context, tx pgx.Tx, orderID string) (*types.ExistingDownpaymentResponse, error) {
+	const query = `
+		SELECT p.client_key, p.payment_intent_id
+		FROM payment.orders o
+		JOIN payment.payments p ON p.order_id = o.id
+		WHERE o.id = $1
+		  AND p.type = 'DOWNPAYMENT'
+		  AND p.status = 'awaiting_payment_method'
+		ORDER BY p.created_at DESC
+		LIMIT 1
+	`
+
+	var clientKey, paymentIntentId string
+	err := tx.QueryRow(ctx, query, orderID).Scan(&clientKey, &paymentIntentId)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return &types.ExistingDownpaymentResponse{
+				HasExistingDownpayment: false,
+			}, nil
+		}
+		return &types.ExistingDownpaymentResponse{
+			HasExistingDownpayment: false,
+		}, err
+	}
+
+	return &types.ExistingDownpaymentResponse{
+		HasExistingDownpayment: true,
+		ClientKey:              &clientKey,
+		PaymentIntentID:        &paymentIntentId,
+	}, nil
 }

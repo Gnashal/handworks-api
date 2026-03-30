@@ -201,6 +201,7 @@ func (s *AccountService) GetEmployee(ctx context.Context, id string) (*types.Get
 		employee.Account = *acc
 		return nil
 	}); err != nil {
+		s.Logger.Error("failed to get employee: %v", err)
 		return nil, fmt.Errorf("could not fetch employee: %w", err)
 	}
 
@@ -339,6 +340,22 @@ func (s *AccountService) EmployeeTimeOut(ctx context.Context, req types.TimeOutR
 	return timesheet, nil
 }
 
-func (s *AccountService) TimesheetToday(ctx context.Context, empId string) (*types.EmployeeTimesheet, error) {
-	return nil, nil
+func (s *AccountService) TimesheetToday(ctx context.Context, empId string) (*types.TimesheetToday, error) {
+	currentDate := time.Now().Format("2006-01-02")
+	var timesheet *types.EmployeeTimesheet
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		ts, err := s.Tasks.TimesheetToday(ctx, tx, empId, currentDate)
+		if err != nil {
+			return err
+		}
+		timesheet = ts
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not retrieve today's timesheet: %w", err)
+	}
+
+	return &types.TimesheetToday{
+		Timesheet: timesheet,
+	}, nil
 }

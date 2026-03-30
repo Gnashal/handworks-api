@@ -25,6 +25,7 @@ import (
 // @title Handworks API
 // @version 1.0
 // @description This is the official API documentation for the Handworks Api.
+// @BasePath /api
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -43,6 +44,8 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
+	// router.RedirectTrailingSlash = false
+	// router.RedirectFixedPath = false
 	router.GET(
 		"/swagger/*any",
 		ginSwagger.WrapHandler(
@@ -72,15 +75,17 @@ func main() {
 	defer conn.Close()
 
 	// public paths for Clerk middleware
-	publicPaths := []string{"/api/account/customer/signup",
-		"/api/account/employee/signup", "/api/account/admin/signup",
-		"/api/payment/quote/preview", "/health", "/api/admin/dashboard", "/api/payment/quote", "/api/booking/slots", "/api/booking/customer", "/api/booking/bookings", "/api/payment/customer"}
+	publicPaths := []string{
+		"/api/account/customer/signup",
+		"/api/account/employee/signup",
+		"/api/account/admin/signup",
+		"/api/payment/quote/preview",
+		"/api/payment/webhooks/paymongo",
+	}
 
 	// websocket
 	hubs := realtime.NewRealtimeHubs(logger)
 
-	router.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
-	// HealthCheck(router)
 	accountService := services.NewAccountService(conn, logger)
 	inventoryService := services.NewInventoryService(conn, logger)
 	paymentService := services.NewPaymentService(conn, logger, paymongoClient)
@@ -94,6 +99,7 @@ func main() {
 	adminHandler := handlers.NewAdminHandler(adminServie, logger)
 
 	api := router.Group("/api")
+	api.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
 	{
 		endpoints.AccountEndpoint(api.Group("/account"), accountHandler)
 		endpoints.InventoryEndpoint(api.Group("/inventory"), inventoryHandler)

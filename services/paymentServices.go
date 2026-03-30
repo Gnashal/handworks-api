@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"handworks-api/types"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -30,6 +31,32 @@ func (s *PaymentService) withTx(
 		}
 	}()
 	return fn(tx)
+}
+
+func (s *PaymentService) FetchOrderAndPrices(ctx context.Context, orderId string) (*types.Order, *types.CleaningPrices, error) {
+	dbCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var order *types.Order
+	var prices *types.CleaningPrices
+
+	if err := s.withTx(dbCtx, func(tx pgx.Tx) error {
+		var err error
+		order, err = s.Tasks.FetchOrderByID(dbCtx, tx, orderId)
+		if err != nil {
+			return err
+		}
+		prices, err = s.Tasks.VerifyQuoteAndFetchPrices(dbCtx, tx, order.QuoteID)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch order and prices: %v", err)
+		return nil, nil, err
+	}
+
+	// Use the order's total amount as the authoritative price for booking calculations
+	prices.MainServicePrice = order.TotalAmount
+
+	return order, prices, nil
 }
 
 func (s *PaymentService) GetQuotePrices(ctx context.Context, quoteId string) (*types.CleaningPrices, error) {
@@ -153,19 +180,26 @@ func (s *PaymentService) GetQuoteByIDForCustomer(ctx context.Context, quoteId, c
 	return quote, nil
 }
 
-func (s *PaymentService) CreateOrder(ctx context.Context, req types.CreateOrderRequest) (string, error) {
+func (s *PaymentService) CreateOrder(ctx context.Context, req types.CreateOrderRequest) (*types.CreateOrderResponse, error) {
 	var orderId string
-
+	var order *types.Order
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
 		orderId, err = s.Tasks.CreateOrder(ctx, tx, req)
+		if err != nil {
+			return fmt.Errorf("failed to create order for quote %s: %v", req.QuoteID, err)
+		}
+		order, err = s.Tasks.FetchOrderByID(ctx, tx, orderId)
+		if err != nil {
+			return fmt.Errorf("failed to create order for quote %s: %v", req.QuoteID, err)
+		}
 		return err
 	}); err != nil {
 		s.Logger.Error("Failed to create order for quote %s: %v", req.QuoteID, err)
-		return "", err
+		return nil, err
 	}
 
-	return orderId, nil
+	return &types.CreateOrderResponse{Order: *order}, nil
 }
 
 func (s *PaymentService) GetOrder(ctx context.Context, orderId string) (*types.Order, error) {
@@ -376,11 +410,51 @@ func (s *PaymentService) CreateFullPaymentIntent(ctx context.Context, orderID st
 
 	return intent, nil
 }
+
+func (s *PaymentService) CreateStaticQRPHCode(ctx context.Context, req types.CreateQRPHCodeRequest) (*types.QRPHCodeResponse, error) {
+	kind := strings.TrimSpace(strings.ToLower(req.Kind))
+	if kind == "" {
+		kind = "instore"
+	}
+
+	if kind != "instore" {
+		return nil, errors.New("kind must be instore")
+	}
+
+	body := map[string]any{
+		"data": map[string]any{
+			"attributes": map[string]any{
+				"mobile_number": req.MobileNumber,
+				"kind":          kind,
+			},
+		},
+	}
+
+	if req.Notes != nil {
+		body["data"].(map[string]any)["attributes"].(map[string]any)["notes"] = *req.Notes
+	}
+
+	res, err := s.PaymongoClient.CreateQRPHCode(ctx, body)
+	if err != nil {
+		s.Logger.Error("Failed to create QRPH static code: %v", err)
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.WebhookEventData) error {
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
+	paymentId := data.Attributes.Data.ID
+	status := data.Attributes.Data.Attributes.Status
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, "pending_fullpayment")
-		return err
+		if err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "pending_fullpayment"); err != nil {
+			return err
+		}
+		if err := s.Tasks.UpdatePaymentStatus(ctx, tx, paymentId, paymentIntentId, status); err != nil {
+			return err
+		}
+		return nil
 	}); err != nil {
 		s.Logger.Error("Failed to update order payment status for payment intent %s: %v", paymentIntentId, err)
 		return err
@@ -389,12 +463,32 @@ func (s *PaymentService) HandlePaymentPaid(ctx context.Context, data types.Webho
 }
 func (s *PaymentService) HandlePaymentFailed(ctx context.Context, data types.WebhookEventData) error {
 	paymentIntentId := *data.Attributes.Data.Attributes.PaymentIntentID
+	paymentId := data.Attributes.Data.ID
+	failMessage := data.Attributes.Data.Attributes.FailedMessage
+	status := data.Attributes.Data.Attributes.Status
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, "failed")
-		return err
+		if err := s.Tasks.UpdateOrderPaymentStatus(ctx, tx, paymentIntentId, paymentId, "failed"); err != nil {
+			return err
+		}
+		if err := s.Tasks.UpdatePaymentStatusFailed(ctx, tx, paymentId, paymentIntentId, *failMessage, status); err != nil {
+			return err
+		}
+		return nil
 	}); err != nil {
 		s.Logger.Error("Failed to update order payment status for payment intent %s: %v", paymentIntentId, err)
 		return err
 	}
 	return nil
+}
+func (s *PaymentService) HasExistingDownpayment(ctx context.Context, orderID string) (*types.ExistingDownpaymentResponse, error) {
+	var res *types.ExistingDownpaymentResponse
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		res, err = s.Tasks.CheckExistingDownpayment(ctx, tx, orderID)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to check existing downpayment for order %s: %v", orderID, err)
+		return nil, err
+	}
+	return res, nil
 }

@@ -136,16 +136,15 @@ type Order struct {
 }
 
 type CreateOrderRequest struct {
-	QuoteID       string  `json:"quoteId" binding:"required"`
-	CustomerID    string  `json:"customerId" binding:"required"`
-	PaymentMethod string  `json:"paymentMethod" binding:"required"` // e.g. "paymongo", "cash"
-	Subtotal      float32 `json:"subtotal" binding:"required"`
-	AddonTotal    float32 `json:"addonTotal" binding:"required"`
-	TotalAmount   float32 `json:"totalAmount" binding:"required"`
+	QuoteID       string   `json:"quoteId" binding:"required"`
+	CustomerID    string   `json:"customerId" binding:"required"`
+	PaymentMethod string   `json:"paymentMethod" binding:"required"` // e.g. "online", "cash"
+	Subtotal      float32  `json:"subtotal" binding:"required"`
+	AddonTotal    *float32 `json:"addonTotal"` // can be null
+	TotalAmount   float32  `json:"totalAmount" binding:"required"`
 }
 type CreateOrderResponse struct {
-	OrderID     string `json:"orderId"`
-	OrderNumber string `json:"orderNumber"`
+	Order Order `json:"order"`
 }
 type GetOrdersResponse struct {
 	OrdersRequested int     `json:"ordersRequested"`
@@ -198,6 +197,12 @@ type GetPaymentsResponse struct {
 	PaymentsRequested int       `json:"paymentsRequested"`
 	TotalPayments     int       `json:"totalPayments"`
 	Payments          []Payment `json:"payments"`
+}
+
+type ExistingDownpaymentResponse struct {
+	HasExistingDownpayment bool    `json:"hasExistingDownpayment"`
+	ClientKey              *string `json:"clientKey,omitempty"`
+	PaymentIntentID        *string `json:"paymentIntentId,omitempty"`
 }
 
 // --- Paymongo Types ---
@@ -345,4 +350,32 @@ type AttachPaymentIntentAttributes struct {
 	PaymentMethod string  `json:"payment_method"`       // required
 	ClientKey     string  `json:"client_key,omitempty"` // required if using public key
 	ReturnURL     *string `json:"return_url,omitempty"` // required for redirect-based methods
+}
+
+type CreateQRPHCodeRequest struct {
+	MobileNumber string  `json:"mobile_number" binding:"required"`
+	Kind         string  `json:"kind"`
+	Notes        *string `json:"notes,omitempty"`
+}
+
+type QRPHCodeResponse struct {
+	Data QRPHCodeData `json:"data"`
+}
+
+type QRPHCodeData struct {
+	ID         string             `json:"id"`
+	Type       string             `json:"type"`
+	Attributes QRPHCodeAttributes `json:"attributes"`
+}
+
+type QRPHCodeAttributes struct {
+	Kind         string  `json:"kind"`
+	Livemode     bool    `json:"livemode"`
+	MobileNumber string  `json:"mobile_number"`
+	Notes        *string `json:"notes"`
+	QRImage      string  `json:"qr_image"`
+	ReferenceID  string  `json:"reference_id"`
+	Status       string  `json:"status"`
+	CreatedAt    int64   `json:"created_at"`
+	Name         string  `json:"name"`
 }
