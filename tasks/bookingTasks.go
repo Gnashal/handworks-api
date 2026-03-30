@@ -437,6 +437,26 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 	return &response, nil
 }
 
+func (t *BookingTasks) ValidateSessionStart(ctx context.Context, tx pgx.Tx, bookingID string) (bool, time.Time, error) {
+	query := `SELECT bb.startsched
+		FROM booking.basebookings bb
+		JOIN booking.bookings b ON b.base_booking_id = bb.id
+		WHERE b.id = $1
+		AND bb.status = 'NOT_STARTED'
+		AND bb.reviewstatus = 'SCHEDULED'`
+
+	var startSched time.Time
+	err := tx.QueryRow(ctx, query, bookingID).Scan(&startSched)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false, time.Time{}, nil
+		}
+		return false, time.Time{}, fmt.Errorf("failed to validate session start: %w", err)
+	}
+
+	return true, startSched, nil
+}
+
 func (t *BookingTasks) StartSession(ctx context.Context, tx pgx.Tx, bookingID string) error {
 	_, err := tx.Exec(ctx,
 		`UPDATE booking.basebookings
