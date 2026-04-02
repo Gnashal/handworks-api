@@ -287,6 +287,24 @@ func (s *BookingService) EndSession(ctx context.Context, bookingID string) error
 	return nil
 }
 
+func (s *BookingService) GetBookingsToday(ctx context.Context) (types.FetchBookingsTodayResponse, error) {
+	var bookings types.FetchBookingsTodayResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		result, err := s.Tasks.FetchBookingsToday(ctx, tx, s.Logger)
+		if err != nil {
+			return err
+		}
+		bookings = *result
+		return nil
+	}); err != nil {
+		s.Logger.Error("failed to fetch today's bookings: %v", err)
+		return types.FetchBookingsTodayResponse{}, fmt.Errorf("failed to get today's bookings: %w", err)
+	}
+	return bookings, nil
+
+}
+
 func (s *BookingService) UpdateBooking(ctx context.Context) error {
 	return nil
 }

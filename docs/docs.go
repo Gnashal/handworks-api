@@ -1541,6 +1541,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/booking/today": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all bookings scheduled for the current server date",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get all bookings for today",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FetchBookingsTodayResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/{id}": {
             "put": {
                 "security": [
@@ -3568,6 +3602,25 @@ const docTemplate = `{
                 },
                 "totalQuotes": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.FetchBookingsTodayResponse": {
+            "type": "object",
+            "properties": {
+                "bookings": {
+                    "type": "object",
+                    "properties": {
+                        "client": {
+                            "type": "string"
+                        },
+                        "service": {
+                            "type": "string"
+                        },
+                        "time": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },

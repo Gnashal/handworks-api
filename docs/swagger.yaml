@@ -511,6 +511,18 @@ definitions:
       totalQuotes:
         type: integer
     type: object
+  types.FetchBookingsTodayResponse:
+    properties:
+      bookings:
+        properties:
+          client:
+            type: string
+          service:
+            type: string
+          time:
+            type: string
+        type: object
+    type: object
   types.FetchSlotsResponse:
     properties:
       occupiedSlots:
@@ -2398,6 +2410,27 @@ paths:
       security:
       - BearerAuth: []
       summary: Get booked slots by date
+      tags:
+      - Booking
+  /booking/today:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all bookings scheduled for the current server date
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.FetchBookingsTodayResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all bookings for today
       tags:
       - Booking
   /inventory:

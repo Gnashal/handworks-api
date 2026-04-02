@@ -77,6 +77,7 @@ func main() {
 	// public paths for Clerk middleware
 	publicPaths := []string{
 		"/api/account/customer/signup",
+		"/api/booking/today",
 		"/api/account/employee/signup",
 		"/api/account/admin/signup",
 		"/api/payment/quote/preview",

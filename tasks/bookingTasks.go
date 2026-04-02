@@ -501,3 +501,22 @@ func (t *BookingTasks) FetchBookingSlots(
 	}
 	return &response, nil
 }
+
+func (t *BookingTasks) FetchBookingsToday(ctx context.Context, tx pgx.Tx, logger *utils.Logger) (*types.FetchBookingsTodayResponse, error) {
+	var rawJSON []byte
+
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_bookings_today()`,
+	).Scan(&rawJSON)
+	if err != nil {
+		logger.Error("failed to call get_bookings_today sproc: %v", err)
+		return nil, fmt.Errorf("failed calling sproc get_bookings_today: %w", err)
+	}
+
+	var response types.FetchBookingsTodayResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal today's bookings JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal today's bookings: %w", err)
+	}
+	return &response, nil
+}
