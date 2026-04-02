@@ -36,7 +36,7 @@ func (s *AdminService) GetAdminDashboard(ctx context.Context, req *types.AdminDa
 		res, err = s.Tasks.FetchAdminDashboardData(ctx, tx, s.Logger, req.DateFilter)
 		return err
 	}); err != nil {
-		s.Logger.Error("Failed to fetch Quotes: %v", err)
+		s.Logger.Error("Failed to fetch admin dashboard analytics: %v", err)
 		return nil, err
 	}
 
