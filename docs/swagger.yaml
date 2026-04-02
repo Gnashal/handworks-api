@@ -73,15 +73,52 @@ definitions:
     type: object
   types.AdminDashboardResponse:
     properties:
+      activeClients:
+        type: integer
       activeSessions:
         type: integer
       bookings:
         type: integer
       clients:
         type: integer
+      employeesActive:
+        type: integer
+      employeesTotal:
+        type: integer
       growthIndex:
         $ref: '#/definitions/types.GrowthIndex'
+      inactiveClients:
+        type: integer
+      lowStockItems:
+        items:
+          $ref: '#/definitions/types.InventoryAlert'
+        type: array
+      newClients:
+        type: integer
+      paid:
+        type: number
+      pendingActions:
+        type: integer
+      recentActivities:
+        items:
+          $ref: '#/definitions/types.RecentActivity'
+        type: array
+      returningClients:
+        type: integer
+      revenue:
+        type: number
       sales:
+        description: Legacy fields kept during transition.
+        type: integer
+      todayBookings:
+        type: integer
+      topServices:
+        items:
+          $ref: '#/definitions/types.TopService'
+        type: array
+      unpaid:
+        type: number
+      unreadMessages:
         type: integer
     type: object
   types.AssignEquipmentToBookingRequest:
@@ -511,6 +548,20 @@ definitions:
       totalQuotes:
         type: integer
     type: object
+  types.FetchBookingsTodayResponse:
+    properties:
+      bookings:
+        items:
+          properties:
+            client:
+              type: string
+            service:
+              type: string
+            time:
+              type: string
+          type: object
+        type: array
+    type: object
   types.FetchSlotsResponse:
     properties:
       occupiedSlots:
@@ -574,6 +625,15 @@ definitions:
         type: number
       salesGrowthIndex:
         type: number
+    type: object
+  types.InventoryAlert:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      stock:
+        type: integer
     type: object
   types.InventoryItem:
     properties:
@@ -1095,6 +1155,17 @@ definitions:
       totalServiceHours:
         type: integer
     type: object
+  types.RecentActivity:
+    properties:
+      id:
+        type: integer
+      time:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+    type: object
   types.ServiceDetail:
     properties:
       car:
@@ -1228,6 +1299,15 @@ definitions:
     properties:
       timesheet:
         $ref: '#/definitions/types.EmployeeTimesheet'
+    type: object
+  types.TopService:
+    properties:
+      bookings:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
     type: object
   types.UpdateCustomerRequest:
     properties:
@@ -2398,6 +2478,27 @@ paths:
       security:
       - BearerAuth: []
       summary: Get booked slots by date
+      tags:
+      - Booking
+  /booking/today:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all bookings scheduled for the current server date
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.FetchBookingsTodayResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all bookings for today
       tags:
       - Booking
   /inventory:

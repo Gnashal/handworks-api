@@ -1541,6 +1541,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/booking/today": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve all bookings scheduled for the current server date",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get all bookings for today",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.FetchBookingsTodayResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/{id}": {
             "put": {
                 "security": [
@@ -2906,6 +2940,9 @@ const docTemplate = `{
         "types.AdminDashboardResponse": {
             "type": "object",
             "properties": {
+                "activeClients": {
+                    "type": "integer"
+                },
                 "activeSessions": {
                     "type": "integer"
                 },
@@ -2915,10 +2952,62 @@ const docTemplate = `{
                 "clients": {
                     "type": "integer"
                 },
+                "employeesActive": {
+                    "type": "integer"
+                },
+                "employeesTotal": {
+                    "type": "integer"
+                },
                 "growthIndex": {
                     "$ref": "#/definitions/types.GrowthIndex"
                 },
+                "inactiveClients": {
+                    "type": "integer"
+                },
+                "lowStockItems": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.InventoryAlert"
+                    }
+                },
+                "newClients": {
+                    "type": "integer"
+                },
+                "paid": {
+                    "type": "number"
+                },
+                "pendingActions": {
+                    "type": "integer"
+                },
+                "recentActivities": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.RecentActivity"
+                    }
+                },
+                "returningClients": {
+                    "type": "integer"
+                },
+                "revenue": {
+                    "type": "number"
+                },
                 "sales": {
+                    "description": "Legacy fields kept during transition.",
+                    "type": "integer"
+                },
+                "todayBookings": {
+                    "type": "integer"
+                },
+                "topServices": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.TopService"
+                    }
+                },
+                "unpaid": {
+                    "type": "number"
+                },
+                "unreadMessages": {
                     "type": "integer"
                 }
             }
@@ -3571,6 +3660,28 @@ const docTemplate = `{
                 }
             }
         },
+        "types.FetchBookingsTodayResponse": {
+            "type": "object",
+            "properties": {
+                "bookings": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "client": {
+                                "type": "string"
+                            },
+                            "service": {
+                                "type": "string"
+                            },
+                            "time": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "types.FetchSlotsResponse": {
             "type": "object",
             "properties": {
@@ -3668,6 +3779,20 @@ const docTemplate = `{
                 },
                 "salesGrowthIndex": {
                     "type": "number"
+                }
+            }
+        },
+        "types.InventoryAlert": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "stock": {
+                    "type": "integer"
                 }
             }
         },
@@ -4439,6 +4564,23 @@ const docTemplate = `{
                 }
             }
         },
+        "types.RecentActivity": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "time": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "types.ServiceDetail": {
             "type": "object",
             "properties": {
@@ -4634,6 +4776,20 @@ const docTemplate = `{
             "properties": {
                 "timesheet": {
                     "$ref": "#/definitions/types.EmployeeTimesheet"
+                }
+            }
+        },
+        "types.TopService": {
+            "type": "object",
+            "properties": {
+                "bookings": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },

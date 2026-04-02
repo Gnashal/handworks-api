@@ -251,3 +251,11 @@ type BookedSlot struct {
 type FetchSlotsResponse struct {
 	OccupiedSlots []BookedSlot `json:"occupiedSlots"`
 }
+
+type FetchBookingsTodayResponse struct {
+	Bookings []struct {
+		Service string `json:"service"`
+		Time    string `json:"time"`
+		Client  string `json:"client"`
+	} `json:"bookings"`
+}
