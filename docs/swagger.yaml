@@ -294,6 +294,43 @@ definitions:
       totalPrice:
         type: number
     type: object
+  types.CalendarBooking:
+    properties:
+      customer:
+        properties:
+          firstName:
+            type: string
+          lastName:
+            type: string
+        required:
+        - firstName
+        - lastName
+        type: object
+      id:
+        type: string
+      schedule:
+        properties:
+          date:
+            type: string
+          time:
+            type: string
+        required:
+        - date
+        - time
+        type: object
+      service:
+        type: string
+    required:
+    - id
+    - service
+    type: object
+  types.CalendarBookingResponse:
+    properties:
+      bookings:
+        items:
+          $ref: '#/definitions/types.CalendarBooking'
+        type: array
+    type: object
   types.CarCleaningDetails:
     properties:
       childSeats:
@@ -1977,6 +2014,37 @@ paths:
       security:
       - BearerAuth: []
       summary: Accept a booking
+      tags:
+      - Admin
+  /admin/booking/calendar:
+    get:
+      consumes:
+      - application/json
+      description: Returns calendar booking cards for the selected month
+      parameters:
+      - description: Month in YYYY-MM format
+        in: query
+        name: month
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CalendarBookingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Fetch calendar bookings by month
       tags:
       - Admin
   /admin/dashboard:

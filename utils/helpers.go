@@ -64,3 +64,17 @@ func DetermineAttendanceStatus(timeIn time.Time) string {
 
 	return "ON_TIME"
 }
+
+func GetCurrentCalendarMonth(month string) (time.Time, time.Time, error) {
+	if month == "" {
+		return time.Time{}, time.Time{}, fmt.Errorf("month is required")
+	}
+
+	start, err := time.ParseInLocation("2006-01", month, time.Local)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("invalid month format, expected YYYY-MM")
+	}
+
+	end := start.AddDate(0, 1, 0)
+	return start, end, nil
+}
