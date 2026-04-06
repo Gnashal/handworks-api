@@ -523,11 +523,14 @@ func (t *AdminTasks) AddToClerkOrganization(ctx context.Context, clerkUserID, or
 	}
 	return membership, nil
 }
-func (t *AdminTasks) FetchCalendarBookings(ctx context.Context, tx pgx.Tx) (*types.CalendarBookingResponse, error) {
+func (t *AdminTasks) FetchCalendarBookings(ctx context.Context, tx pgx.Tx, month string) (*types.CalendarBookingResponse, error) {
 	var rawJSON []byte
-	start, end := utils.GetCurrentCalendarMonth()
+	start, end, err := utils.GetCurrentCalendarMonth(month)
+	if err != nil {
+		return nil, err
+	}
 
-	err := tx.QueryRow(ctx,
+	err = tx.QueryRow(ctx,
 		`SELECT booking.get_calendar_bookings($1, $2)`,
 		start,
 		end,

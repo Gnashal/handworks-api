@@ -2020,7 +2020,13 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns calendar booking cards for the current calendar month
+      description: Returns calendar booking cards for the selected month
+      parameters:
+      - description: Month in YYYY-MM format
+        in: query
+        name: month
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -2028,13 +2034,17 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/types.CalendarBookingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/types.ErrorResponse'
       security:
       - BearerAuth: []
-      summary: Fetch current month calendar bookings
+      summary: Fetch calendar bookings by month
       tags:
       - Admin
   /admin/dashboard:

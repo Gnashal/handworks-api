@@ -857,7 +857,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns calendar booking cards for the current calendar month",
+                "description": "Returns calendar booking cards for the selected month",
                 "consumes": [
                     "application/json"
                 ],
@@ -867,12 +867,27 @@ const docTemplate = `{
                 "tags": [
                     "Admin"
                 ],
-                "summary": "Fetch current month calendar bookings",
+                "summary": "Fetch calendar bookings by month",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Month in YYYY-MM format",
+                        "name": "month",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.CalendarBookingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
                         }
                     },
                     "500": {
