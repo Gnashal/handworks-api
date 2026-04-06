@@ -112,3 +112,20 @@ type AssignInventoryResponse struct {
 	BookingID string `json:"bookingId"`
 	Message   string `json:"message"`
 }
+
+type CalendarBooking struct {
+	ID       string `json:"id" binding:"required"`
+	Service  string `json:"service" binding:"required"`
+	Schedule *struct {
+		Date string `json:"date" binding:"required"`
+		Time string `json:"time" binding:"required"`
+	} `json:"schedule,omitempty"`
+	Customer *struct {
+		FirstName string `json:"firstName" binding:"required"`
+		LastName  string `json:"lastName" binding:"required"`
+	} `json:"customer,omitempty"`
+}
+
+type CalendarBookingResponse struct {
+	Bookings []CalendarBooking `json:"bookings"`
+}

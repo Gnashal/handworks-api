@@ -157,3 +157,22 @@ func (h *AdminHandler) AssignEquipmentToBooking(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
+// GetCalendarBookings godoc
+// @Summary Fetch current month calendar bookings
+// @Description Returns calendar booking cards for the current calendar month
+// @Tags Admin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.CalendarBookingResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/booking/calendar [get]
+func (h *AdminHandler) GetCalendarBookings(c *gin.Context) {
+	bookings, err := h.Service.GetCalendarBookings(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+	c.JSON(http.StatusOK, bookings)
+}

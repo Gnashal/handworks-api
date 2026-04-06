@@ -523,3 +523,20 @@ func (t *AdminTasks) AddToClerkOrganization(ctx context.Context, clerkUserID, or
 	}
 	return membership, nil
 }
+func (t *AdminTasks) FetchCalendarBookings(ctx context.Context, tx pgx.Tx) (*types.CalendarBookingResponse, error) {
+	var rawJSON []byte
+
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_calendar_bookings()`,
+	).Scan(&rawJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_calendar_bookings: %w", err)
+	}
+
+	var response types.CalendarBookingResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal calendar bookings: %w", err)
+	}
+
+	return &response, nil
+}

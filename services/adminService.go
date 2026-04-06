@@ -117,3 +117,18 @@ func (s *AdminService) AssignEquipmentToBooking(ctx context.Context, req *types.
 		Message:   "Equipment assigned successfully",
 	}, nil
 }
+
+func (s *AdminService) GetCalendarBookings(ctx context.Context) (*types.CalendarBookingResponse, error) {
+	var res *types.CalendarBookingResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		res, err = s.Tasks.FetchCalendarBookings(ctx, tx)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch calendar bookings: %v", err)
+		return nil, err
+	}
+
+	return res, nil
+}

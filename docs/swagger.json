@@ -843,6 +843,40 @@
                 }
             }
         },
+        "/admin/booking/calendar": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns calendar booking cards for the current calendar month",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Fetch current month calendar bookings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.CalendarBookingResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/dashboard": {
             "get": {
                 "security": [
@@ -3265,6 +3299,62 @@
                 },
                 "totalPrice": {
                     "type": "number"
+                }
+            }
+        },
+        "types.CalendarBooking": {
+            "type": "object",
+            "required": [
+                "id",
+                "service"
+            ],
+            "properties": {
+                "customer": {
+                    "type": "object",
+                    "required": [
+                        "firstName",
+                        "lastName"
+                    ],
+                    "properties": {
+                        "firstName": {
+                            "type": "string"
+                        },
+                        "lastName": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "schedule": {
+                    "type": "object",
+                    "required": [
+                        "date",
+                        "time"
+                    ],
+                    "properties": {
+                        "date": {
+                            "type": "string"
+                        },
+                        "time": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "service": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.CalendarBookingResponse": {
+            "type": "object",
+            "properties": {
+                "bookings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.CalendarBooking"
+                    }
                 }
             }
         },
