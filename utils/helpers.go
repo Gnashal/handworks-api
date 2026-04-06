@@ -64,3 +64,10 @@ func DetermineAttendanceStatus(timeIn time.Time) string {
 
 	return "ON_TIME"
 }
+
+func GetCurrentCalendarMonth() (time.Time, time.Time) {
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	end := start.AddDate(0, 1, 0)
+	return start, end
+}

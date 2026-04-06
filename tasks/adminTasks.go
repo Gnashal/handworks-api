@@ -525,9 +525,12 @@ func (t *AdminTasks) AddToClerkOrganization(ctx context.Context, clerkUserID, or
 }
 func (t *AdminTasks) FetchCalendarBookings(ctx context.Context, tx pgx.Tx) (*types.CalendarBookingResponse, error) {
 	var rawJSON []byte
+	start, end := utils.GetCurrentCalendarMonth()
 
 	err := tx.QueryRow(ctx,
-		`SELECT booking.get_calendar_bookings()`,
+		`SELECT booking.get_calendar_bookings($1, $2)`,
+		start,
+		end,
 	).Scan(&rawJSON)
 	if err != nil {
 		return nil, fmt.Errorf("failed calling sproc get_calendar_bookings: %w", err)
