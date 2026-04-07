@@ -35,7 +35,7 @@ func (h *AdminHub) Run() {
 
 func AdminWS(hub *AdminHub) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		adminId := c.Param("adminId")
+		adminId := c.Query("adminId")
 		if adminId == "" {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
