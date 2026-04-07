@@ -46,7 +46,7 @@ func (h *EmployeeHub) SendToEmployee(employeeID string, event string, payload an
 }
 func EmployeeWS(hub *EmployeeHub) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		employeeID := c.Param("employeeID")
+		employeeID := c.Query("employeeID")
 		if employeeID == "" {
 			c.AbortWithStatus(http.StatusBadRequest)
 			return
