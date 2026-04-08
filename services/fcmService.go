@@ -225,7 +225,7 @@ func (s *FCMService) SendToTokens(
 		if r.Success {
 			continue
 		}
-		if messaging.IsRegistrationTokenNotRegistered(r.Error) || messaging.IsInvalidArgument(r.Error) {
+		if messaging.IsUnregistered(r.Error) || messaging.IsInvalidArgument(r.Error) {
 			invalid = append(invalid, tokens[i])
 		}
 	}
