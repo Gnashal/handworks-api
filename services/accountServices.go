@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"handworks-api/types"
 	"handworks-api/utils"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -358,4 +359,146 @@ func (s *AccountService) TimesheetToday(ctx context.Context, empId string) (*typ
 	return &types.TimesheetToday{
 		Timesheet: timesheet,
 	}, nil
+}
+
+func (s *AccountService) CreateAddress(ctx context.Context, req types.CreateAddressRequest) (*types.CreateAddressResponse, error) {
+	var saved types.SavedAddress
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		address, err := s.Tasks.CreateAddress(ctx, tx, req.AccountID, req.Address)
+		if err != nil {
+			return err
+		}
+		saved = *address
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not create address: %w", err)
+	}
+
+	return &types.CreateAddressResponse{Address: saved}, nil
+}
+
+func (s *AccountService) GetAddress(ctx context.Context, id, accountID string) (*types.GetAddressResponse, error) {
+	var saved types.SavedAddress
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		address, err := s.Tasks.FetchAddressByID(ctx, tx, id, accountID)
+		if err != nil {
+			return err
+		}
+		saved = *address
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not get address: %w", err)
+	}
+
+	return &types.GetAddressResponse{Address: saved}, nil
+}
+
+func (s *AccountService) GetAddresses(ctx context.Context, accountID string) (*types.GetAddressesResponse, error) {
+	addresses := make([]types.SavedAddress, 0)
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		result, err := s.Tasks.FetchAddressesByAccountID(ctx, tx, accountID)
+		if err != nil {
+			return err
+		}
+		addresses = result
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not get addresses: %w", err)
+	}
+
+	return &types.GetAddressesResponse{Addresses: addresses}, nil
+}
+
+func (s *AccountService) UpdateAddress(ctx context.Context, req types.UpdateAddressRequest) (*types.UpdateAddressResponse, error) {
+	var saved types.SavedAddress
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		address, err := s.Tasks.UpdateAddress(ctx, tx, req.ID, req.AccountID, req.Address)
+		if err != nil {
+			return err
+		}
+		saved = *address
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not update address: %w", err)
+	}
+
+	return &types.UpdateAddressResponse{Address: saved}, nil
+}
+
+func (s *AccountService) DeleteAddress(ctx context.Context, req types.DeleteAddressRequest) (*types.DeleteAddressResponse, error) {
+	var saved types.SavedAddress
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		address, err := s.Tasks.DeleteAddress(ctx, tx, req.ID, req.AccountID)
+		if err != nil {
+			return err
+		}
+		saved = *address
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not delete address: %w", err)
+	}
+
+	return &types.DeleteAddressResponse{
+		Ok:      true,
+		Message: "Success",
+		Address: saved,
+	}, nil
+}
+
+func (s *AccountService) GetPhoneNumbers(ctx context.Context, accountID string) (*types.GetPhoneNumbersResponse, error) {
+	phoneNumbers := make([]string, 0)
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		result, err := s.Tasks.FetchPhoneNumbers(ctx, tx, accountID)
+		if err != nil {
+			return err
+		}
+		phoneNumbers = result
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not get phone numbers: %w", err)
+	}
+
+	return &types.GetPhoneNumbersResponse{PhoneNumbers: phoneNumbers}, nil
+}
+
+func (s *AccountService) AddPhoneNumber(ctx context.Context, req types.AddPhoneNumberRequest) (*types.AddPhoneNumberResponse, error) {
+	phoneNumber := strings.TrimSpace(req.PhoneNumber)
+	if phoneNumber == "" {
+		return nil, fmt.Errorf("phone number cannot be empty")
+	}
+
+	phoneNumbers := make([]string, 0)
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		result, err := s.Tasks.AddPhoneNumber(ctx, tx, req.AccountID, phoneNumber)
+		if err != nil {
+			return err
+		}
+		phoneNumbers = result
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not add phone number: %w", err)
+	}
+
+	return &types.AddPhoneNumberResponse{PhoneNumbers: phoneNumbers}, nil
+}
+
+func (s *AccountService) DeletePhoneNumber(ctx context.Context, req types.DeletePhoneNumberRequest) (*types.DeletePhoneNumberResponse, error) {
+	phoneNumber := strings.TrimSpace(req.PhoneNumber)
+	if phoneNumber == "" {
+		return nil, fmt.Errorf("phone number cannot be empty")
+	}
+
+	phoneNumbers := make([]string, 0)
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		result, err := s.Tasks.DeletePhoneNumber(ctx, tx, req.AccountID, phoneNumber)
+		if err != nil {
+			return err
+		}
+		phoneNumbers = result
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("could not delete phone number: %w", err)
+	}
+
+	return &types.DeletePhoneNumberResponse{PhoneNumbers: phoneNumbers}, nil
 }
