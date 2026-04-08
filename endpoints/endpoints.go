@@ -38,6 +38,22 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	{
 		admin.POST("/signup", h.SignUpAdmin)
 	}
+	address := r.Group("/address")
+	{
+		address.GET("/", h.GetAddress)
+		address.GET("/addresses", h.GetAddresses)
+		address.POST("/", h.CreateAddress)
+		address.PUT("/:id", h.UpdateAddress)
+		address.DELETE("/:id", h.DeleteAddress)
+	}
+
+	phones := r.Group("/phones")
+	{
+		phones.GET("", h.GetPhoneNumbers)
+		phones.POST("", h.AddPhoneNumber)
+		phones.DELETE("", h.DeletePhoneNumber)
+	}
+
 }
 func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
 	r.POST("/create", h.CreateItem)
@@ -129,4 +145,9 @@ func RealtimeEndpoint(r *gin.RouterGroup, hubs *realtime.RealtimeHubs) {
 	r.GET("/ws/admin", realtime.AdminWS(hubs.AdminHub))
 	r.GET("/ws/employee", realtime.EmployeeWS(hubs.EmployeeHub))
 	r.GET("/ws/chat", realtime.ChatWS(hubs.ChatHub))
+}
+
+func NotificationEndpoint(r *gin.RouterGroup, h *handlers.NotificationHandler) {
+	r.POST("/subscribe", h.SubscribeToken)
+	r.POST("/unsubscribe", h.UnsubscribeToken)
 }

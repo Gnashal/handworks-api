@@ -477,3 +477,256 @@ func (h *AccountHandler) TimesheetToday(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
+// CreateAddress godoc
+// @Summary Save a customer address
+// @Description Save an address to an account for easier future bookings
+// @Security BearerAuth
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param input body types.CreateAddressRequest true "Address data"
+// @Success 200 {object} types.CreateAddressResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/address/ [post]
+func (h *AccountHandler) CreateAddress(c *gin.Context) {
+	var req types.CreateAddressRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.Service.CreateAddress(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// GetAddress godoc
+// @Summary Get saved address by ID
+// @Description Retrieve a single saved address from an account
+// @Security BearerAuth
+// @Tags Account
+// @Produce json
+// @Param id query string true "Address ID"
+// @Param accountId query string true "Account ID"
+// @Success 200 {object} types.GetAddressResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 404 {object} types.ErrorResponse
+// @Router /account/address/ [get]
+func (h *AccountHandler) GetAddress(c *gin.Context) {
+	id := c.Query("id")
+	accountID := c.Query("accountId")
+	if id == "" || accountID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("id and accountId are required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.Service.GetAddress(ctx, id, accountID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// GetAddresses godoc
+// @Summary Get all saved addresses by account
+// @Description Retrieve all saved addresses for an account
+// @Security BearerAuth
+// @Tags Account
+// @Produce json
+// @Param id query string true "Account ID"
+// @Success 200 {object} types.GetAddressesResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 404 {object} types.ErrorResponse
+// @Router /account/address/addresses [get]
+func (h *AccountHandler) GetAddresses(c *gin.Context) {
+	accountID := c.Query("id")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("account id is required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.Service.GetAddresses(ctx, accountID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// UpdateAddress godoc
+// @Summary Update a saved address
+// @Description Update a saved account address by ID
+// @Security BearerAuth
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param id path string true "Address ID"
+// @Param input body types.UpdateAddressRequest true "Updated address data"
+// @Success 200 {object} types.UpdateAddressResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/address/{id} [put]
+func (h *AccountHandler) UpdateAddress(c *gin.Context) {
+	var req types.UpdateAddressRequest
+	req.ID = c.Param("id")
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.Service.UpdateAddress(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// DeleteAddress godoc
+// @Summary Delete a saved address
+// @Description Delete a saved account address by ID
+// @Security BearerAuth
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param id path string true "Address ID"
+// @Param input body types.DeleteAddressRequest true "Delete address payload"
+// @Success 200 {object} types.DeleteAddressResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/address/{id} [delete]
+func (h *AccountHandler) DeleteAddress(c *gin.Context) {
+	var req types.DeleteAddressRequest
+	req.ID = c.Param("id")
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.Service.DeleteAddress(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// GetPhoneNumbers godoc
+// @Summary Get account phone numbers
+// @Description Retrieve saved phone numbers from an account
+// @Security BearerAuth
+// @Tags Account
+// @Produce json
+// @Param id query string true "Account ID"
+// @Success 200 {object} types.GetPhoneNumbersResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/phones [get]
+func (h *AccountHandler) GetPhoneNumbers(c *gin.Context) {
+	accountID := c.Query("id")
+	if accountID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("account id is required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.Service.GetPhoneNumbers(ctx, accountID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// AddPhoneNumber godoc
+// @Summary Add account phone number
+// @Description Add a phone number to the account's saved phone array
+// @Security BearerAuth
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param input body types.AddPhoneNumberRequest true "Phone number payload"
+// @Success 200 {object} types.AddPhoneNumberResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/phones [post]
+func (h *AccountHandler) AddPhoneNumber(c *gin.Context) {
+	var req types.AddPhoneNumberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.Service.AddPhoneNumber(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// DeletePhoneNumber godoc
+// @Summary Delete account phone number
+// @Description Remove a phone number from the account's saved phone array
+// @Security BearerAuth
+// @Tags Account
+// @Accept json
+// @Produce json
+// @Param input body types.DeletePhoneNumberRequest true "Phone number payload"
+// @Success 200 {object} types.DeletePhoneNumberResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /account/phones [delete]
+func (h *AccountHandler) DeletePhoneNumber(c *gin.Context) {
+	var req types.DeletePhoneNumberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.Service.DeletePhoneNumber(ctx, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}

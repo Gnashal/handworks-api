@@ -154,6 +154,74 @@ type DeleteCustomerResponse struct {
 	Customer Customer `json:"customer"`
 }
 
+type SavedAddress struct {
+	ID        string    `json:"id"`
+	AccountID string    `json:"accountId"`
+	Address   Address   `json:"address"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type CreateAddressRequest struct {
+	AccountID string  `json:"accountId" binding:"required"`
+	Address   Address `json:"address" binding:"required"`
+}
+
+type UpdateAddressRequest struct {
+	ID        string  `json:"id" binding:"required"`
+	AccountID string  `json:"accountId" binding:"required"`
+	Address   Address `json:"address" binding:"required"`
+}
+
+type DeleteAddressRequest struct {
+	ID        string `json:"id" binding:"required"`
+	AccountID string `json:"accountId" binding:"required"`
+}
+
+type CreateAddressResponse struct {
+	Address SavedAddress `json:"address"`
+}
+
+type GetAddressResponse struct {
+	Address SavedAddress `json:"address"`
+}
+
+type GetAddressesResponse struct {
+	Addresses []SavedAddress `json:"addresses"`
+}
+
+type UpdateAddressResponse struct {
+	Address SavedAddress `json:"address"`
+}
+
+type DeleteAddressResponse struct {
+	Ok      bool         `json:"ok"`
+	Message string       `json:"message"`
+	Address SavedAddress `json:"address"`
+}
+
+type AddPhoneNumberRequest struct {
+	AccountID   string `json:"accountId" binding:"required"`
+	PhoneNumber string `json:"phoneNumber" binding:"required"`
+}
+
+type DeletePhoneNumberRequest struct {
+	AccountID   string `json:"accountId" binding:"required"`
+	PhoneNumber string `json:"phoneNumber" binding:"required"`
+}
+
+type GetPhoneNumbersResponse struct {
+	PhoneNumbers []string `json:"phoneNumbers"`
+}
+
+type AddPhoneNumberResponse struct {
+	PhoneNumbers []string `json:"phoneNumbers"`
+}
+
+type DeletePhoneNumberResponse struct {
+	PhoneNumbers []string `json:"phoneNumbers"`
+}
+
 type EmployeeTimesheet struct {
 	TimesheetId string     `json:"id" db:"id"`
 	EmployeeId  string     `json:"employee_id," db:"employee_id"`

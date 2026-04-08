@@ -68,3 +68,15 @@ func NewAdminHandler(service *services.AdminService, logger *utils.Logger) *Admi
 		Logger:  logger,
 	}
 }
+
+type NotificationHandler struct {
+	Service *services.NotificationService
+	Logger  *utils.Logger
+}
+
+func NewNotificationHandler(service *services.NotificationService, logger *utils.Logger) *NotificationHandler {
+	return &NotificationHandler{
+		Service: service,
+		Logger:  logger,
+	}
+}

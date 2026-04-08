@@ -55,6 +55,23 @@ definitions:
       serviceDetail:
         $ref: '#/definitions/types.ServiceDetails'
     type: object
+  types.AddPhoneNumberRequest:
+    properties:
+      accountId:
+        type: string
+      phoneNumber:
+        type: string
+    required:
+    - accountId
+    - phoneNumber
+    type: object
+  types.AddPhoneNumberResponse:
+    properties:
+      phoneNumbers:
+        items:
+          type: string
+        type: array
+    type: object
   types.Address:
     properties:
       addressHuman:
@@ -410,6 +427,21 @@ definitions:
       widthCm:
         type: integer
     type: object
+  types.CreateAddressRequest:
+    properties:
+      accountId:
+        type: string
+      address:
+        $ref: '#/definitions/types.Address'
+    required:
+    - accountId
+    - address
+    type: object
+  types.CreateAddressResponse:
+    properties:
+      address:
+        $ref: '#/definitions/types.SavedAddress'
+    type: object
   types.CreateBookingRequest:
     properties:
       addons:
@@ -494,6 +526,25 @@ definitions:
       id:
         type: string
     type: object
+  types.DeleteAddressRequest:
+    properties:
+      accountId:
+        type: string
+      id:
+        type: string
+    required:
+    - accountId
+    - id
+    type: object
+  types.DeleteAddressResponse:
+    properties:
+      address:
+        $ref: '#/definitions/types.SavedAddress'
+      message:
+        type: string
+      ok:
+        type: boolean
+    type: object
   types.DeleteCustomerResponse:
     properties:
       customer:
@@ -511,6 +562,23 @@ definitions:
         type: string
       ok:
         type: boolean
+    type: object
+  types.DeletePhoneNumberRequest:
+    properties:
+      accountId:
+        type: string
+      phoneNumber:
+        type: string
+    required:
+    - accountId
+    - phoneNumber
+    type: object
+  types.DeletePhoneNumberResponse:
+    properties:
+      phoneNumbers:
+        items:
+          type: string
+        type: array
     type: object
   types.Employee:
     properties:
@@ -615,6 +683,18 @@ definitions:
       sqm:
         type: integer
     type: object
+  types.GetAddressResponse:
+    properties:
+      address:
+        $ref: '#/definitions/types.SavedAddress'
+    type: object
+  types.GetAddressesResponse:
+    properties:
+      addresses:
+        items:
+          $ref: '#/definitions/types.SavedAddress'
+        type: array
+    type: object
   types.GetAllCustomersResponse:
     properties:
       customers:
@@ -653,6 +733,13 @@ definitions:
         type: integer
       totalPayments:
         type: integer
+    type: object
+  types.GetPhoneNumbersResponse:
+    properties:
+      phoneNumbers:
+        items:
+          type: string
+        type: array
     type: object
   types.GrowthIndex:
     properties:
@@ -1203,6 +1290,19 @@ definitions:
       type:
         type: string
     type: object
+  types.SavedAddress:
+    properties:
+      accountId:
+        type: string
+      address:
+        $ref: '#/definitions/types.Address'
+      createdAt:
+        type: string
+      id:
+        type: string
+      updatedAt:
+        type: string
+    type: object
   types.ServiceDetail:
     properties:
       car:
@@ -1318,6 +1418,35 @@ definitions:
       employee:
         $ref: '#/definitions/types.Employee'
     type: object
+  types.SubscribeNotificationRequest:
+    properties:
+      adminId:
+        type: string
+      customerId:
+        type: string
+      employeeId:
+        type: string
+      installationId:
+        type: string
+      platform:
+        type: string
+      role:
+        type: string
+      token:
+        type: string
+    required:
+    - role
+    - token
+    type: object
+  types.SubscribeNotificationResponse:
+    properties:
+      ok:
+        type: boolean
+      topics:
+        items:
+          type: string
+        type: array
+    type: object
   types.TimeInRequest:
     properties:
       employee_id:
@@ -1345,6 +1474,45 @@ definitions:
         type: integer
       name:
         type: string
+    type: object
+  types.UnsubscribeNotificationRequest:
+    properties:
+      adminId:
+        type: string
+      customerId:
+        type: string
+      employeeId:
+        type: string
+      role:
+        type: string
+      token:
+        type: string
+    required:
+    - role
+    - token
+    type: object
+  types.UnsubscribeNotificationResponse:
+    properties:
+      ok:
+        type: boolean
+    type: object
+  types.UpdateAddressRequest:
+    properties:
+      accountId:
+        type: string
+      address:
+        $ref: '#/definitions/types.Address'
+      id:
+        type: string
+    required:
+    - accountId
+    - address
+    - id
+    type: object
+  types.UpdateAddressResponse:
+    properties:
+      address:
+        $ref: '#/definitions/types.SavedAddress'
     type: object
   types.UpdateCustomerRequest:
     properties:
@@ -1483,6 +1651,173 @@ info:
   title: Handworks API
   version: "1.0"
 paths:
+  /account/address/:
+    get:
+      description: Retrieve a single saved address from an account
+      parameters:
+      - description: Address ID
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Account ID
+        in: query
+        name: accountId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get saved address by ID
+      tags:
+      - Account
+    post:
+      consumes:
+      - application/json
+      description: Save an address to an account for easier future bookings
+      parameters:
+      - description: Address data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CreateAddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Save a customer address
+      tags:
+      - Account
+  /account/address/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a saved account address by ID
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Delete address payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.DeleteAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.DeleteAddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a saved address
+      tags:
+      - Account
+    put:
+      consumes:
+      - application/json
+      description: Update a saved account address by ID
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Updated address data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.UpdateAddressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a saved address
+      tags:
+      - Account
+  /account/address/addresses:
+    get:
+      description: Retrieve all saved addresses for an account
+      parameters:
+      - description: Account ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetAddressesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all saved addresses by account
+      tags:
+      - Account
   /account/admin/signup:
     post:
       consumes:
@@ -1982,6 +2317,97 @@ paths:
       security:
       - BearerAuth: []
       summary: Get today's timesheet
+      tags:
+      - Account
+  /account/phones:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a phone number from the account's saved phone array
+      parameters:
+      - description: Phone number payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.DeletePhoneNumberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.DeletePhoneNumberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete account phone number
+      tags:
+      - Account
+    get:
+      description: Retrieve saved phone numbers from an account
+      parameters:
+      - description: Account ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.GetPhoneNumbersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get account phone numbers
+      tags:
+      - Account
+    post:
+      consumes:
+      - application/json
+      description: Add a phone number to the account's saved phone array
+      parameters:
+      - description: Phone number payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.AddPhoneNumberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AddPhoneNumberResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add account phone number
       tags:
       - Account
   /admin/booking/approve/{id}:
@@ -2734,6 +3160,71 @@ paths:
       summary: Get inventory items
       tags:
       - Inventory
+  /notifications/subscribe:
+    post:
+      consumes:
+      - application/json
+      description: Subscribes an FCM token to admin or employee topic based on role
+      parameters:
+      - description: Subscription request
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.SubscribeNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.SubscribeNotificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Subscribe a device token to notification topics
+      tags:
+      - Notifications
+  /notifications/unsubscribe:
+    post:
+      consumes:
+      - application/json
+      description: Deactivates token persistence and removes topic subscription for
+        admin or employee role
+      parameters:
+      - description: Unsubscription request
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.UnsubscribeNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.UnsubscribeNotificationResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Unsubscribe a device token from notification topics
+      tags:
+      - Notifications
   /payment/customer:
     get:
       consumes:

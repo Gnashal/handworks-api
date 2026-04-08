@@ -288,6 +288,196 @@ func (t *AccountTasks) DeleteEmployeeData(c context.Context, tx pgx.Tx, empId, a
 	emp.Account = acc
 	return &emp, nil
 }
+
+func (t *AccountTasks) CreateAddress(c context.Context, tx pgx.Tx, accountID string, address types.Address) (*types.SavedAddress, error) {
+	var saved types.SavedAddress
+	err := tx.QueryRow(c,
+		`INSERT INTO account.addresses (account_id, address_human, address_lat, address_lng)
+		 VALUES ($1, $2, $3, $4)
+		 RETURNING id, account_id, address_human, address_lat, address_lng, created_at, updated_at`,
+		accountID,
+		address.AddressHuman,
+		address.AddressLat,
+		address.AddressLng,
+	).Scan(
+		&saved.ID,
+		&saved.AccountID,
+		&saved.Address.AddressHuman,
+		&saved.Address.AddressLat,
+		&saved.Address.AddressLng,
+		&saved.CreatedAt,
+		&saved.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not create address: %w", err)
+	}
+	return &saved, nil
+}
+
+func (t *AccountTasks) FetchAddressByID(c context.Context, tx pgx.Tx, id, accountID string) (*types.SavedAddress, error) {
+	var saved types.SavedAddress
+	err := tx.QueryRow(c,
+		`SELECT id, account_id, address_human, address_lat, address_lng, created_at, updated_at
+		 FROM account.addresses
+		 WHERE id = $1 AND account_id = $2`,
+		id,
+		accountID,
+	).Scan(
+		&saved.ID,
+		&saved.AccountID,
+		&saved.Address.AddressHuman,
+		&saved.Address.AddressLat,
+		&saved.Address.AddressLng,
+		&saved.CreatedAt,
+		&saved.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not query address with id %s: %w", id, err)
+	}
+	return &saved, nil
+}
+
+func (t *AccountTasks) FetchAddressesByAccountID(c context.Context, tx pgx.Tx, accountID string) ([]types.SavedAddress, error) {
+	rows, err := tx.Query(c,
+		`SELECT id, account_id, address_human, address_lat, address_lng, created_at, updated_at
+		 FROM account.addresses
+		 WHERE account_id = $1
+		 ORDER BY created_at DESC`,
+		accountID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not query addresses by account id %s: %w", accountID, err)
+	}
+	defer rows.Close()
+
+	addresses := make([]types.SavedAddress, 0)
+	for rows.Next() {
+		var saved types.SavedAddress
+		if err := rows.Scan(
+			&saved.ID,
+			&saved.AccountID,
+			&saved.Address.AddressHuman,
+			&saved.Address.AddressLat,
+			&saved.Address.AddressLng,
+			&saved.CreatedAt,
+			&saved.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("could not scan addresses: %w", err)
+		}
+		addresses = append(addresses, saved)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("could not iterate addresses: %w", err)
+	}
+
+	return addresses, nil
+}
+
+func (t *AccountTasks) UpdateAddress(c context.Context, tx pgx.Tx, id, accountID string, address types.Address) (*types.SavedAddress, error) {
+	var saved types.SavedAddress
+	err := tx.QueryRow(c,
+		`UPDATE account.addresses
+		 SET address_human = $1,
+		     address_lat = $2,
+		     address_lng = $3,
+		     updated_at = NOW()
+		 WHERE id = $4 AND account_id = $5
+		 RETURNING id, account_id, address_human, address_lat, address_lng, created_at, updated_at`,
+		address.AddressHuman,
+		address.AddressLat,
+		address.AddressLng,
+		id,
+		accountID,
+	).Scan(
+		&saved.ID,
+		&saved.AccountID,
+		&saved.Address.AddressHuman,
+		&saved.Address.AddressLat,
+		&saved.Address.AddressLng,
+		&saved.CreatedAt,
+		&saved.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not update address with id %s: %w", id, err)
+	}
+	return &saved, nil
+}
+
+func (t *AccountTasks) DeleteAddress(c context.Context, tx pgx.Tx, id, accountID string) (*types.SavedAddress, error) {
+	var saved types.SavedAddress
+	err := tx.QueryRow(c,
+		`DELETE FROM account.addresses
+		 WHERE id = $1 AND account_id = $2
+		 RETURNING id, account_id, address_human, address_lat, address_lng, created_at, updated_at`,
+		id,
+		accountID,
+	).Scan(
+		&saved.ID,
+		&saved.AccountID,
+		&saved.Address.AddressHuman,
+		&saved.Address.AddressLat,
+		&saved.Address.AddressLng,
+		&saved.CreatedAt,
+		&saved.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("could not delete address with id %s: %w", id, err)
+	}
+	return &saved, nil
+}
+
+func (t *AccountTasks) FetchPhoneNumbers(c context.Context, tx pgx.Tx, accountID string) ([]string, error) {
+	phoneNumbers := make([]string, 0)
+	err := tx.QueryRow(c,
+		`SELECT COALESCE(phone_numbers, '{}'::text[])
+		 FROM account.accounts
+		 WHERE id = $1`,
+		accountID,
+	).Scan(&phoneNumbers)
+	if err != nil {
+		return nil, fmt.Errorf("could not fetch phone numbers for account id %s: %w", accountID, err)
+	}
+	return phoneNumbers, nil
+}
+
+func (t *AccountTasks) AddPhoneNumber(c context.Context, tx pgx.Tx, accountID, phoneNumber string) ([]string, error) {
+	phoneNumbers := make([]string, 0)
+	err := tx.QueryRow(c,
+		`UPDATE account.accounts
+		 SET phone_numbers = CASE
+		 	WHEN $2 = ANY(phone_numbers) THEN phone_numbers
+		 	ELSE array_append(phone_numbers, $2)
+		 END,
+		 updated_at = NOW()
+		 WHERE id = $1
+		 RETURNING COALESCE(phone_numbers, '{}'::text[])`,
+		accountID,
+		phoneNumber,
+	).Scan(&phoneNumbers)
+	if err != nil {
+		return nil, fmt.Errorf("could not add phone number for account id %s: %w", accountID, err)
+	}
+	return phoneNumbers, nil
+}
+
+func (t *AccountTasks) DeletePhoneNumber(c context.Context, tx pgx.Tx, accountID, phoneNumber string) ([]string, error) {
+	phoneNumbers := make([]string, 0)
+	err := tx.QueryRow(c,
+		`UPDATE account.accounts
+		 SET phone_numbers = array_remove(phone_numbers, $2),
+		 updated_at = NOW()
+		 WHERE id = $1
+		 RETURNING COALESCE(phone_numbers, '{}'::text[])`,
+		accountID,
+		phoneNumber,
+	).Scan(&phoneNumbers)
+	if err != nil {
+		return nil, fmt.Errorf("could not delete phone number for account id %s: %w", accountID, err)
+	}
+	return phoneNumbers, nil
+}
+
 func (t *AccountTasks) AddPerformanceScore(c context.Context, tx pgx.Tx, newScore float32, empId string) error {
 
 	args := pgx.NamedArgs{

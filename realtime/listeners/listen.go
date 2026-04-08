@@ -16,6 +16,8 @@ type Listener struct {
 	ctx              context.Context
 	log              *utils.Logger
 	hub              *realtime.RealtimeHubs
+	notifier         *services.NotificationService
+	dualRunWebsocket bool
 	listener         *pq.Listener
 	bookingService   *services.BookingService
 	inventoryService *services.InventoryService
@@ -25,13 +27,17 @@ func NewListener(
 	ctx context.Context,
 	log *utils.Logger,
 	hub *realtime.RealtimeHubs,
+	notifier *services.NotificationService,
+	dualRunWebsocket bool,
 	connString string,
 	bookingService *services.BookingService,
 	inventoryService *services.InventoryService) *Listener {
 	return &Listener{
-		ctx: ctx,
-		log: log,
-		hub: hub,
+		ctx:              ctx,
+		log:              log,
+		hub:              hub,
+		notifier:         notifier,
+		dualRunWebsocket: dualRunWebsocket,
 		listener: pq.NewListener(
 			connString,
 			10*time.Second,
@@ -118,7 +124,7 @@ func (l *Listener) handleBookingAccepted(payload string) {
 	}
 
 	for _, cleanerID := range evt.CleanerIDs {
-		l.hub.EmployeeHub.SendToEmployee(cleanerID, "booking.accepted", booking)
+		l.sendToEmployee(cleanerID, "booking.accepted", booking)
 	}
 }
 func (l *Listener) handleBookingCreated(payload string) {
@@ -137,7 +143,7 @@ func (l *Listener) handleBookingCreated(payload string) {
 		return
 	}
 
-	l.hub.AdminHub.SendToAdmin("booking.created", booking)
+	l.sendToAdmin("booking.created", booking)
 }
 
 func (l *Listener) handleInventoryLow(payload string) {
@@ -155,6 +161,31 @@ func (l *Listener) handleInventoryLow(payload string) {
 		l.log.Error("Failed to get inventory item by ID: %v", err)
 		return
 	}
-	l.hub.AdminHub.SendToAdmin("inventory.low", inventory)
+	l.sendToAdmin("inventory.low", inventory)
+
+}
+
+func (l *Listener) sendToAdmin(event string, payload any) {
+	if l.notifier != nil {
+		if err := l.notifier.SendToAdmins(l.ctx, event, payload); err != nil {
+			l.log.Error("Failed to send FCM admin event (%s): %v", event, err)
+		}
+	}
+
+	if l.dualRunWebsocket && l.hub != nil && l.hub.AdminHub != nil {
+		l.hub.AdminHub.SendToAdmin(event, payload)
+	}
+}
+
+func (l *Listener) sendToEmployee(employeeID string, event string, payload any) {
+	if l.notifier != nil {
+		if err := l.notifier.SendToEmployee(l.ctx, employeeID, event, payload); err != nil {
+			l.log.Error("Failed to send FCM employee event (%s, %s): %v", employeeID, event, err)
+		}
+	}
+
+	if l.dualRunWebsocket && l.hub != nil && l.hub.EmployeeHub != nil {
+		l.hub.EmployeeHub.SendToEmployee(employeeID, event, payload)
+	}
 
 }
