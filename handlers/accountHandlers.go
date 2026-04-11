@@ -612,7 +612,6 @@ func (h *AccountHandler) UpdateAddress(c *gin.Context) {
 // @Tags Account
 // @Accept json
 // @Produce json
-// @Param id path string true "Address ID"
 // @Param input body types.DeleteAddressRequest true "Delete address payload"
 // @Success 200 {object} types.DeleteAddressResponse
 // @Failure 400 {object} types.ErrorResponse
@@ -620,7 +619,6 @@ func (h *AccountHandler) UpdateAddress(c *gin.Context) {
 // @Router /account/address/{id} [delete]
 func (h *AccountHandler) DeleteAddress(c *gin.Context) {
 	var req types.DeleteAddressRequest
-	req.ID = c.Param("id")
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
