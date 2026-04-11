@@ -34,7 +34,6 @@ func (s *AccountService) withTx(
 // Customer methods
 func (s *AccountService) SignUpCustomer(ctx context.Context, req types.SignUpCustomerRequest) (*types.SignUpCustomerResponse, error) {
 	var customer types.Customer
-
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		acc, err := s.Tasks.CreateAccount(ctx, tx, req.FirstName, req.LastName, req.Email, req.Provider, req.ClerkID, req.Role)
 		if err != nil {
@@ -46,7 +45,7 @@ func (s *AccountService) SignUpCustomer(ctx context.Context, req types.SignUpCus
 			return err
 		}
 		customer.ID = id
-		err = s.Tasks.UpdateCustomerMetadata(ctx, tx, customer.ID, req.ClerkID)
+		err = s.Tasks.UpdateCustomerMetadata(ctx, tx, customer.ID, customer.Account.ID, req.ClerkID)
 		if err != nil {
 			return err
 		}
@@ -170,7 +169,7 @@ func (s *AccountService) SignUpEmployee(ctx context.Context, req types.SignUpEmp
 			return err
 		}
 		employee = *emp
-		err = s.Tasks.UpdateEmployeeMetadata(ctx, tx, employee.ID, req.ClerkID)
+		err = s.Tasks.UpdateEmployeeMetadata(ctx, tx, employee.ID, acc.ID, req.ClerkID)
 		if err != nil {
 			return err
 		}
@@ -289,7 +288,7 @@ func (s *AccountService) SignUpAdmin(ctx context.Context, req types.SignUpAdminR
 			return err
 		}
 		admin.ID = id
-		err = s.Tasks.UpdateAdminMetadata(ctx, tx, admin.ID, req.ClerkID)
+		err = s.Tasks.UpdateAdminMetadata(ctx, tx, admin.ID, admin.Account.ID, req.ClerkID)
 		if err != nil {
 			return err
 		}

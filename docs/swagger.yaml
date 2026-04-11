@@ -1722,11 +1722,6 @@ paths:
       - application/json
       description: Delete a saved account address by ID
       parameters:
-      - description: Address ID
-        in: path
-        name: id
-        required: true
-        type: string
       - description: Delete address payload
         in: body
         name: input

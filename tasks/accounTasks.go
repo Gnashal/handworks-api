@@ -513,8 +513,8 @@ func (a *AccountTasks) UpdateStatus(c context.Context, tx pgx.Tx, status, empId 
 	}
 	return nil
 }
-func (a *AccountTasks) UpdateCustomerMetadata(c context.Context, tx pgx.Tx, customerId, clerkId string) error {
-	metadata := map[string]string{"custId": customerId}
+func (a *AccountTasks) UpdateCustomerMetadata(c context.Context, tx pgx.Tx, customerId, accId, clerkId string) error {
+	metadata := map[string]string{"custId": customerId, "accId": accId}
 	jsonData, err := json.Marshal(metadata)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
@@ -529,8 +529,8 @@ func (a *AccountTasks) UpdateCustomerMetadata(c context.Context, tx pgx.Tx, cust
 	}
 	return nil
 }
-func (a *AccountTasks) UpdateEmployeeMetadata(c context.Context, tx pgx.Tx, employeeId, clerkId string) error {
-	metadata := map[string]string{"empId": employeeId}
+func (a *AccountTasks) UpdateEmployeeMetadata(c context.Context, tx pgx.Tx, employeeId, accId, clerkId string) error {
+	metadata := map[string]string{"empId": employeeId, "accId": accId}
 	jsonData, err := json.Marshal(metadata)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
@@ -545,8 +545,8 @@ func (a *AccountTasks) UpdateEmployeeMetadata(c context.Context, tx pgx.Tx, empl
 	}
 	return nil
 }
-func (a *AccountTasks) UpdateAdminMetadata(c context.Context, tx pgx.Tx, adminId, clerkId string) error {
-	metadata := map[string]string{"adminId": adminId}
+func (a *AccountTasks) UpdateAdminMetadata(c context.Context, tx pgx.Tx, adminId, accId, clerkId string) error {
+	metadata := map[string]string{"adminId": adminId, "accId": accId}
 	jsonData, err := json.Marshal(metadata)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)

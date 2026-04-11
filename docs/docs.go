@@ -239,13 +239,6 @@ const docTemplate = `{
                 "summary": "Delete a saved address",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Address ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Delete address payload",
                         "name": "input",
                         "in": "body",
