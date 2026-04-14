@@ -9,3 +9,5 @@ bin/
 dist/
 .gitignore
 .DS_Store
+
+service_key.json

@@ -129,6 +129,30 @@ func (h *BookingHandler) GetBookings(c *gin.Context) {
 
 }
 
+// GetBookingsToday godoc
+// @Summary Get all bookings for today
+// @Description Retrieve all bookings scheduled for the current server date
+// @Tags Booking
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.FetchBookingsTodayResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/today [get]
+func (h *BookingHandler) GetBookingsToday(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.Service.GetBookingsToday(ctx)
+	if err != nil {
+		h.Logger.Error("failed to get today's bookings: %v", err)
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // GetCustomerBookings godoc
 // @Summary Get customer bookings
 // @Description Get bookings for a specific customer using query parameters

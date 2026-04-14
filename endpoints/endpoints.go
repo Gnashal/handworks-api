@@ -38,6 +38,22 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 	{
 		admin.POST("/signup", h.SignUpAdmin)
 	}
+	address := r.Group("/address")
+	{
+		address.GET("/", h.GetAddress)
+		address.GET("/addresses", h.GetAddresses)
+		address.POST("/", h.CreateAddress)
+		address.PUT("/:id", h.UpdateAddress)
+		address.DELETE("/:id", h.DeleteAddress)
+	}
+
+	phones := r.Group("/phones")
+	{
+		phones.GET("", h.GetPhoneNumbers)
+		phones.POST("", h.AddPhoneNumber)
+		phones.DELETE("", h.DeletePhoneNumber)
+	}
+
 }
 func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
 	r.POST("/create", h.CreateItem)
@@ -49,6 +65,7 @@ func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
 func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.GET("/", h.GetBookingById)
 	r.GET("/bookings", h.GetBookings)
+	r.GET("/today", h.GetBookingsToday)
 	r.GET("/slots", h.GetBookedSlots)
 	r.POST("/", h.CreateBooking)
 	r.PUT("/:id", h.UpdateBooking)
@@ -114,6 +131,7 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	}
 	bookings := r.Group("/booking")
 	{
+		bookings.GET("/calendar", h.GetCalendarBookings)
 		bookings.POST("/approve/:id", h.AcceptBooking)
 	}
 	inventory := r.Group("/inventory")
@@ -127,4 +145,9 @@ func RealtimeEndpoint(r *gin.RouterGroup, hubs *realtime.RealtimeHubs) {
 	r.GET("/ws/admin", realtime.AdminWS(hubs.AdminHub))
 	r.GET("/ws/employee", realtime.EmployeeWS(hubs.EmployeeHub))
 	r.GET("/ws/chat", realtime.ChatWS(hubs.ChatHub))
+}
+
+func NotificationEndpoint(r *gin.RouterGroup, h *handlers.NotificationHandler) {
+	r.POST("/subscribe", h.SubscribeToken)
+	r.POST("/unsubscribe", h.UnsubscribeToken)
 }

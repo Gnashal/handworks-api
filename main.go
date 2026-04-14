@@ -11,6 +11,7 @@ import (
 	"handworks-api/services"
 	"handworks-api/utils"
 	"os"
+	"strconv"
 
 	_ "handworks-api/docs"
 
@@ -76,6 +77,9 @@ func main() {
 
 	// public paths for Clerk middleware
 	publicPaths := []string{
+		"/api/account/address",
+		"/api/account/phones",
+		"/api/ws/employee",
 		"/api/account/customer/signup",
 		"/api/account/employee/signup",
 		"/api/account/admin/signup",
@@ -92,11 +96,41 @@ func main() {
 	bookingService := services.NewBookingService(conn, logger, paymentService)
 	adminServie := services.NewAdminService(conn, logger, accountService)
 
+	fcmCredentialsFile := os.Getenv("FIREBASE_CREDENTIALS_FILE")
+
+	firebaseProjectID := os.Getenv("FIREBASE_PROJECT_ID")
+	fcmAdminTopic := os.Getenv("FCM_ADMIN_TOPIC")
+
+	fcmEmployeeTopicPrefix := os.Getenv("FCM_EMPLOYEE_TOPIC_PREFIX")
+	fcmCustomerTopicPrefix := os.Getenv("FCM_CUSTOMER_TOPIC_PREFIX")
+
+	fcmDualRunWebsocket := true
+	if raw := os.Getenv("FCM_DUAL_RUN_WEBSOCKET"); raw != "" {
+		parsed, parseErr := strconv.ParseBool(raw)
+		if parseErr != nil {
+			logger.Fatal("Invalid FCM_DUAL_RUN_WEBSOCKET value: %v", parseErr)
+		}
+		fcmDualRunWebsocket = parsed
+	}
+
+	var fcmService *services.FCMService
+	if firebaseProjectID != "" {
+		fcmService, err = services.NewFCMService(c, logger, fcmCredentialsFile, firebaseProjectID, fcmAdminTopic, fcmEmployeeTopicPrefix, fcmCustomerTopicPrefix)
+		if err != nil {
+			logger.Fatal("Failed to initialize FCM service: %v", err)
+		}
+		logger.Info("FCM sender initialized")
+	} else {
+		logger.Warn("FIREBASE_PROJECT_ID not set, FCM sender disabled")
+	}
+	notificationService := services.NewNotificationService(conn, logger, fcmService)
+
 	accountHandler := handlers.NewAccountHandler(accountService, logger)
 	inventoryHandler := handlers.NewInventoryHandler(inventoryService, logger)
 	bookingHandler := handlers.NewBookingHandler(bookingService, logger)
 	paymentHandler := handlers.NewPaymentHandler(paymentService, logger)
 	adminHandler := handlers.NewAdminHandler(adminServie, logger)
+	notificationHandler := handlers.NewNotificationHandler(notificationService, logger)
 
 	api := router.Group("/api")
 	api.Use(middleware.ClerkAuthMiddleware(publicPaths, logger))
@@ -106,6 +140,7 @@ func main() {
 		endpoints.BookingEndpoint(api.Group("/booking"), bookingHandler)
 		endpoints.PaymentEndpoint(api.Group("/payment"), paymentHandler)
 		endpoints.AdminEndpoint(api.Group("/admin"), adminHandler)
+		endpoints.NotificationEndpoint(api.Group("/notifications"), notificationHandler)
 		endpoints.RealtimeEndpoint(api, hubs)
 	}
 
@@ -119,6 +154,8 @@ func main() {
 		c,
 		logger,
 		hubs,
+		notificationService,
+		fcmDualRunWebsocket,
 		os.Getenv("DB_CONN_REALTIME"),
 		bookingService,
 		inventoryService,

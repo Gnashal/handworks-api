@@ -437,6 +437,26 @@ func (t *BookingTasks) FetchAllEmployeeAssignedBookings(
 	return &response, nil
 }
 
+func (t *BookingTasks) ValidateSessionStart(ctx context.Context, tx pgx.Tx, bookingID string) (bool, time.Time, error) {
+	query := `SELECT bb.startsched
+		FROM booking.basebookings bb
+		JOIN booking.bookings b ON b.base_booking_id = bb.id
+		WHERE b.id = $1
+		AND bb.status = 'NOT_STARTED'
+		AND bb.reviewstatus = 'SCHEDULED'`
+
+	var startSched time.Time
+	err := tx.QueryRow(ctx, query, bookingID).Scan(&startSched)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false, time.Time{}, nil
+		}
+		return false, time.Time{}, fmt.Errorf("failed to validate session start: %w", err)
+	}
+
+	return true, startSched, nil
+}
+
 func (t *BookingTasks) StartSession(ctx context.Context, tx pgx.Tx, bookingID string) error {
 	_, err := tx.Exec(ctx,
 		`UPDATE booking.basebookings
@@ -478,6 +498,25 @@ func (t *BookingTasks) FetchBookingSlots(
 	if err := json.Unmarshal(rawJSON, &response); err != nil {
 		logger.Error("failed to unmarshal booking slots JSON: %v", err)
 		return nil, fmt.Errorf("unmarshal booking slots: %w", err)
+	}
+	return &response, nil
+}
+
+func (t *BookingTasks) FetchBookingsToday(ctx context.Context, tx pgx.Tx, logger *utils.Logger) (*types.FetchBookingsTodayResponse, error) {
+	var rawJSON []byte
+
+	err := tx.QueryRow(ctx,
+		`SELECT booking.get_bookings_today()`,
+	).Scan(&rawJSON)
+	if err != nil {
+		logger.Error("failed to call get_bookings_today sproc: %v", err)
+		return nil, fmt.Errorf("failed calling sproc get_bookings_today: %w", err)
+	}
+
+	var response types.FetchBookingsTodayResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal today's bookings JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal today's bookings: %w", err)
 	}
 	return &response, nil
 }

@@ -36,7 +36,7 @@ func (s *AdminService) GetAdminDashboard(ctx context.Context, req *types.AdminDa
 		res, err = s.Tasks.FetchAdminDashboardData(ctx, tx, s.Logger, req.DateFilter)
 		return err
 	}); err != nil {
-		s.Logger.Error("Failed to fetch Quotes: %v", err)
+		s.Logger.Error("Failed to fetch admin dashboard analytics: %v", err)
 		return nil, err
 	}
 
@@ -116,4 +116,19 @@ func (s *AdminService) AssignEquipmentToBooking(ctx context.Context, req *types.
 		BookingID: req.BookingID,
 		Message:   "Equipment assigned successfully",
 	}, nil
+}
+
+func (s *AdminService) GetCalendarBookings(ctx context.Context, month string) (*types.CalendarBookingResponse, error) {
+	var res *types.CalendarBookingResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		res, err = s.Tasks.FetchCalendarBookings(ctx, tx, month)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch calendar bookings: %v", err)
+		return nil, err
+	}
+
+	return res, nil
 }

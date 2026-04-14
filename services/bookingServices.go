@@ -55,11 +55,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			return err
 		}
 
-		allocation, err := s.Tasks.AllocateEquipmentAndResources(ctx, tx, &req)
-		if err != nil {
-			return err
-		}
-
 		mainService, err := s.Tasks.CreateMainServiceBooking(ctx, tx, s.Logger, req.MainService.Details)
 		if err != nil {
 			return err
@@ -111,17 +106,6 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			addonModels = append(addonModels, *createdAddon)
 			addonIDs = append(addonIDs, createdAddon.ID)
 		}
-
-		equipmentIDs := make([]string, 0, len(allocation.CleaningEquipment))
-		for _, eq := range allocation.CleaningEquipment {
-			equipmentIDs = append(equipmentIDs, eq.ID)
-		}
-
-		resourceIDs := make([]string, 0, len(allocation.CleaningResources))
-		for _, r := range allocation.CleaningResources {
-			resourceIDs = append(resourceIDs, r.ID)
-		}
-
 		cleanerIDs := make([]string, 0, len(cleaners))
 		for _, c := range cleaners {
 			cleanerIDs = append(cleanerIDs, c.ID)
@@ -133,8 +117,8 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			baseBook.ID,
 			mainService.ID,
 			addonIDs,
-			equipmentIDs,
-			resourceIDs,
+			[]string{},
+			[]string{},
 			cleanerIDs,
 			prices.MainServicePrice,
 			extraHourCost,
@@ -148,8 +132,8 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 			Base:        *baseBook,
 			MainService: *mainService,
 			Addons:      addonModels,
-			Equipments:  allocation.CleaningEquipment,
-			Resources:   allocation.CleaningResources,
+			Equipments:  []types.CleaningEquipment{},
+			Resources:   []types.CleaningResources{},
 			Cleaners:    cleaners,
 			TotalPrice:  prices.MainServicePrice + extraHourCost,
 		}
@@ -253,6 +237,22 @@ func (s *BookingService) GetBookedSlots(ctx context.Context, date string) (*type
 
 func (s *BookingService) StartSession(ctx context.Context, bookingID string) error {
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		canStart, startSched, err := s.Tasks.ValidateSessionStart(ctx, tx, bookingID)
+		if err != nil {
+			return err
+		}
+		if !canStart {
+			return fmt.Errorf("booking cannot be started in its current state")
+		}
+
+		now := time.Now()
+		startSchedLocal := startSched.In(now.Location())
+		nowYear, nowMonth, nowDay := now.Date()
+		startYear, startMonth, startDay := startSchedLocal.Date()
+		if nowYear != startYear || nowMonth != startMonth || nowDay != startDay {
+			return fmt.Errorf("session can only be started within today's timeframe")
+		}
+
 		return s.Tasks.StartSession(ctx, tx, bookingID)
 	}); err != nil {
 		s.Logger.Error("failed to start session for booking %s: %v", bookingID, err)
@@ -269,6 +269,24 @@ func (s *BookingService) EndSession(ctx context.Context, bookingID string) error
 		return err
 	}
 	return nil
+}
+
+func (s *BookingService) GetBookingsToday(ctx context.Context) (types.FetchBookingsTodayResponse, error) {
+	var bookings types.FetchBookingsTodayResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		result, err := s.Tasks.FetchBookingsToday(ctx, tx, s.Logger)
+		if err != nil {
+			return err
+		}
+		bookings = *result
+		return nil
+	}); err != nil {
+		s.Logger.Error("failed to fetch today's bookings: %v", err)
+		return types.FetchBookingsTodayResponse{}, fmt.Errorf("failed to get today's bookings: %w", err)
+	}
+	return bookings, nil
+
 }
 
 func (s *BookingService) UpdateBooking(ctx context.Context) error {
