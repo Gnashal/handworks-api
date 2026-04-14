@@ -56,7 +56,7 @@ func AccountEndpoint(r *gin.RouterGroup, h *handlers.AccountHandler) {
 
 }
 func InventoryEndpoint(r *gin.RouterGroup, h *handlers.InventoryHandler) {
-	r.POST("/create", h.CreateItem)
+	r.POST("/", h.CreateItem)
 	r.GET("/", h.GetItem)
 	r.GET("/items", h.GetItems)
 	r.PUT("/", h.UpdateItem)
