@@ -235,6 +235,21 @@ func (s *BookingService) GetBookedSlots(ctx context.Context, date string) (*type
 	return result, nil
 }
 
+func (s *BookingService) GetUsedInventoryByBooking(ctx context.Context, bookingID string, itemType string) ([]types.UsedInventoryItem, error) {
+	var result []types.UsedInventoryItem
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		result, err = s.Tasks.FetchUsedInventoryByBooking(ctx, tx, bookingID, itemType)
+		return err
+	}); err != nil {
+		s.Logger.Error("failed to fetch used inventory by booking: %v", err)
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (s *BookingService) StartSession(ctx context.Context, bookingID string, startPhotos []string) error {
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		canStart, startSched, err := s.Tasks.ValidateSessionStart(ctx, tx, bookingID)

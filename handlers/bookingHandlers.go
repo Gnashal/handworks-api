@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"handworks-api/types"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -37,6 +39,46 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+// GetUsedInventoryByBooking godoc
+// @Summary Get used inventory items in a booking
+// @Description Returns used inventory entries filtered by RESOURCE or EQUIPMENT type
+// @Tags Booking
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param bookingId query string true "Booking ID"
+// @Param type query string true "Inventory type (RESOURCE or EQUIPMENT)"
+// @Success 200 {array} types.UsedInventoryItem
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/inventory-used [get]
+func (h *BookingHandler) GetUsedInventoryByBooking(c *gin.Context) {
+	bookingID := c.Query("bookingId")
+	itemType := strings.ToUpper(strings.TrimSpace(c.Query("type")))
+
+	if bookingID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("bookingId query parameter is required")))
+		return
+	}
+
+	if itemType != string(types.ItemTypeResource) && itemType != string(types.ItemTypeEquipment) {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("type must be RESOURCE or EQUIPMENT")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.Service.GetUsedInventoryByBooking(ctx, bookingID, itemType)
+	if err != nil {
+		h.Logger.Error("failed to get used inventory by booking: %v", err)
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 // GetBookings godoc

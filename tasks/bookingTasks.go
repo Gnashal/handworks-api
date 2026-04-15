@@ -545,6 +545,46 @@ func (t *BookingTasks) FetchBookingSlots(
 	return &response, nil
 }
 
+func (t *BookingTasks) FetchUsedInventoryByBooking(ctx context.Context, tx pgx.Tx, bookingID string, itemType string) ([]types.UsedInventoryItem, error) {
+	rows, err := tx.Query(ctx,
+		`SELECT biu.item_id, COALESCE(i.image_url, ''), biu.quantity_used
+		 FROM booking.bookings b
+		 JOIN booking.booking_inventory_used biu
+		   ON biu.id = ANY(
+				CASE
+					WHEN $2 = 'RESOURCE' THEN COALESCE(b.resource_ids, ARRAY[]::uuid[])
+					WHEN $2 = 'EQUIPMENT' THEN COALESCE(b.equipment_ids, ARRAY[]::uuid[])
+					ELSE ARRAY[]::uuid[]
+				END
+			)
+		 JOIN inventory.items i
+		   ON i.id = biu.item_id
+		 WHERE b.id = $1
+		   AND biu.item_type = $2`,
+		bookingID,
+		itemType,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch used inventory for booking: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]types.UsedInventoryItem, 0)
+	for rows.Next() {
+		var item types.UsedInventoryItem
+		if scanErr := rows.Scan(&item.ID, &item.ImageURL, &item.Quantity); scanErr != nil {
+			return nil, fmt.Errorf("failed to scan used inventory row: %w", scanErr)
+		}
+		items = append(items, item)
+	}
+
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("failed iterating used inventory rows: %w", rows.Err())
+	}
+
+	return items, nil
+}
+
 func (t *BookingTasks) FetchBookingsToday(ctx context.Context, tx pgx.Tx, logger *utils.Logger) (*types.FetchBookingsTodayResponse, error) {
 	var rawJSON []byte
 

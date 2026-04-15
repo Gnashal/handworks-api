@@ -260,6 +260,12 @@ type FetchBookingsTodayResponse struct {
 	} `json:"bookings"`
 }
 
+type UsedInventoryItem struct {
+	ID       string  `json:"id"`
+	ImageURL string  `json:"imageUrl"`
+	Quantity float64 `json:"quantity"`
+}
+
 type StartSessionRequest struct {
 	BookingID   string   `json:"bookingId" binding:"required"`
 	StartPhotos []string `json:"startPhotos" binding:"required,min=1"`
