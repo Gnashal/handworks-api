@@ -59,6 +59,9 @@ func (l *Listener) Start() error {
 	if err := l.listener.Listen("booking_accepted"); err != nil {
 		return err
 	}
+	if err := l.listener.Listen("booking_ongoing"); err != nil {
+		return err
+	}
 	if err := l.listener.Listen("inventory_low"); err != nil {
 		return err
 	}
@@ -97,6 +100,8 @@ func (l *Listener) dispatch(channel string, payload string) {
 		l.handleBookingCreated(payload)
 	case "booking_accepted":
 		l.handleBookingAccepted(payload)
+	case "booking_ongoing":
+		l.handleBookingOngoing(payload)
 	case "inventory_low":
 		l.handleInventoryLow(payload)
 	default:
@@ -127,6 +132,32 @@ func (l *Listener) handleBookingAccepted(payload string) {
 		l.sendToEmployee(cleanerID, "booking.accepted", booking)
 	}
 }
+
+func (l *Listener) handleBookingOngoing(payload string) {
+	l.log.Debug("booking_ongoing payload: %s", payload)
+
+	var evt = struct {
+		Event      string   `json:"event"`
+		BookingID  string   `json:"bookingId"`
+		CleanerIDs []string `json:"cleanerIds"`
+	}{}
+
+	if err := json.Unmarshal([]byte(payload), &evt); err != nil {
+		l.log.Error("Invalid booking_ongoing payload: %v", err)
+		return
+	}
+
+	booking, err := l.bookingService.GetBookingByID(l.ctx, evt.BookingID)
+	if err != nil {
+		l.log.Error("Failed to fetch booking: %v", err)
+		return
+	}
+
+	for _, cleanerID := range evt.CleanerIDs {
+		l.sendToEmployee(cleanerID, "booking.ongoing", booking)
+	}
+}
+
 func (l *Listener) handleBookingCreated(payload string) {
 	l.log.Debug("booking_created payload: %s", payload)
 	var evt = struct {

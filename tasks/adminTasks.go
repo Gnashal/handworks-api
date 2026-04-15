@@ -479,7 +479,7 @@ func (t *AdminTasks) AssignEquipmentToBooking(ctx context.Context, tx pgx.Tx, bo
 	_, err := tx.Exec(ctx,
 		`UPDATE booking.bookings
 		 SET equipment_ids = '{}'::uuid[]
-		 WHERE base_booking_id = $1`,
+		 WHERE id = $1`,
 		bookingID,
 	)
 	if err != nil {
@@ -504,7 +504,7 @@ func (t *AdminTasks) AssignEquipmentToBooking(ctx context.Context, tx pgx.Tx, bo
 	_, err = tx.Exec(ctx,
 		`UPDATE booking.bookings
 		 SET equipment_ids = $2::uuid[]
-		 WHERE base_booking_id = $1`,
+		 WHERE id = $1`,
 		bookingID, usedIDs,
 	)
 	return err

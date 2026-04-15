@@ -457,7 +457,20 @@ func (t *BookingTasks) ValidateSessionStart(ctx context.Context, tx pgx.Tx, book
 	return true, startSched, nil
 }
 
-func (t *BookingTasks) StartSession(ctx context.Context, tx pgx.Tx, bookingID string) error {
+func (t *BookingTasks) StartSession(ctx context.Context, tx pgx.Tx, bookingID string, startPhotos []string) error {
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO booking.sessions (booking_id, start_photos, created_at, updated_at)
+		 VALUES ($1, $2, NOW(), NOW())
+		 ON CONFLICT (booking_id)
+		 DO UPDATE SET
+			start_photos = EXCLUDED.start_photos,
+			updated_at = NOW()`,
+		bookingID,
+		startPhotos,
+	); err != nil {
+		return err
+	}
+
 	_, err := tx.Exec(ctx,
 		`UPDATE booking.basebookings
 		 SET status = 'ONGOING', updatedat = now()
@@ -467,11 +480,41 @@ func (t *BookingTasks) StartSession(ctx context.Context, tx pgx.Tx, bookingID st
 	return err
 }
 
-func (t *BookingTasks) EndSession(ctx context.Context, tx pgx.Tx, bookingID string) error {
+func (t *BookingTasks) EndSession(ctx context.Context, tx pgx.Tx, bookingID string, endPhotos []string) error {
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO booking.sessions (booking_id, end_photos, created_at, updated_at)
+		 VALUES ($1, $2, NOW(), NOW())
+		 ON CONFLICT (booking_id)
+		 DO UPDATE SET
+			end_photos = EXCLUDED.end_photos,
+			updated_at = NOW()`,
+		bookingID,
+		endPhotos,
+	); err != nil {
+		return err
+	}
+
 	_, err := tx.Exec(ctx,
 		`UPDATE booking.basebookings
 		 SET status = 'COMPLETED', updatedat = now()
 		 WHERE id = (SELECT base_booking_id FROM booking.bookings WHERE id = $1)`,
+		bookingID,
+	)
+	return err
+}
+
+func (t *BookingTasks) UpdateCleanerStatusesForBooking(ctx context.Context, tx pgx.Tx, bookingID, status string) error {
+	_, err := tx.Exec(ctx,
+		`UPDATE account.employees e
+		 SET status = $1,
+		     updated_at = NOW()
+		 WHERE e.id = ANY(
+		 	COALESCE(
+		 		(SELECT b.cleaner_ids FROM booking.bookings b WHERE b.id = $2),
+		 		ARRAY[]::uuid[]
+		 	)
+		 )`,
+		status,
 		bookingID,
 	)
 	return err
@@ -500,6 +543,46 @@ func (t *BookingTasks) FetchBookingSlots(
 		return nil, fmt.Errorf("unmarshal booking slots: %w", err)
 	}
 	return &response, nil
+}
+
+func (t *BookingTasks) FetchUsedInventoryByBooking(ctx context.Context, tx pgx.Tx, bookingID string, itemType string) ([]types.UsedInventoryItem, error) {
+	rows, err := tx.Query(ctx,
+		`SELECT biu.item_id, COALESCE(i.image_url, ''), biu.quantity_used
+		 FROM booking.bookings b
+		 JOIN booking.booking_inventory_used biu
+		   ON biu.id = ANY(
+				CASE
+					WHEN $2 = 'RESOURCE' THEN COALESCE(b.resource_ids, ARRAY[]::uuid[])
+					WHEN $2 = 'EQUIPMENT' THEN COALESCE(b.equipment_ids, ARRAY[]::uuid[])
+					ELSE ARRAY[]::uuid[]
+				END
+			)
+		 JOIN inventory.items i
+		   ON i.id = biu.item_id
+		 WHERE b.id = $1
+		   AND biu.item_type = $2`,
+		bookingID,
+		itemType,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch used inventory for booking: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]types.UsedInventoryItem, 0)
+	for rows.Next() {
+		var item types.UsedInventoryItem
+		if scanErr := rows.Scan(&item.ID, &item.ImageURL, &item.Quantity); scanErr != nil {
+			return nil, fmt.Errorf("failed to scan used inventory row: %w", scanErr)
+		}
+		items = append(items, item)
+	}
+
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("failed iterating used inventory rows: %w", rows.Err())
+	}
+
+	return items, nil
 }
 
 func (t *BookingTasks) FetchBookingsToday(ctx context.Context, tx pgx.Tx, logger *utils.Logger) (*types.FetchBookingsTodayResponse, error) {

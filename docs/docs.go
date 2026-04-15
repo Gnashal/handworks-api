@@ -1841,6 +1841,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/booking/inventory-used": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns used inventory entries filtered by RESOURCE or EQUIPMENT type",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get used inventory items in a booking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "bookingId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Inventory type (RESOURCE or EQUIPMENT)",
+                        "name": "type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.UsedInventoryItem"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/session/end": {
             "post": {
                 "description": "Marks a booking as COMPLETED",
@@ -1856,11 +1915,13 @@ const docTemplate = `{
                 "summary": "End a booking session",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Booking ID",
-                        "name": "bookingId",
-                        "in": "query",
-                        "required": true
+                        "description": "End session payload",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.EndSessionRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1903,11 +1964,13 @@ const docTemplate = `{
                 "summary": "Start a booking session",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Booking ID",
-                        "name": "bookingId",
-                        "in": "query",
-                        "required": true
+                        "description": "Start session payload",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.StartSessionRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -4314,6 +4377,25 @@ const docTemplate = `{
                 }
             }
         },
+        "types.EndSessionRequest": {
+            "type": "object",
+            "required": [
+                "bookingId",
+                "endPhotos"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "endPhotos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "types.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -5509,6 +5591,25 @@ const docTemplate = `{
                 }
             }
         },
+        "types.StartSessionRequest": {
+            "type": "object",
+            "required": [
+                "bookingId",
+                "startPhotos"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "startPhotos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "types.SubscribeNotificationRequest": {
             "type": "object",
             "required": [
@@ -5799,6 +5900,20 @@ const docTemplate = `{
             "properties": {
                 "ok": {
                     "type": "boolean"
+                }
+            }
+        },
+        "types.UsedInventoryItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "imageUrl": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
                 }
             }
         },
