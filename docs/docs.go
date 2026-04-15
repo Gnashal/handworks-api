@@ -1841,6 +1841,65 @@ const docTemplate = `{
                 }
             }
         },
+        "/booking/inventory-used": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns used inventory entries filtered by RESOURCE or EQUIPMENT type",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Booking"
+                ],
+                "summary": "Get used inventory items in a booking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "bookingId",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Inventory type (RESOURCE or EQUIPMENT)",
+                        "name": "type",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.UsedInventoryItem"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/booking/session/end": {
             "post": {
                 "description": "Marks a booking as COMPLETED",
@@ -5841,6 +5900,20 @@ const docTemplate = `{
             "properties": {
                 "ok": {
                     "type": "boolean"
+                }
+            }
+        },
+        "types.UsedInventoryItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "imageUrl": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "number"
                 }
             }
         },

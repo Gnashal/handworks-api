@@ -1636,6 +1636,15 @@ definitions:
       ok:
         type: boolean
     type: object
+  types.UsedInventoryItem:
+    properties:
+      id:
+        type: string
+      imageUrl:
+        type: string
+      quantity:
+        type: number
+    type: object
   types.WebhookEvent:
     properties:
       data:
@@ -2896,6 +2905,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Employee bookings
+      tags:
+      - Booking
+  /booking/inventory-used:
+    get:
+      consumes:
+      - application/json
+      description: Returns used inventory entries filtered by RESOURCE or EQUIPMENT
+        type
+      parameters:
+      - description: Booking ID
+        in: query
+        name: bookingId
+        required: true
+        type: string
+      - description: Inventory type (RESOURCE or EQUIPMENT)
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.UsedInventoryItem'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get used inventory items in a booking
       tags:
       - Booking
   /booking/session/end:
