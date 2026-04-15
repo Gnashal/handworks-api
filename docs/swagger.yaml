@@ -617,6 +617,19 @@ definitions:
       work_date:
         type: string
     type: object
+  types.EndSessionRequest:
+    properties:
+      bookingId:
+        type: string
+      endPhotos:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - bookingId
+    - endPhotos
+    type: object
   types.ErrorResponse:
     properties:
       error:
@@ -1417,6 +1430,19 @@ definitions:
     properties:
       employee:
         $ref: '#/definitions/types.Employee'
+    type: object
+  types.StartSessionRequest:
+    properties:
+      bookingId:
+        type: string
+      startPhotos:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - bookingId
+    - startPhotos
     type: object
   types.SubscribeNotificationRequest:
     properties:
@@ -2878,11 +2904,12 @@ paths:
       - application/json
       description: Marks a booking as COMPLETED
       parameters:
-      - description: Booking ID
-        in: query
-        name: bookingId
+      - description: End session payload
+        in: body
+        name: input
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/types.EndSessionRequest'
       produces:
       - application/json
       responses:
@@ -2909,11 +2936,12 @@ paths:
       - application/json
       description: Marks a booking as ONGOING
       parameters:
-      - description: Booking ID
-        in: query
-        name: bookingId
+      - description: Start session payload
+        in: body
+        name: input
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/types.StartSessionRequest'
       produces:
       - application/json
       responses:

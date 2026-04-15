@@ -1856,11 +1856,13 @@ const docTemplate = `{
                 "summary": "End a booking session",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Booking ID",
-                        "name": "bookingId",
-                        "in": "query",
-                        "required": true
+                        "description": "End session payload",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.EndSessionRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1903,11 +1905,13 @@ const docTemplate = `{
                 "summary": "Start a booking session",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Booking ID",
-                        "name": "bookingId",
-                        "in": "query",
-                        "required": true
+                        "description": "Start session payload",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.StartSessionRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -4314,6 +4318,25 @@ const docTemplate = `{
                 }
             }
         },
+        "types.EndSessionRequest": {
+            "type": "object",
+            "required": [
+                "bookingId",
+                "endPhotos"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "endPhotos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "types.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -5506,6 +5529,25 @@ const docTemplate = `{
             "properties": {
                 "employee": {
                     "$ref": "#/definitions/types.Employee"
+                }
+            }
+        },
+        "types.StartSessionRequest": {
+            "type": "object",
+            "required": [
+                "bookingId",
+                "startPhotos"
+            ],
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "startPhotos": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
