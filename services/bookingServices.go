@@ -235,7 +235,7 @@ func (s *BookingService) GetBookedSlots(ctx context.Context, date string) (*type
 	return result, nil
 }
 
-func (s *BookingService) StartSession(ctx context.Context, bookingID string) error {
+func (s *BookingService) StartSession(ctx context.Context, bookingID string, startPhotos []string) error {
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		canStart, startSched, err := s.Tasks.ValidateSessionStart(ctx, tx, bookingID)
 		if err != nil {
@@ -253,7 +253,15 @@ func (s *BookingService) StartSession(ctx context.Context, bookingID string) err
 			return fmt.Errorf("session can only be started within today's timeframe")
 		}
 
-		return s.Tasks.StartSession(ctx, tx, bookingID)
+		if err := s.Tasks.StartSession(ctx, tx, bookingID, startPhotos); err != nil {
+			return err
+		}
+
+		if err := s.Tasks.UpdateCleanerStatusesForBooking(ctx, tx, bookingID, "ONDUTY"); err != nil {
+			return err
+		}
+
+		return nil
 	}); err != nil {
 		s.Logger.Error("failed to start session for booking %s: %v", bookingID, err)
 		return err
@@ -261,9 +269,17 @@ func (s *BookingService) StartSession(ctx context.Context, bookingID string) err
 	return nil
 }
 
-func (s *BookingService) EndSession(ctx context.Context, bookingID string) error {
+func (s *BookingService) EndSession(ctx context.Context, bookingID string, endPhotos []string) error {
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		return s.Tasks.EndSession(ctx, tx, bookingID)
+		if err := s.Tasks.EndSession(ctx, tx, bookingID, endPhotos); err != nil {
+			return err
+		}
+
+		if err := s.Tasks.UpdateCleanerStatusesForBooking(ctx, tx, bookingID, "ACTIVE"); err != nil {
+			return err
+		}
+
+		return nil
 	}); err != nil {
 		s.Logger.Error("failed to end session for booking %s: %v", bookingID, err)
 		return err

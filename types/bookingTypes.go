@@ -259,3 +259,13 @@ type FetchBookingsTodayResponse struct {
 		Client  string `json:"client"`
 	} `json:"bookings"`
 }
+
+type StartSessionRequest struct {
+	BookingID   string   `json:"bookingId" binding:"required"`
+	StartPhotos []string `json:"startPhotos" binding:"required,min=1"`
+}
+
+type EndSessionRequest struct {
+	BookingID string   `json:"bookingId" binding:"required"`
+	EndPhotos []string `json:"endPhotos" binding:"required,min=1"`
+}

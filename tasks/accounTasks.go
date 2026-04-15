@@ -506,7 +506,8 @@ func (a *AccountTasks) UpdateStatus(c context.Context, tx pgx.Tx, status, empId 
 	}
 	_, err := tx.Exec(c,
 		`UPDATE account.employees
-	SET status = @newStatus
+	SET status = @newStatus,
+	    updated_at = NOW()
 	WHERE id = @id`, args)
 	if err != nil {
 		return err
@@ -636,6 +637,8 @@ func (a *AccountTasks) EmployeeTimeOut(c context.Context, tx pgx.Tx, req types.T
 	    updated_at = NOW()
 	WHERE employee_id = @employee_id
 	AND work_date = CURRENT_DATE
+	AND time_in IS NOT NULL
+	AND time_out IS NULL
 	RETURNING id, employee_id, work_date, time_in, time_out, status, created_at, updated_at
 	`
 

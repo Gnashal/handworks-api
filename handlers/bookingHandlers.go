@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"handworks-api/types"
 	"net/http"
 	"strconv"
@@ -352,20 +351,21 @@ func (h *BookingHandler) GetBookedSlots(c *gin.Context) {
 // @Tags Booking
 // @Accept json
 // @Produce json
-// @Param bookingId query string true "Booking ID"
+// @Param input body types.StartSessionRequest true "Start session payload"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /booking/session/start [post]
 func (h *BookingHandler) StartSession(c *gin.Context) {
-	bookingID := c.Query("bookingId")
-	if bookingID == "" {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(fmt.Errorf("bookingId is required")))
+	var req types.StartSessionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
 		return
 	}
+	bookingID := req.BookingID
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := h.Service.StartSession(ctx, bookingID); err != nil {
+	if err := h.Service.StartSession(ctx, bookingID, req.StartPhotos); err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}
@@ -378,20 +378,21 @@ func (h *BookingHandler) StartSession(c *gin.Context) {
 // @Tags Booking
 // @Accept json
 // @Produce json
-// @Param bookingId query string true "Booking ID"
+// @Param input body types.EndSessionRequest true "End session payload"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /booking/session/end [post]
 func (h *BookingHandler) EndSession(c *gin.Context) {
-	bookingID := c.Query("bookingId")
-	if bookingID == "" {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(fmt.Errorf("bookingId is required")))
+	var req types.EndSessionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
 		return
 	}
+	bookingID := req.BookingID
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := h.Service.EndSession(ctx, bookingID); err != nil {
+	if err := h.Service.EndSession(ctx, bookingID, req.EndPhotos); err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}

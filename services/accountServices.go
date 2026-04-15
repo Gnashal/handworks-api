@@ -313,6 +313,10 @@ func (s *AccountService) EmployeeTimeIn(ctx context.Context, req types.TimeInReq
 			return err
 		}
 
+		if err := s.Tasks.UpdateStatus(ctx, tx, "ACTIVE", req.EmployeeId); err != nil {
+			return err
+		}
+
 		timesheet = ts
 		return nil
 	}); err != nil {
@@ -328,6 +332,10 @@ func (s *AccountService) EmployeeTimeOut(ctx context.Context, req types.TimeOutR
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		ts, err := s.Tasks.EmployeeTimeOut(ctx, tx, req)
 		if err != nil {
+			return err
+		}
+
+		if err := s.Tasks.UpdateStatus(ctx, tx, "INACTIVE", req.EmployeeId); err != nil {
 			return err
 		}
 
