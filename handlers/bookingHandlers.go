@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"handworks-api/types"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -38,6 +39,46 @@ func (h *BookingHandler) CreateBooking(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+// GetUsedInventoryByBooking godoc
+// @Summary Get used inventory items in a booking
+// @Description Returns used inventory entries filtered by RESOURCE or EQUIPMENT type
+// @Tags Booking
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param bookingId query string true "Booking ID"
+// @Param type query string true "Inventory type (RESOURCE or EQUIPMENT)"
+// @Success 200 {array} types.UsedInventoryItem
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/inventory-used [get]
+func (h *BookingHandler) GetUsedInventoryByBooking(c *gin.Context) {
+	bookingID := c.Query("bookingId")
+	itemType := strings.ToUpper(strings.TrimSpace(c.Query("type")))
+
+	if bookingID == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("bookingId query parameter is required")))
+		return
+	}
+
+	if itemType != string(types.ItemTypeResource) && itemType != string(types.ItemTypeEquipment) {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("type must be RESOURCE or EQUIPMENT")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.Service.GetUsedInventoryByBooking(ctx, bookingID, itemType)
+	if err != nil {
+		h.Logger.Error("failed to get used inventory by booking: %v", err)
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 // GetBookings godoc
@@ -352,20 +393,21 @@ func (h *BookingHandler) GetBookedSlots(c *gin.Context) {
 // @Tags Booking
 // @Accept json
 // @Produce json
-// @Param bookingId query string true "Booking ID"
+// @Param input body types.StartSessionRequest true "Start session payload"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /booking/session/start [post]
 func (h *BookingHandler) StartSession(c *gin.Context) {
-	bookingID := c.Query("bookingId")
-	if bookingID == "" {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(fmt.Errorf("bookingId is required")))
+	var req types.StartSessionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
 		return
 	}
+	bookingID := req.BookingID
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := h.Service.StartSession(ctx, bookingID); err != nil {
+	if err := h.Service.StartSession(ctx, bookingID, req.StartPhotos); err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}
@@ -378,20 +420,21 @@ func (h *BookingHandler) StartSession(c *gin.Context) {
 // @Tags Booking
 // @Accept json
 // @Produce json
-// @Param bookingId query string true "Booking ID"
+// @Param input body types.EndSessionRequest true "End session payload"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} types.ErrorResponse
 // @Failure 500 {object} types.ErrorResponse
 // @Router /booking/session/end [post]
 func (h *BookingHandler) EndSession(c *gin.Context) {
-	bookingID := c.Query("bookingId")
-	if bookingID == "" {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(fmt.Errorf("bookingId is required")))
+	var req types.EndSessionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
 		return
 	}
+	bookingID := req.BookingID
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := h.Service.EndSession(ctx, bookingID); err != nil {
+	if err := h.Service.EndSession(ctx, bookingID, req.EndPhotos); err != nil {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}

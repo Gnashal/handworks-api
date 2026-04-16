@@ -617,6 +617,19 @@ definitions:
       work_date:
         type: string
     type: object
+  types.EndSessionRequest:
+    properties:
+      bookingId:
+        type: string
+      endPhotos:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - bookingId
+    - endPhotos
+    type: object
   types.ErrorResponse:
     properties:
       error:
@@ -1418,6 +1431,19 @@ definitions:
       employee:
         $ref: '#/definitions/types.Employee'
     type: object
+  types.StartSessionRequest:
+    properties:
+      bookingId:
+        type: string
+      startPhotos:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - bookingId
+    - startPhotos
+    type: object
   types.SubscribeNotificationRequest:
     properties:
       adminId:
@@ -1609,6 +1635,15 @@ definitions:
     properties:
       ok:
         type: boolean
+    type: object
+  types.UsedInventoryItem:
+    properties:
+      id:
+        type: string
+      imageUrl:
+        type: string
+      quantity:
+        type: number
     type: object
   types.WebhookEvent:
     properties:
@@ -2872,17 +2907,57 @@ paths:
       summary: Get Employee bookings
       tags:
       - Booking
-  /booking/session/end:
-    post:
+  /booking/inventory-used:
+    get:
       consumes:
       - application/json
-      description: Marks a booking as COMPLETED
+      description: Returns used inventory entries filtered by RESOURCE or EQUIPMENT
+        type
       parameters:
       - description: Booking ID
         in: query
         name: bookingId
         required: true
         type: string
+      - description: Inventory type (RESOURCE or EQUIPMENT)
+        in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.UsedInventoryItem'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get used inventory items in a booking
+      tags:
+      - Booking
+  /booking/session/end:
+    post:
+      consumes:
+      - application/json
+      description: Marks a booking as COMPLETED
+      parameters:
+      - description: End session payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.EndSessionRequest'
       produces:
       - application/json
       responses:
@@ -2909,11 +2984,12 @@ paths:
       - application/json
       description: Marks a booking as ONGOING
       parameters:
-      - description: Booking ID
-        in: query
-        name: bookingId
+      - description: Start session payload
+        in: body
+        name: input
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/types.StartSessionRequest'
       produces:
       - application/json
       responses:

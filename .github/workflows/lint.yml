@@ -27,7 +27,7 @@ jobs:
           go install github.com/swaggo/swag/cmd/swag@latest
 
       - name: Run linter
-        run: golangci-lint run ./...
+        run: golangci-lint run --timeout=5m ./...
 
       - name: Generate Swagger docs
         run: swag init --parseDependency --parseInternal
