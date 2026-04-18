@@ -241,6 +241,10 @@ type FetchAllBookingsResponse struct {
 	Bookings          []Booking `json:"bookings"`
 }
 
+type FetchActiveBookingsResponse struct {
+	Bookings []Booking `json:"bookings"`
+}
+
 type BookedSlot struct {
 	StartSched    time.Time `json:"startSched"`
 	EndSched      time.Time `json:"endSched"`

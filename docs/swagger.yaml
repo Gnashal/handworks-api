@@ -644,6 +644,13 @@ definitions:
       paymentIntentId:
         type: string
     type: object
+  types.FetchActiveBookingsResponse:
+    properties:
+      bookings:
+        items:
+          $ref: '#/definitions/types.Booking'
+        type: array
+    type: object
   types.FetchAllBookingsResponse:
     properties:
       bookings:
@@ -2750,6 +2757,37 @@ paths:
       security:
       - BearerAuth: []
       summary: Update a booking
+      tags:
+      - Booking
+  /booking/active:
+    get:
+      consumes:
+      - application/json
+      description: Returns ongoing bookings for a customer
+      parameters:
+      - description: Customer ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.FetchActiveBookingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      summary: Get customer active bookings
       tags:
       - Booking
   /booking/bookings:

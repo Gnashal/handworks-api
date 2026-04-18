@@ -441,6 +441,39 @@ func (h *BookingHandler) EndSession(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "COMPLETED", "bookingId": bookingID})
 }
 
+// GetActiveBooking godoc
+// @Summary Get customer active bookings
+// @Description Returns ongoing bookings for a customer
+// @Tags Booking
+// @Accept json
+// @Produce json
+// @Param id query string true "Customer ID"
+// @Success 200 {object} types.FetchActiveBookingsResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} types.ErrorResponse
+// @Router /booking/active [get]
+func (h *BookingHandler) GetActiveBooking(c *gin.Context) {
+	customerId := c.Query("id")
+	if customerId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "customerId query parameter is required",
+		})
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.Service.GetActiveBooking(ctx, customerId)
+	if err != nil {
+		h.Logger.Error("failed to get active booking: %v", err)
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // UpdateBooking godoc
 // @Summary Update a booking
 // @Description Update booking information

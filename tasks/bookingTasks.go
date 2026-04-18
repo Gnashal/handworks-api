@@ -353,6 +353,26 @@ func (t *BookingTasks) FetchBookingByID(ctx context.Context, tx pgx.Tx, bookingI
 	return &booking, nil
 }
 
+func (t *BookingTasks) FetchActiveBooking(ctx context.Context, tx pgx.Tx, customerId string, logger *utils.Logger) (*types.FetchActiveBookingsResponse, error) {
+	var rawJSON []byte
+	err := tx.QueryRow(ctx, `SELECT booking.get_customer_active_booking($1)`, customerId).Scan(&rawJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed calling sproc get_customer_active_booking: %w", err)
+	}
+
+	var response types.FetchActiveBookingsResponse
+	if err := json.Unmarshal(rawJSON, &response); err != nil {
+		logger.Error("failed to unmarshal active bookings JSON: %v", err)
+		return nil, fmt.Errorf("unmarshal active bookings: %w", err)
+	}
+
+	if response.Bookings == nil {
+		response.Bookings = []types.Booking{}
+	}
+
+	return &response, nil
+}
+
 func (t *BookingTasks) FetchAllBookings(
 	ctx context.Context,
 	tx pgx.Tx,
