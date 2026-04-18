@@ -68,6 +68,7 @@ func BookingEndpoint(r *gin.RouterGroup, h *handlers.BookingHandler) {
 	r.GET("/bookings", h.GetBookings)
 	r.GET("/today", h.GetBookingsToday)
 	r.GET("/slots", h.GetBookedSlots)
+	r.GET("/active", h.GetActiveBooking)
 	r.POST("/", h.CreateBooking)
 	r.PUT("/:id", h.UpdateBooking)
 	r.DELETE("/:id", h.DeleteBooking)

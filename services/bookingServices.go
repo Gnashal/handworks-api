@@ -320,6 +320,21 @@ func (s *BookingService) GetBookingsToday(ctx context.Context) (types.FetchBooki
 
 }
 
+func (s *BookingService) GetActiveBooking(ctx context.Context, customerId string) (*types.FetchActiveBookingsResponse, error) {
+	var booking *types.FetchActiveBookingsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		booking, err = s.Tasks.FetchActiveBooking(ctx, tx, customerId, s.Logger)
+		return err
+	}); err != nil {
+		s.Logger.Error("failed to fetch active booking for customer %s: %v", customerId, err)
+		return nil, fmt.Errorf("failed to get active booking: %w", err)
+	}
+
+	return booking, nil
+}
+
 func (s *BookingService) UpdateBooking(ctx context.Context) error {
 	return nil
 }
