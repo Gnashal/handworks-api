@@ -129,3 +129,13 @@ type CalendarBooking struct {
 type CalendarBookingResponse struct {
 	Bookings []CalendarBooking `json:"bookings"`
 }
+
+type BookingTrendPoint struct {
+	Label string `json:"label"`
+	Value int32  `json:"value"`
+}
+
+type BookingTrendsResponse struct {
+	WeeklyData  []BookingTrendPoint `json:"weeklyData"`
+	MonthlyData []BookingTrendPoint `json:"monthlyData"`
+}

@@ -546,3 +546,91 @@ func (t *AdminTasks) FetchCalendarBookings(ctx context.Context, tx pgx.Tx, month
 
 	return &response, nil
 }
+
+func (t *AdminTasks) FetchBookingTrends(ctx context.Context, tx pgx.Tx) (*types.BookingTrendsResponse, error) {
+	now := time.Now()
+	loc := now.Location()
+
+	weekStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, -6)
+	weekEnd := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc).AddDate(0, 0, 1)
+
+	weeklyRows, err := tx.Query(ctx, `
+		SELECT date(bb.createdat) AS day_bucket, COUNT(*)::int AS bookings_count
+		FROM booking.basebookings bb
+		WHERE bb.createdat >= $1
+		  AND bb.createdat < $2
+		GROUP BY day_bucket
+		ORDER BY day_bucket
+	`, weekStart, weekEnd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch weekly booking trends: %w", err)
+	}
+	defer weeklyRows.Close()
+
+	weeklyCounts := make(map[string]int32)
+	for weeklyRows.Next() {
+		var bucket time.Time
+		var count int32
+		if err := weeklyRows.Scan(&bucket, &count); err != nil {
+			return nil, fmt.Errorf("failed to scan weekly booking trends: %w", err)
+		}
+		weeklyCounts[bucket.In(loc).Format("2006-01-02")] = count
+	}
+	if err := weeklyRows.Err(); err != nil {
+		return nil, fmt.Errorf("weekly booking trends rows error: %w", err)
+	}
+
+	weeklyData := make([]types.BookingTrendPoint, 0, 7)
+	for i := 0; i < 7; i++ {
+		day := weekStart.AddDate(0, 0, i)
+		key := day.Format("2006-01-02")
+		weeklyData = append(weeklyData, types.BookingTrendPoint{
+			Label: day.Format("Mon"),
+			Value: weeklyCounts[key],
+		})
+	}
+
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc).AddDate(0, -11, 0)
+	nextMonthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc).AddDate(0, 1, 0)
+
+	monthlyRows, err := tx.Query(ctx, `
+		SELECT date_trunc('month', bb.createdat) AS month_bucket, COUNT(*)::int AS bookings_count
+		FROM booking.basebookings bb
+		WHERE bb.createdat >= $1
+		  AND bb.createdat < $2
+		GROUP BY month_bucket
+		ORDER BY month_bucket
+	`, monthStart, nextMonthStart)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch monthly booking trends: %w", err)
+	}
+	defer monthlyRows.Close()
+
+	monthlyCounts := make(map[string]int32)
+	for monthlyRows.Next() {
+		var bucket time.Time
+		var count int32
+		if err := monthlyRows.Scan(&bucket, &count); err != nil {
+			return nil, fmt.Errorf("failed to scan monthly booking trends: %w", err)
+		}
+		monthlyCounts[bucket.In(loc).Format("2006-01")] = count
+	}
+	if err := monthlyRows.Err(); err != nil {
+		return nil, fmt.Errorf("monthly booking trends rows error: %w", err)
+	}
+
+	monthlyData := make([]types.BookingTrendPoint, 0, 12)
+	for i := 0; i < 12; i++ {
+		month := monthStart.AddDate(0, i, 0)
+		key := month.Format("2006-01")
+		monthlyData = append(monthlyData, types.BookingTrendPoint{
+			Label: month.Format("Jan"),
+			Value: monthlyCounts[key],
+		})
+	}
+
+	return &types.BookingTrendsResponse{
+		WeeklyData:  weeklyData,
+		MonthlyData: monthlyData,
+	}, nil
+}

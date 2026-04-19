@@ -1193,6 +1193,40 @@
                 }
             }
         },
+        "/admin/booking-trends": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns booking trends formatted for charting with weeklyData and monthlyData points",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Fetch booking trend analytics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.BookingTrendsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/booking/approve/{id}": {
             "post": {
                 "security": [
@@ -3951,6 +3985,34 @@
                 },
                 "totalPrice": {
                     "type": "number"
+                }
+            }
+        },
+        "types.BookingTrendPoint": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.BookingTrendsResponse": {
+            "type": "object",
+            "properties": {
+                "monthlyData": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.BookingTrendPoint"
+                    }
+                },
+                "weeklyData": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.BookingTrendPoint"
+                    }
                 }
             }
         },

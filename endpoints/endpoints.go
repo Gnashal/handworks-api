@@ -126,6 +126,7 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 
 func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	r.GET("/dashboard", h.GetAdminDashboard)
+	r.GET("/booking-trends", h.GetBookingTrends)
 	employees := r.Group("/employee")
 	{
 		employees.POST("/onboard", h.OnboardEmployee)

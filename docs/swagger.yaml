@@ -311,6 +311,24 @@ definitions:
       totalPrice:
         type: number
     type: object
+  types.BookingTrendPoint:
+    properties:
+      label:
+        type: string
+      value:
+        type: integer
+    type: object
+  types.BookingTrendsResponse:
+    properties:
+      monthlyData:
+        items:
+          $ref: '#/definitions/types.BookingTrendPoint'
+        type: array
+      weeklyData:
+        items:
+          $ref: '#/definitions/types.BookingTrendPoint'
+        type: array
+    type: object
   types.CalendarBooking:
     properties:
       customer:
@@ -2447,6 +2465,28 @@ paths:
       summary: Add account phone number
       tags:
       - Account
+  /admin/booking-trends:
+    get:
+      consumes:
+      - application/json
+      description: Returns booking trends formatted for charting with weeklyData and
+        monthlyData points
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.BookingTrendsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Fetch booking trend analytics
+      tags:
+      - Admin
   /admin/booking/approve/{id}:
     post:
       consumes:
