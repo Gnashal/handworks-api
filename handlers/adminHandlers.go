@@ -188,3 +188,27 @@ func (h *AdminHandler) GetCalendarBookings(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, bookings)
 }
+
+// GetBookingTrends godoc
+// @Summary Fetch booking trend analytics
+// @Description Returns booking trends formatted for charting with weeklyData and monthlyData points
+// @Tags Admin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.BookingTrendsResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/booking-trends [get]
+func (h *AdminHandler) GetBookingTrends(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	result, err := h.Service.GetBookingTrends(ctx)
+	if err != nil {
+		h.Logger.Error("failed to get booking trends: %v", err)
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}

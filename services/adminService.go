@@ -132,3 +132,17 @@ func (s *AdminService) GetCalendarBookings(ctx context.Context, month string) (*
 
 	return res, nil
 }
+func (s *AdminService) GetBookingTrends(ctx context.Context) (*types.BookingTrendsResponse, error) {
+	var res *types.BookingTrendsResponse
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		res, err = s.Tasks.FetchBookingTrends(ctx, tx)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to fetch booking trends: %v", err)
+		return nil, err
+	}
+
+	return res, nil
+}
