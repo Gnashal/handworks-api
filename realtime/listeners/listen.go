@@ -128,8 +128,10 @@ func (l *Listener) handleBookingAccepted(payload string) {
 		return
 	}
 
+	const event = "booking.accepted"
+
 	for _, cleanerID := range evt.CleanerIDs {
-		l.sendToEmployee(cleanerID, "booking.accepted", booking)
+		l.sendToEmployee(cleanerID, event, booking)
 	}
 }
 
@@ -153,9 +155,12 @@ func (l *Listener) handleBookingOngoing(payload string) {
 		return
 	}
 
+	const event = "booking.ongoing"
+
 	for _, cleanerID := range evt.CleanerIDs {
-		l.sendToEmployee(cleanerID, "booking.ongoing", booking)
+		l.sendToEmployee(cleanerID, event, booking)
 	}
+	l.sendToAdmin(event, booking)
 }
 
 func (l *Listener) handleBookingCreated(payload string) {
