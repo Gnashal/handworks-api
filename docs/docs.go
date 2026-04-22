@@ -614,13 +614,6 @@ const docTemplate = `{
                 "summary": "Update an employee",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Updated employee data",
                         "name": "input",
                         "in": "body",
@@ -1370,6 +1363,112 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/types.AdminDashboardResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/employee/assign": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds or removes a cleaner from a booking after schedule conflict checks",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Assign or unassign a cleaner to a booking",
+                "parameters": [
+                    {
+                        "description": "Assign employee data",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignEmployeeToBookingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AssignEmployeeToBookingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/types.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/employee/available": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns cleaners with no overlapping non-cancelled responsibilities for the booking schedule",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "List available cleaners for a booking",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Booking ID",
+                        "name": "bookingId",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.AvailableCleanersResponse"
                         }
                     },
                     "400": {
@@ -3732,6 +3831,61 @@ const docTemplate = `{
                 }
             }
         },
+        "types.AssignEmployeeAction": {
+            "type": "string",
+            "enum": [
+                "ADD",
+                "REMOVE"
+            ],
+            "x-enum-varnames": [
+                "AssignEmployeeActionAdd",
+                "AssignEmployeeActionRemove"
+            ]
+        },
+        "types.AssignEmployeeToBookingRequest": {
+            "type": "object",
+            "required": [
+                "action",
+                "bookingId",
+                "employeeId"
+            ],
+            "properties": {
+                "action": {
+                    "enum": [
+                        "ADD",
+                        "REMOVE"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/types.AssignEmployeeAction"
+                        }
+                    ]
+                },
+                "bookingId": {
+                    "type": "string"
+                },
+                "employeeId": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.AssignEmployeeToBookingResponse": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "bookingId": {
+                    "type": "string"
+                },
+                "employeeId": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "types.AssignEquipmentToBookingRequest": {
             "type": "object",
             "required": [
@@ -3776,6 +3930,46 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/types.ItemQuantity"
                     }
+                }
+            }
+        },
+        "types.AvailableCleaner": {
+            "type": "object",
+            "properties": {
+                "employeeId": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "pfpUrl": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.AvailableCleanersResponse": {
+            "type": "object",
+            "properties": {
+                "bookingId": {
+                    "type": "string"
+                },
+                "cleanerCount": {
+                    "type": "integer"
+                },
+                "cleaners": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.AvailableCleaner"
+                    }
+                },
+                "endSched": {
+                    "type": "string"
+                },
+                "startSched": {
+                    "type": "string"
                 }
             }
         },

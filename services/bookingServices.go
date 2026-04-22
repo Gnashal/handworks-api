@@ -50,7 +50,7 @@ func (s *BookingService) CreateBooking(ctx context.Context, req types.CreateBook
 
 	err = s.withTx(ctx, func(tx pgx.Tx) error {
 
-		cleaners, err := s.Tasks.AllocateCleaners(ctx, tx)
+		cleaners, err := s.Tasks.AllocateCleaners(ctx, tx, &req)
 		if err != nil {
 			return err
 		}

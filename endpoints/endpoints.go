@@ -130,7 +130,8 @@ func AdminEndpoint(r *gin.RouterGroup, h *handlers.AdminHandler) {
 	employees := r.Group("/employee")
 	{
 		employees.POST("/onboard", h.OnboardEmployee)
-		// employees.POST("/assign-to-booking", h.AssignEmployeeToBooking)
+		employees.POST("/assign", h.AssignEmployeeToBooking)
+		employees.GET("/available", h.ListAvailableCleaners)
 	}
 	bookings := r.Group("/booking")
 	{

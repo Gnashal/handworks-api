@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 type AdminDashboardRequest struct {
 	AdminID    string `json:"adminId"     binding:"required"`
 	DateFilter string `json:"dateFilter"`
@@ -138,4 +140,39 @@ type BookingTrendPoint struct {
 type BookingTrendsResponse struct {
 	WeeklyData  []BookingTrendPoint `json:"weeklyData"`
 	MonthlyData []BookingTrendPoint `json:"monthlyData"`
+}
+
+type AssignEmployeeAction string
+
+const (
+	AssignEmployeeActionAdd    AssignEmployeeAction = "ADD"
+	AssignEmployeeActionRemove AssignEmployeeAction = "REMOVE"
+)
+
+type AssignEmployeeToBookingRequest struct {
+	BookingID  string               `json:"bookingId" binding:"required"`
+	EmployeeID string               `json:"employeeId" binding:"required"`
+	Action     AssignEmployeeAction `json:"action" binding:"required,oneof=ADD REMOVE"`
+}
+
+type AssignEmployeeToBookingResponse struct {
+	BookingID  string `json:"bookingId"`
+	EmployeeID string `json:"employeeId"`
+	Action     string `json:"action"`
+	Message    string `json:"message"`
+}
+
+type AvailableCleaner struct {
+	EmployeeID string `json:"employeeId"`
+	FirstName  string `json:"firstName"`
+	LastName   string `json:"lastName"`
+	PFPUrl     string `json:"pfpUrl"`
+}
+
+type AvailableCleanersResponse struct {
+	BookingID    string             `json:"bookingId"`
+	StartSched   time.Time          `json:"startSched"`
+	EndSched     time.Time          `json:"endSched"`
+	Cleaners     []AvailableCleaner `json:"cleaners"`
+	CleanerCount int                `json:"cleanerCount"`
 }
