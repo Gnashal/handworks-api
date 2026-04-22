@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"handworks-api/tasks"
 	"handworks-api/types"
 
 	"github.com/jackc/pgx/v5"
@@ -145,4 +147,87 @@ func (s *AdminService) GetBookingTrends(ctx context.Context) (*types.BookingTren
 	}
 
 	return res, nil
+}
+
+func (s *AdminService) GetAvailableCleaners(ctx context.Context, req *types.AvailableCleanersRequest) (*types.AvailableCleanersResponse, error) {
+	var (
+		window   *tasks.BookingScheduleWindow
+		cleaners []types.AvailableCleaner
+	)
+
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		var err error
+		window, err = s.Tasks.GetBookingScheduleWindow(ctx, tx, req.BookingID)
+		if err != nil {
+			return err
+		}
+
+		cleaners, err = s.Tasks.FetchAvailableCleanersByBooking(ctx, tx, req.BookingID, window.StartSched, window.EndSched)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		s.Logger.Error("Failed to fetch available cleaners: %v", err)
+		return nil, err
+	}
+
+	return &types.AvailableCleanersResponse{
+		BookingID:    req.BookingID,
+		StartSched:   window.StartSched,
+		EndSched:     window.EndSched,
+		Cleaners:     cleaners,
+		CleanerCount: len(cleaners),
+	}, nil
+}
+
+func (s *AdminService) AssignEmployeeToBooking(ctx context.Context, req *types.AssignEmployeeToBookingRequest) (*types.AssignEmployeeToBookingResponse, error) {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		window, err := s.Tasks.GetBookingScheduleWindow(ctx, tx, req.BookingID)
+		if err != nil {
+			return err
+		}
+
+		if err := s.Tasks.ValidateActiveCleaner(ctx, tx, req.EmployeeID); err != nil {
+			return err
+		}
+
+		if req.Action == types.AssignEmployeeActionAdd {
+			hasConflict, err := s.Tasks.CleanerHasScheduleConflict(ctx, tx, req.EmployeeID, window.StartSched, window.EndSched, req.BookingID)
+			if err != nil {
+				return err
+			}
+			if hasConflict {
+				return tasks.ErrCleanerHasConflict
+			}
+		}
+
+		return s.Tasks.AssignEmployeeToBooking(ctx, tx, req.BookingID, req.EmployeeID, req.Action)
+	}); err != nil {
+		if errors.Is(err, tasks.ErrBookingNotFound) ||
+			errors.Is(err, tasks.ErrEmployeeNotFoundOrInactive) ||
+			errors.Is(err, tasks.ErrCleanerAlreadyAssigned) ||
+			errors.Is(err, tasks.ErrCleanerNotAssigned) ||
+			errors.Is(err, tasks.ErrCleanerHasConflict) {
+			return nil, err
+		}
+
+		s.Logger.Error("Failed to assign employee to booking: %v", err)
+		return nil, err
+	}
+
+	actionText := string(req.Action)
+	message := "Cleaner assigned to booking successfully"
+	if req.Action == types.AssignEmployeeActionRemove {
+		actionText = string(types.AssignEmployeeActionRemove)
+		message = "Cleaner removed from booking successfully"
+	}
+
+	return &types.AssignEmployeeToBookingResponse{
+		BookingID:  req.BookingID,
+		EmployeeID: req.EmployeeID,
+		Action:     actionText,
+		Message:    message,
+	}, nil
 }

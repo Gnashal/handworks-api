@@ -138,6 +138,42 @@ definitions:
       unreadMessages:
         type: integer
     type: object
+  types.AssignEmployeeAction:
+    enum:
+    - ADD
+    - REMOVE
+    type: string
+    x-enum-varnames:
+    - AssignEmployeeActionAdd
+    - AssignEmployeeActionRemove
+  types.AssignEmployeeToBookingRequest:
+    properties:
+      action:
+        allOf:
+        - $ref: '#/definitions/types.AssignEmployeeAction'
+        enum:
+        - ADD
+        - REMOVE
+      bookingId:
+        type: string
+      employeeId:
+        type: string
+    required:
+    - action
+    - bookingId
+    - employeeId
+    type: object
+  types.AssignEmployeeToBookingResponse:
+    properties:
+      action:
+        type: string
+      bookingId:
+        type: string
+      employeeId:
+        type: string
+      message:
+        type: string
+    type: object
   types.AssignEquipmentToBookingRequest:
     properties:
       bookingId:
@@ -168,6 +204,32 @@ definitions:
     required:
     - bookingId
     - resources
+    type: object
+  types.AvailableCleaner:
+    properties:
+      employeeId:
+        type: string
+      firstName:
+        type: string
+      lastName:
+        type: string
+      pfpUrl:
+        type: string
+    type: object
+  types.AvailableCleanersResponse:
+    properties:
+      bookingId:
+        type: string
+      cleanerCount:
+        type: integer
+      cleaners:
+        items:
+          $ref: '#/definitions/types.AvailableCleaner'
+        type: array
+      endSched:
+        type: string
+      startSched:
+        type: string
     type: object
   types.BaseBookingDetails:
     properties:
@@ -2583,6 +2645,75 @@ paths:
       security:
       - BearerAuth: []
       summary: Fetch data for admin dashboard
+      tags:
+      - Admin
+  /admin/employee/assign:
+    post:
+      consumes:
+      - application/json
+      description: Adds or removes a cleaner from a booking after schedule conflict
+        checks
+      parameters:
+      - description: Assign employee data
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/types.AssignEmployeeToBookingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AssignEmployeeToBookingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Assign or unassign a cleaner to a booking
+      tags:
+      - Admin
+  /admin/employee/available:
+    get:
+      consumes:
+      - application/json
+      description: Returns cleaners with no overlapping non-cancelled responsibilities
+        for the booking schedule
+      parameters:
+      - description: Booking ID
+        in: query
+        name: bookingId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.AvailableCleanersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List available cleaners for a booking
       tags:
       - Admin
   /admin/employee/onboard:

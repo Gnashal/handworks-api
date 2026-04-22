@@ -3,10 +3,12 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"handworks-api/types"
 	"handworks-api/utils"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
@@ -16,6 +18,19 @@ import (
 )
 
 type AdminTasks struct{}
+
+var (
+	ErrBookingNotFound            = errors.New("booking not found")
+	ErrEmployeeNotFoundOrInactive = errors.New("employee not found or inactive")
+	ErrCleanerAlreadyAssigned     = errors.New("cleaner is already assigned to booking")
+	ErrCleanerNotAssigned         = errors.New("cleaner is not assigned to booking")
+	ErrCleanerHasConflict         = errors.New("cleaner has conflicting booking schedule")
+)
+
+type BookingScheduleWindow struct {
+	StartSched time.Time
+	EndSched   time.Time
+}
 type AccountPort interface {
 	SignUpCustomer(ctx context.Context, req types.SignUpCustomerRequest) (*types.SignUpCustomerResponse, error)
 	SignUpEmployee(ctx context.Context, req types.SignUpEmployeeRequest) (*types.SignUpEmployeeResponse, error)
@@ -462,6 +477,20 @@ func (t *AdminTasks) AssignResourcesToBooking(ctx context.Context, tx pgx.Tx, bo
 		if err != nil {
 			return fmt.Errorf("failed to insert resource usage for item %s: %w", r.ItemID, err)
 		}
+
+		result, updateErr := tx.Exec(ctx,
+			`UPDATE inventory.items
+			 SET quantity = quantity - $2
+			 WHERE id = $1`,
+			r.ItemID, r.Quantity,
+		)
+		if updateErr != nil {
+			return fmt.Errorf("failed to decrement resource inventory for item %s: %w", r.ItemID, updateErr)
+		}
+		if result.RowsAffected() == 0 {
+			return fmt.Errorf("resource inventory item not found: %s", r.ItemID)
+		}
+
 		usedIDs = append(usedIDs, usedID)
 	}
 
@@ -498,6 +527,20 @@ func (t *AdminTasks) AssignEquipmentToBooking(ctx context.Context, tx pgx.Tx, bo
 		if err != nil {
 			return fmt.Errorf("failed to insert equipment usage for item %s: %w", e.ItemID, err)
 		}
+
+		result, updateErr := tx.Exec(ctx,
+			`UPDATE inventory.items
+			 SET quantity = quantity - $2
+			 WHERE id = $1`,
+			e.ItemID, e.Quantity,
+		)
+		if updateErr != nil {
+			return fmt.Errorf("failed to decrement equipment inventory for item %s: %w", e.ItemID, updateErr)
+		}
+		if result.RowsAffected() == 0 {
+			return fmt.Errorf("equipment inventory item not found: %s", e.ItemID)
+		}
+
 		usedIDs = append(usedIDs, usedID)
 	}
 
@@ -633,4 +676,173 @@ func (t *AdminTasks) FetchBookingTrends(ctx context.Context, tx pgx.Tx) (*types.
 		WeeklyData:  weeklyData,
 		MonthlyData: monthlyData,
 	}, nil
+}
+
+func (t *AdminTasks) GetBookingScheduleWindow(ctx context.Context, tx pgx.Tx, bookingID string) (*BookingScheduleWindow, error) {
+	var out BookingScheduleWindow
+	err := tx.QueryRow(ctx, `
+		SELECT bb.startsched, bb.endsched
+		FROM booking.bookings b
+		JOIN booking.basebookings bb ON bb.id = b.base_booking_id
+		WHERE b.id = $1
+	`, bookingID).Scan(&out.StartSched, &out.EndSched)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrBookingNotFound
+		}
+		return nil, fmt.Errorf("failed to load booking schedule window: %w", err)
+	}
+
+	return &out, nil
+}
+
+func (t *AdminTasks) ValidateActiveCleaner(ctx context.Context, tx pgx.Tx, employeeID string) error {
+	var found bool
+	err := tx.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM account.employees e
+			WHERE e.id = $1
+			  AND e.position = 'cleaner'
+			  AND e.status IN ('ACTIVE', 'ONDUTY')
+		)
+	`, employeeID).Scan(&found)
+	if err != nil {
+		return fmt.Errorf("failed to validate cleaner: %w", err)
+	}
+	if !found {
+		return ErrEmployeeNotFoundOrInactive
+	}
+	return nil
+}
+
+func (t *AdminTasks) CleanerHasScheduleConflict(
+	ctx context.Context,
+	tx pgx.Tx,
+	employeeID string,
+	startSched, endSched time.Time,
+	excludeBookingID string,
+) (bool, error) {
+	var count int
+	err := tx.QueryRow(ctx, `
+		SELECT COUNT(1)::int
+		FROM booking.bookings b
+		JOIN booking.basebookings bb ON bb.id = b.base_booking_id
+		WHERE $1 = ANY(b.cleaner_ids)
+		  AND bb.startsched < $3
+		  AND bb.endsched > $2
+		  AND ($4 = '' OR b.id <> $4)
+		  AND UPPER(COALESCE(bb.reviewstatus, '')) NOT IN ('CANCELLED', 'REJECTED')
+		  AND UPPER(COALESCE(bb.status, '')) <> 'CANCELLED'
+	`, employeeID, startSched, endSched, excludeBookingID).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("failed checking cleaner schedule conflict: %w", err)
+	}
+
+	return count > 0, nil
+}
+
+func (t *AdminTasks) FetchAvailableCleanersByBooking(
+	ctx context.Context,
+	tx pgx.Tx,
+	bookingID string,
+	startSched, endSched time.Time,
+) ([]types.AvailableCleaner, error) {
+	rows, err := tx.Query(ctx, `
+		SELECT
+			e.id,
+			a.first_name,
+			a.last_name
+		FROM account.employees e
+		JOIN account.accounts a ON a.id = e.account_id
+		WHERE e.position = 'cleaner'
+		  AND e.status IN ('ACTIVE', 'ONDUTY')
+		  AND NOT EXISTS (
+			SELECT 1
+			FROM booking.bookings b
+			JOIN booking.basebookings bb ON bb.id = b.base_booking_id
+			WHERE e.id = ANY(b.cleaner_ids)
+			  AND bb.startsched < $2
+			  AND bb.endsched > $1
+			  AND b.id <> $3
+			  AND UPPER(COALESCE(bb.reviewstatus, '')) NOT IN ('CANCELLED', 'REJECTED')
+			  AND UPPER(COALESCE(bb.status, '')) <> 'CANCELLED'
+		  )
+		ORDER BY a.last_name ASC, a.first_name ASC
+	`, startSched, endSched, bookingID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch available cleaners: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]types.AvailableCleaner, 0)
+	for rows.Next() {
+		var cleaner types.AvailableCleaner
+		if scanErr := rows.Scan(&cleaner.EmployeeID, &cleaner.FirstName, &cleaner.LastName); scanErr != nil {
+			return nil, fmt.Errorf("failed scanning available cleaner row: %w", scanErr)
+		}
+		out = append(out, cleaner)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed iterating available cleaner rows: %w", err)
+	}
+
+	return out, nil
+}
+
+func (t *AdminTasks) AssignEmployeeToBooking(
+	ctx context.Context,
+	tx pgx.Tx,
+	bookingID, employeeID string,
+	action types.AssignEmployeeAction,
+) error {
+	normalizedAction := strings.ToUpper(string(action))
+
+	switch normalizedAction {
+	case string(types.AssignEmployeeActionAdd):
+		result, err := tx.Exec(ctx, `
+			UPDATE booking.bookings b
+			SET cleaner_ids = array_append(b.cleaner_ids, $2)
+			WHERE b.id = $1
+			  AND NOT ($2 = ANY(b.cleaner_ids))
+		`, bookingID, employeeID)
+		if err != nil {
+			return fmt.Errorf("failed assigning cleaner to booking: %w", err)
+		}
+		if result.RowsAffected() == 0 {
+			var exists bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM booking.bookings WHERE id = $1)`, bookingID).Scan(&exists); err != nil {
+				return fmt.Errorf("failed validating booking existence after assign: %w", err)
+			}
+			if !exists {
+				return ErrBookingNotFound
+			}
+			return ErrCleanerAlreadyAssigned
+		}
+		return nil
+	case string(types.AssignEmployeeActionRemove):
+		result, err := tx.Exec(ctx, `
+			UPDATE booking.bookings b
+			SET cleaner_ids = array_remove(b.cleaner_ids, $2)
+			WHERE b.id = $1
+			  AND $2 = ANY(b.cleaner_ids)
+		`, bookingID, employeeID)
+		if err != nil {
+			return fmt.Errorf("failed unassigning cleaner from booking: %w", err)
+		}
+		if result.RowsAffected() == 0 {
+			var exists bool
+			if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM booking.bookings WHERE id = $1)`, bookingID).Scan(&exists); err != nil {
+				return fmt.Errorf("failed validating booking existence after unassign: %w", err)
+			}
+			if !exists {
+				return ErrBookingNotFound
+			}
+			return ErrCleanerNotAssigned
+		}
+		return nil
+	default:
+		return fmt.Errorf("invalid action: %s", action)
+	}
 }

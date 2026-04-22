@@ -3,8 +3,10 @@ package handlers
 import (
 	"context"
 	"errors"
+	"handworks-api/tasks"
 	"handworks-api/types"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -71,6 +73,84 @@ func (h *AdminHandler) OnboardEmployee(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
 		return
 	}
+	c.JSON(http.StatusOK, res)
+}
+
+// AssignEmployeeToBooking godoc
+// @Summary Assign or unassign a cleaner to a booking
+// @Description Adds or removes a cleaner from a booking after schedule conflict checks
+// @Tags Admin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param input body types.AssignEmployeeToBookingRequest true "Assign employee data"
+// @Success 200 {object} types.AssignEmployeeToBookingResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 409 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/employee/assign [post]
+func (h *AdminHandler) AssignEmployeeToBooking(c *gin.Context) {
+	var req types.AssignEmployeeToBookingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	req.Action = types.AssignEmployeeAction(strings.ToUpper(string(req.Action)))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.Service.AssignEmployeeToBooking(ctx, &req)
+	if err != nil {
+		switch {
+		case errors.Is(err, tasks.ErrBookingNotFound), errors.Is(err, tasks.ErrEmployeeNotFoundOrInactive):
+			c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+			return
+		case errors.Is(err, tasks.ErrCleanerAlreadyAssigned), errors.Is(err, tasks.ErrCleanerHasConflict), errors.Is(err, tasks.ErrCleanerNotAssigned):
+			c.JSON(http.StatusConflict, types.NewErrorResponse(err))
+			return
+		default:
+			c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+// ListAvailableCleaners godoc
+// @Summary List available cleaners for a booking
+// @Description Returns cleaners with no overlapping non-cancelled responsibilities for the booking schedule
+// @Tags Admin
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param bookingId query string true "Booking ID"
+// @Success 200 {object} types.AvailableCleanersResponse
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /admin/employee/available [get]
+func (h *AdminHandler) ListAvailableCleaners(c *gin.Context) {
+	var req types.AvailableCleanersRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := h.Service.GetAvailableCleaners(ctx, &req)
+	if err != nil {
+		if errors.Is(err, tasks.ErrBookingNotFound) {
+			c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+			return
+		}
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
 	c.JSON(http.StatusOK, res)
 }
 
