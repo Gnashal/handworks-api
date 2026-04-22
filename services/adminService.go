@@ -149,7 +149,7 @@ func (s *AdminService) GetBookingTrends(ctx context.Context) (*types.BookingTren
 	return res, nil
 }
 
-func (s *AdminService) GetAvailableCleaners(ctx context.Context, req *types.AvailableCleanersRequest) (*types.AvailableCleanersResponse, error) {
+func (s *AdminService) GetAvailableCleaners(ctx context.Context, bookingId string) (*types.AvailableCleanersResponse, error) {
 	var (
 		window   *tasks.BookingScheduleWindow
 		cleaners []types.AvailableCleaner
@@ -157,12 +157,12 @@ func (s *AdminService) GetAvailableCleaners(ctx context.Context, req *types.Avai
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
 		var err error
-		window, err = s.Tasks.GetBookingScheduleWindow(ctx, tx, req.BookingID)
+		window, err = s.Tasks.GetBookingScheduleWindow(ctx, tx, bookingId)
 		if err != nil {
 			return err
 		}
 
-		cleaners, err = s.Tasks.FetchAvailableCleanersByBooking(ctx, tx, req.BookingID, window.StartSched, window.EndSched)
+		cleaners, err = s.Tasks.FetchAvailableCleanersByBooking(ctx, tx, bookingId, window.StartSched, window.EndSched)
 		if err != nil {
 			return err
 		}
@@ -174,7 +174,7 @@ func (s *AdminService) GetAvailableCleaners(ctx context.Context, req *types.Avai
 	}
 
 	return &types.AvailableCleanersResponse{
-		BookingID:    req.BookingID,
+		BookingID:    bookingId,
 		StartSched:   window.StartSched,
 		EndSched:     window.EndSched,
 		Cleaners:     cleaners,

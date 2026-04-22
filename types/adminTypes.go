@@ -169,10 +169,6 @@ type AvailableCleaner struct {
 	PFPUrl     string `json:"pfpUrl"`
 }
 
-type AvailableCleanersRequest struct {
-	BookingID string `form:"bookingId" binding:"required"`
-}
-
 type AvailableCleanersResponse struct {
 	BookingID    string             `json:"bookingId"`
 	StartSched   time.Time          `json:"startSched"`

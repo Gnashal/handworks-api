@@ -132,16 +132,16 @@ func (h *AdminHandler) AssignEmployeeToBooking(c *gin.Context) {
 // @Failure 500 {object} types.ErrorResponse
 // @Router /admin/employee/available [get]
 func (h *AdminHandler) ListAvailableCleaners(c *gin.Context) {
-	var req types.AvailableCleanersRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
+	bookingId := c.Query("bookingId")
+	if bookingId == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("bookingId query param is required")))
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	res, err := h.Service.GetAvailableCleaners(ctx, &req)
+	res, err := h.Service.GetAvailableCleaners(ctx, bookingId)
 	if err != nil {
 		if errors.Is(err, tasks.ErrBookingNotFound) {
 			c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))
