@@ -3,12 +3,15 @@ package tasks
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"handworks-api/types"
 	"handworks-api/utils"
+	"math"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type BookingTasks struct{}
@@ -40,28 +43,114 @@ func (t *BookingTasks) AllocateEquipmentAndResources(ctx context.Context, tx pgx
 	}, nil
 }
 
-func (t *BookingTasks) AllocateCleaners(ctx context.Context, tx pgx.Tx) ([]types.CleanerAssigned, error) {
-	query := `
-		SELECT e.id, a.first_name, a.last_name
-		FROM account.employees e
-		JOIN account.accounts a ON a.id = e.account_id
-		WHERE e.status = 'ACTIVE'
-		AND e.position = 'cleaner'
-		ORDER BY
-			CASE WHEN e.id = ANY(
-				SELECT UNNEST(b.cleaner_ids)
-				FROM booking.bookings b
-				JOIN booking.basebookings bb ON bb.id = b.base_booking_id
-				ORDER BY bb.startsched DESC
-				LIMIT 1
-			) THEN 1 ELSE 0 END ASC`
+func (t *BookingTasks) AllocateCleaners(ctx context.Context, tx pgx.Tx, req *types.CreateBookingRequest) ([]types.CleanerAssigned, error) {
+	if req == nil {
+		return nil, fmt.Errorf("booking request is required for cleaner allocation")
+	}
 
-	rows, err := tx.Query(ctx, query)
+	cleanersNeeded := t.calculateCleanersNeeded(req)
+	if cleanersNeeded <= 0 {
+		cleanersNeeded = 1
+	}
+
+	cleaners, err := t.allocateCleanersViaSproc(ctx, tx, req.Base.StartSched, req.Base.EndSched, cleanersNeeded, req.Base.DirtyScale)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query active cleaners: %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "42883" {
+			cleaners, err = t.allocateCleanersFallback(ctx, tx, req.Base.StartSched, req.Base.EndSched, cleanersNeeded)
+			if err != nil {
+				return nil, fmt.Errorf("failed to allocate cleaners via fallback query: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to allocate cleaners via sproc: %w", err)
+		}
+	}
+
+	if len(cleaners) == 0 {
+		return nil, fmt.Errorf("no available cleaners found for selected schedule")
+	}
+
+	if len(cleaners) < cleanersNeeded {
+		return nil, fmt.Errorf("insufficient available cleaners for selected schedule: need %d, got %d", cleanersNeeded, len(cleaners))
+	}
+
+	return cleaners, nil
+}
+
+func (t *BookingTasks) allocateCleanersViaSproc(
+	ctx context.Context,
+	tx pgx.Tx,
+	startSched, endSched time.Time,
+	cleanersNeeded int,
+	dirtyScale int32,
+) ([]types.CleanerAssigned, error) {
+	rows, err := tx.Query(ctx,
+		`SELECT cleaner_id, cleaner_first_name, cleaner_last_name
+		 FROM booking.allocate_cleaners($1, $2, $3, $4)`,
+		startSched,
+		endSched,
+		cleanersNeeded,
+		dirtyScale,
+	)
+	if err != nil {
+		return nil, err
 	}
 	defer rows.Close()
 
+	return scanCleanerRows(rows)
+}
+
+func (t *BookingTasks) allocateCleanersFallback(
+	ctx context.Context,
+	tx pgx.Tx,
+	startSched, endSched time.Time,
+	cleanersNeeded int,
+) ([]types.CleanerAssigned, error) {
+	query := `
+		WITH candidates AS (
+			SELECT
+				e.id,
+				a.first_name,
+				a.last_name,
+				COALESCE(e.performance_score, 0) AS performance_score,
+				COUNT(b2.id) FILTER (
+					WHERE bb2.startsched >= NOW()
+					  AND UPPER(COALESCE(bb2.reviewstatus, '')) NOT IN ('CANCELLED', 'REJECTED')
+					  AND UPPER(COALESCE(bb2.status, '')) <> 'CANCELLED'
+				) AS upcoming_assignments
+			FROM account.employees e
+			JOIN account.accounts a ON a.id = e.account_id
+			LEFT JOIN booking.bookings b2 ON e.id = ANY(b2.cleaner_ids)
+			LEFT JOIN booking.basebookings bb2 ON bb2.id = b2.base_booking_id
+			WHERE e.position = 'cleaner'
+			  AND e.status IN ('ACTIVE', 'ONDUTY')
+			GROUP BY e.id, a.first_name, a.last_name, e.performance_score
+		)
+		SELECT c.id, c.first_name, c.last_name
+		FROM candidates c
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM booking.bookings b
+			JOIN booking.basebookings bb ON bb.id = b.base_booking_id
+			WHERE c.id = ANY(b.cleaner_ids)
+			  AND bb.startsched < $2
+			  AND bb.endsched > $1
+			  AND UPPER(COALESCE(bb.reviewstatus, '')) NOT IN ('CANCELLED', 'REJECTED')
+			  AND UPPER(COALESCE(bb.status, '')) <> 'CANCELLED'
+		)
+		ORDER BY c.upcoming_assignments ASC, c.performance_score DESC, c.last_name ASC, c.first_name ASC
+		LIMIT $3`
+
+	rows, err := tx.Query(ctx, query, startSched, endSched, cleanersNeeded)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query available cleaners: %w", err)
+	}
+	defer rows.Close()
+
+	return scanCleanerRows(rows)
+}
+
+func scanCleanerRows(rows pgx.Rows) ([]types.CleanerAssigned, error) {
 	var cleaners []types.CleanerAssigned
 	for rows.Next() {
 		var cleaner types.CleanerAssigned
@@ -75,10 +164,35 @@ func (t *BookingTasks) AllocateCleaners(ctx context.Context, tx pgx.Tx) ([]types
 		return nil, fmt.Errorf("failed iterating cleaner rows: %w", err)
 	}
 
-	if len(cleaners) == 0 {
-		return nil, fmt.Errorf("no available cleaners found")
-	}
 	return cleaners, nil
+}
+
+func (t *BookingTasks) calculateCleanersNeeded(req *types.CreateBookingRequest) int {
+	serviceHours := float64(req.TotalServiceHours + req.ExtraHours)
+	if serviceHours <= 0 {
+		serviceHours = req.Base.EndSched.Sub(req.Base.StartSched).Hours()
+	}
+
+	windowHours := req.Base.EndSched.Sub(req.Base.StartSched).Hours()
+	if windowHours <= 0 {
+		windowHours = 1
+	}
+
+	baseNeeded := int(math.Ceil(serviceHours / windowHours))
+	if baseNeeded < 1 {
+		baseNeeded = 1
+	}
+
+	// Larger dirt scale tends to require at least one extra cleaner to avoid overrun.
+	if req.Base.DirtyScale >= 5 {
+		baseNeeded++
+	}
+
+	if baseNeeded > 4 {
+		baseNeeded = 4
+	}
+
+	return baseNeeded
 }
 
 func (t *BookingTasks) MakeBaseBooking(

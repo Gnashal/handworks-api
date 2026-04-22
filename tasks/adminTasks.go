@@ -731,7 +731,10 @@ func (t *AdminTasks) CleanerHasScheduleConflict(
 		WHERE $1 = ANY(b.cleaner_ids)
 		  AND bb.startsched < $3
 		  AND bb.endsched > $2
-		  AND ($4 = '' OR b.id <> $4)
+		  AND (
+			NULLIF($4, '')::uuid IS NULL
+			OR b.id <> NULLIF($4, '')::uuid
+		  )
 		  AND UPPER(COALESCE(bb.reviewstatus, '')) NOT IN ('CANCELLED', 'REJECTED')
 		  AND UPPER(COALESCE(bb.status, '')) <> 'CANCELLED'
 	`, employeeID, startSched, endSched, excludeBookingID).Scan(&count)
@@ -764,7 +767,7 @@ func (t *AdminTasks) FetchAvailableCleanersByBooking(
 			WHERE e.id = ANY(b.cleaner_ids)
 			  AND bb.startsched < $2
 			  AND bb.endsched > $1
-			  AND b.id <> $3
+			  AND b.id <> $3::uuid
 			  AND UPPER(COALESCE(bb.reviewstatus, '')) NOT IN ('CANCELLED', 'REJECTED')
 			  AND UPPER(COALESCE(bb.status, '')) <> 'CANCELLED'
 		  )
