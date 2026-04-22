@@ -278,7 +278,6 @@ func (h *AccountHandler) GetEmployees(c *gin.Context) {
 // @Tags Account
 // @Accept json
 // @Produce json
-// @Param id path string true "Employee ID"
 // @Param input body types.UpdateEmployeeRequest true "Updated employee data"
 // @Success 200 {object} types.UpdateEmployeeResponse
 // @Failure 400 {object} types.ErrorResponse
@@ -286,7 +285,6 @@ func (h *AccountHandler) GetEmployees(c *gin.Context) {
 // @Router /account/employee/ [put]
 func (h *AccountHandler) UpdateEmployee(c *gin.Context) {
 	var req types.UpdateEmployeeRequest
-	req.ID = c.Query("id")
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, types.NewErrorResponse(err))

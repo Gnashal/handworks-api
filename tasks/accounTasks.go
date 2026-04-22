@@ -175,14 +175,14 @@ func (t *AccountTasks) UpdateCustomer(c context.Context, tx pgx.Tx, id, firstNam
 	customer.Account = *acc
 	return customer, nil
 }
-func (t *AccountTasks) UpdateEmployee(c context.Context, tx pgx.Tx, id, firstName, lastName, email string) (*types.Employee, error) {
+func (t *AccountTasks) UpdateEmployee(c context.Context, tx pgx.Tx, id, empId, firstName, lastName, email string) (*types.Employee, error) {
 	acc, err := t.UpdateAccount(c, tx, id, firstName, lastName, email)
 	if err != nil {
 		return nil, fmt.Errorf("could not update account: %w", err)
 	}
-	employee, err := t.FetchEmployeeData(c, tx, id)
+	employee, err := t.FetchEmployeeData(c, tx, empId)
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch customer data: %w", err)
+		return nil, fmt.Errorf("could not fetch employee data: %w", err)
 	}
 
 	employee.Account = *acc

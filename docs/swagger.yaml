@@ -2148,11 +2148,6 @@ paths:
       - application/json
       description: Update employee information
       parameters:
-      - description: Employee ID
-        in: path
-        name: id
-        required: true
-        type: string
       - description: Updated employee data
         in: body
         name: input

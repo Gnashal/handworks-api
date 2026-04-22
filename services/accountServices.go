@@ -214,7 +214,7 @@ func (s *AccountService) UpdateEmployee(ctx context.Context, req types.UpdateEmp
 	var employee types.Employee
 
 	if err := s.withTx(ctx, func(tx pgx.Tx) error {
-		emp, err := s.Tasks.UpdateEmployee(ctx, tx, req.ID, req.FirstName, req.LastName, req.Email)
+		emp, err := s.Tasks.UpdateEmployee(ctx, tx, req.ID, req.EmployeeID, req.FirstName, req.LastName, req.Email)
 		if err != nil {
 			return err
 		}

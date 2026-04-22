@@ -614,13 +614,6 @@ const docTemplate = `{
                 "summary": "Update an employee",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Employee ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "description": "Updated employee data",
                         "name": "input",
                         "in": "body",
