@@ -1060,6 +1060,22 @@ func (s *PaymentTasks) UpdateOrderPaymentStatus(ctx context.Context, tx pgx.Tx, 
 	_, err := tx.Exec(ctx, updateOrderQuery, newStatus, paymentIntentId)
 	return err
 }
+func (s *PaymentTasks) UpdateOrderPaymentStatusCash(ctx context.Context, tx pgx.Tx, orderID, newStatus string) error {
+	const updateOrderQuery = `
+		UPDATE payment.orders
+		SET payment_status = $1, updated_at = NOW()
+		WHERE id = $2
+	`
+
+	cmdTag, err := tx.Exec(ctx, updateOrderQuery, newStatus, orderID)
+	if err != nil {
+		return err
+	}
+	if cmdTag.RowsAffected() != 1 {
+		return fmt.Errorf("cash status update affected %d rows for order %s", cmdTag.RowsAffected(), orderID)
+	}
+	return nil
+}
 func (s *PaymentTasks) UpdatePaymentStatus(ctx context.Context, tx pgx.Tx, paymentId, paymentIntentId, newStatus string) error {
 	const updatePaymentQuery = `
 		UPDATE payment.payments
