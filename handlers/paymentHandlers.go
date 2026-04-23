@@ -562,6 +562,37 @@ func (h *PaymentHandler) CreateFullPaymentIntent(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// CashFullPayment godoc
+// @Summary Record full cash payment
+// @Security BearerAuth
+// @Description Record a full cash payment for an order and update payment status in the database
+// @Tags Payment
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} types.ErrorResponse
+// @Failure 500 {object} types.ErrorResponse
+// @Router /payment/payments/intent/cash/{id} [post]
+func (h *PaymentHandler) CashFullPayment(c *gin.Context) {
+	orderId := c.Param("id")
+	if orderId == "" {
+		c.JSON(http.StatusBadRequest, types.NewErrorResponse(errors.New("order id is required")))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	err := h.Service.CashFullPayment(ctx, orderId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, types.NewErrorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "success"})
+}
+
 // CreateStaticQRPHCode godoc
 // @Summary Create QRPH static code
 // @Security BearerAuth

@@ -115,6 +115,7 @@ func PaymentEndpoint(r *gin.RouterGroup, h *handlers.PaymentHandler) {
 		{
 			intents.POST("/downpayment/:id", h.CreateDownpaymentIntent)
 			intents.POST("/fullpayment/:id", h.CreateFullPaymentIntent)
+			intents.POST("/cash/:id", h.CashFullPayment)
 			intents.POST("/qrph-static", h.CreateStaticQRPHCode)
 		}
 	}

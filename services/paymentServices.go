@@ -395,7 +395,7 @@ func (s *PaymentService) CreateFullPaymentIntent(ctx context.Context, orderID st
 			Provider:        order.PaymentMethod,
 			FailedReason:    failedReason,
 			RawResponse:     raw,
-			Amount:          order.DownpaymentRequired,
+			Amount:          order.RemainingBalance,
 			Status:          intent.Data.Attributes.Status,
 		}
 		err = s.Tasks.StorePayment(ctx, tx, payment)
@@ -409,6 +409,39 @@ func (s *PaymentService) CreateFullPaymentIntent(ctx context.Context, orderID st
 	}
 
 	return intent, nil
+}
+
+func (s *PaymentService) CashFullPayment(ctx context.Context, orderID string) error {
+	if err := s.withTx(ctx, func(tx pgx.Tx) error {
+		order, err := s.Tasks.FetchOrderByID(ctx, tx, orderID)
+		if err != nil {
+			return err
+		}
+
+		if order.PaymentStatus != "pending_fullpayment" {
+			return errors.New("order not eligible for full payment")
+		}
+
+		err = s.Tasks.UpdateOrderPaymentStatus(ctx, tx, "", "", "paid")
+		if err != nil {
+			return err
+		}
+
+		payment := &types.StorePayment{
+			OrderID:  orderID,
+			Type:     "FULLPAYMENT",
+			Currency: "PHP",
+			Provider: "CASH",
+			Amount:   order.RemainingBalance,
+			Status:   "paid",
+		}
+		err = s.Tasks.StorePayment(ctx, tx, payment)
+		return err
+	}); err != nil {
+		s.Logger.Error("Failed to process cash full payment for order %s: %v", orderID, err)
+		return err
+	}
+	return nil
 }
 
 func (s *PaymentService) CreateStaticQRPHCode(ctx context.Context, req types.CreateQRPHCodeRequest) (*types.QRPHCodeResponse, error) {

@@ -3765,6 +3765,40 @@ paths:
       summary: Check existing downpayment
       tags:
       - Payment
+  /payment/payments/intent/cash/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Record a full cash payment for an order and update payment status
+        in the database
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/types.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Record full cash payment
+      tags:
+      - Payment
   /payment/payments/intent/downpayment/{id}:
     post:
       consumes:
