@@ -289,6 +289,10 @@ func (s *PaymentService) CreateDownpaymentIntent(ctx context.Context, orderID st
 			return errors.New("order not eligible for downpayment")
 		}
 
+		if order.PaymentMethod != "online" {
+			return errors.New("order payment method is not online")
+		}
+
 		// Convert PHP to centavos
 		amountInCents := int64(math.Round(float64(order.DownpaymentRequired) * 100))
 
@@ -354,6 +358,9 @@ func (s *PaymentService) CreateFullPaymentIntent(ctx context.Context, orderID st
 
 		if order.PaymentStatus != "pending_fullpayment" {
 			return errors.New("order not eligible for full payment")
+		}
+		if order.PaymentMethod != "online" {
+			return errors.New("order payment method is not online")
 		}
 
 		// Convert PHP to centavos
@@ -422,8 +429,13 @@ func (s *PaymentService) CashFullPayment(ctx context.Context, orderID string) er
 			return errors.New("order not eligible for full payment")
 		}
 
-		err = s.Tasks.UpdateOrderPaymentStatus(ctx, tx, "", "", "paid")
+		if order.PaymentMethod != "cash" {
+			return errors.New("order payment method is not cash")
+		}
+
+		err = s.Tasks.UpdateOrderPaymentStatusCash(ctx, tx, orderID, "paid")
 		if err != nil {
+			s.Logger.Error("Failed to update order payment status for cash full payment for order %s: %v", orderID, err)
 			return err
 		}
 
@@ -431,7 +443,7 @@ func (s *PaymentService) CashFullPayment(ctx context.Context, orderID string) er
 			OrderID:  orderID,
 			Type:     "FULLPAYMENT",
 			Currency: "PHP",
-			Provider: "CASH",
+			Provider: "cash",
 			Amount:   order.RemainingBalance,
 			Status:   "paid",
 		}
