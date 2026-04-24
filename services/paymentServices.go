@@ -289,10 +289,6 @@ func (s *PaymentService) CreateDownpaymentIntent(ctx context.Context, orderID st
 			return errors.New("order not eligible for downpayment")
 		}
 
-		if order.PaymentMethod != "online" {
-			return errors.New("order payment method is not online")
-		}
-
 		// Convert PHP to centavos
 		amountInCents := int64(math.Round(float64(order.DownpaymentRequired) * 100))
 
