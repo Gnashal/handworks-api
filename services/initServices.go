@@ -10,6 +10,7 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/api/option"
 )
@@ -77,10 +78,17 @@ func NewAdminService(db *pgxpool.Pool, logger *utils.Logger, accountService task
 
 type FCMService struct {
 	logger              *utils.Logger
-	client              *messaging.Client
+	client              fcmMessagingClient
 	adminTopic          string
 	employeeTopicPrefix string
 	customerTopicPrefix string
+}
+
+type fcmMessagingClient interface {
+	Send(ctx context.Context, msg *messaging.Message) (string, error)
+	SendEachForMulticast(ctx context.Context, message *messaging.MulticastMessage) (*messaging.BatchResponse, error)
+	SubscribeToTopic(ctx context.Context, tokens []string, topic string) (*messaging.TopicManagementResponse, error)
+	UnsubscribeFromTopic(ctx context.Context, tokens []string, topic string) (*messaging.TopicManagementResponse, error)
 }
 
 func NewFCMService(
@@ -134,10 +142,37 @@ func NewFCMService(
 
 // Notification Service
 type NotificationService struct {
-	DB     *pgxpool.Pool
+	DB     notificationTxBeginner
 	Logger *utils.Logger
-	FCM    *FCMService
-	Tasks  *tasks.NotificationTasks
+	FCM    notificationFCMPort
+	Tasks  notificationTasker
+}
+
+type notificationTxBeginner interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
+
+type notificationFCMPort interface {
+	SubscribeTokenToAdminTopic(ctx context.Context, token string) (string, error)
+	SubscribeTokenToEmployeeTopic(ctx context.Context, token string, employeeID string) (string, error)
+	SubscribeTokenToCustomerTopic(ctx context.Context, token string, customerID string) (string, error)
+	UnsubscribeTokenFromAdminTopic(ctx context.Context, token string) error
+	UnsubscribeTokenFromEmployeeTopic(ctx context.Context, token string, employeeID string) error
+	UnsubscribeTokenFromCustomerTopic(ctx context.Context, token string, customerID string) error
+	SendToTokens(ctx context.Context, tokens []string, event string, payload any) ([]string, error)
+}
+
+type notificationTasker interface {
+	UpsertEmployeeFCMToken(ctx context.Context, tx pgx.Tx, employeeID string, installationID string, fcmToken string, platform string) error
+	DeactivateToken(ctx context.Context, tx pgx.Tx, fcmToken string) error
+	UpsertAdminFCMToken(ctx context.Context, tx pgx.Tx, adminID string, installationID string, fcmToken string, platform string) error
+	UpsertCustomerFCMToken(ctx context.Context, tx pgx.Tx, customerID string, installationID string, fcmToken string, platform string) error
+	GetActiveEmployeeTokens(ctx context.Context, tx pgx.Tx, employeeID string) ([]string, error)
+	GetActiveAdminTokens(ctx context.Context, tx pgx.Tx) ([]string, error)
+	GetActiveCustomerTokens(ctx context.Context, tx pgx.Tx, customerID string) ([]string, error)
+	DeactivateEmployeeToken(ctx context.Context, tx pgx.Tx, employeeID string, fcmToken string) error
+	DeactivateAdminToken(ctx context.Context, tx pgx.Tx, adminID string, fcmToken string) error
+	DeactivateCustomerToken(ctx context.Context, tx pgx.Tx, customerID string, fcmToken string) error
 }
 
 func NewNotificationService(db *pgxpool.Pool, logger *utils.Logger, fcm *FCMService) *NotificationService {
